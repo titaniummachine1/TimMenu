@@ -9,6 +9,8 @@ if UnloadLib then
     UnloadLib()
 end
 
+print("XD")
+
 -- Import lnxLib
 ---@type boolean, lnxLib
 local libLoaded, lnxLib = pcall(require, "lnxLib")
