@@ -1,29 +1,24 @@
--- A lightweight multi-window library.
-
 local Common = require("TimMenu.Common")
 local Static = require("TimMenu.Static")
 local Utils  = require("TimMenu.Utils")
+WindowState = WindowState or require("TimMenu.WindowState")  -- global persistent state
 
-TimMenu = TimMenu or {}
-TimMenu.windows = TimMenu.windows or {}
-TimMenu.order   = TimMenu.order or {} -- Window order: bottom-first, top-last
-TimMenu.CapturedWindow = TimMenu.CapturedWindow or nil
+local TimMenu = {}  -- local instance
+TimMenu.windows = WindowState.windows  -- global shared state
+TimMenu.order   = WindowState.order
+TimMenu.CapturedWindow = nil
+TimMenu.LastWindowDrawnKey = nil
 
 function TimMenu.Refresh()
-    package.loaded["TimMenu"] = nil
+    package.loaded["TimMenu.Common"] = nil
+    package.loaded["TimMenu.Static"] = nil
+    package.loaded["TimMenu.Utils"]  = nil
 end
-TimMenu.Refresh()
-
---------------------------------------------------------------------------------
--- API Functions
---------------------------------------------------------------------------------
 
 --- Begins a new or updates an existing window.
---- @param title string Window title.
---- @param visible? boolean Whether the window is visible (default: true).
---- @param id? string|number Unique identifier (default: title).
---- @return boolean, table Visible flag and the window table.
 function TimMenu.Begin(title, visible, id)
+    TimMenu.Refresh()
+
     assert(type(title) == "string", "TimMenu.Begin requires a string title")
     visible = (visible == nil) and true or visible
     if type(visible) == "string" then id, visible = visible, true end
@@ -39,8 +34,8 @@ function TimMenu.Begin(title, visible, id)
             title   = title,
             id      = key,
             visible = visible,
-            X       = Static.Defaults.DEFAULT_X + math.random(0, 150), -- slight random offset on X
-            Y       = Static.Defaults.DEFAULT_Y + math.random(0, 50), -- slight random offset on Y
+            X       = Static.Defaults.DEFAULT_X + math.random(0, 150),
+            Y       = Static.Defaults.DEFAULT_Y + math.random(0, 50),
             W       = Static.Defaults.DEFAULT_W,
             H       = Static.Defaults.DEFAULT_H,
         }
@@ -90,7 +85,6 @@ function TimMenu.Begin(title, visible, id)
 end
 
 --- Ends the current window.
---- Draws all visible windows if the top visible window matches the latest drawn.
 function TimMenu.End()
     if not input.IsButtonDown(MOUSE_LEFT) then
         TimMenu.CapturedWindow = nil
@@ -119,7 +113,6 @@ function TimMenu.End()
 end
 
 --- Renders the given window.
---- @param win table Window object.
 function TimMenu.DrawWindow(win)
     assert(win and type(win) == "table", "DrawWindow requires a window table")
     draw.Color(table.unpack(Static.Colors.Window or {30,30,30,255}))
