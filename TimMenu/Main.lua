@@ -79,12 +79,15 @@ function TimMenu.Begin(title, visible, id)
     end
 
     if visible then
+        -- basicly free feathere to not draw when celan screnshtos are needed
+        if gui.GetValue("clean screenshots") == 1 and engine.IsTakingScreenshot() then
+            return
+        end
+
         -- Update the window's last drawn frame.
         win.lastFrame = currentFrame
-        -- Clamp window positions to the screen bounds.
-        local screenWidth, screenHeight = draw.GetScreenSize()
-        win.x = Common.Clamp(win.x, 0)
-        win.y = Common.Clamp(win.y, 0)
+        win.x = Common.Clamp(win.x)
+        win.y = Common.Clamp(win.y)
         -- Draw the window.
         TimMenu.DrawWindow(win)
     end
