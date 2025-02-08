@@ -33,7 +33,7 @@ TimMenu.Refresh() -- Refresh if run manually
 -- for at least 5 frames.
 local function PruneOrphanedWindows()
     local currentFrame = globals.FrameCount()
-    local threshold = 5  -- Maximum number of frames a window can go without being drawn.
+    local threshold = 2  -- Maximum number of frames a window can go without being drawn.
     for key, win in pairs(TimMenu.windows) do
         if not win.lastFrame or (currentFrame - win.lastFrame) >= threshold then
             TimMenu.windows[key] = nil
@@ -98,42 +98,44 @@ function TimMenu.Begin(title, visible, id)
         win.visible = visible
     end
 
-    if visible and (gui.GetValue("clean screenshots") == 1 and not engine.IsTakingScreenshot()) then
-        win.lastFrame = currentFrame
-        win.X = Common.Clamp(win.X)
-        win.Y = Common.Clamp(win.Y)
-        -- Removed immediate drawing call:
-        -- TimMenu.DrawWindow(win)
-        TimMenu.LastWindowDrawnKey = key  -- update last drawn key
-    end
-
-    local screenWidth, screenHeight = draw.GetScreenSize()
-    local titleText = win.title
-    draw.SetFont(Static.Style.Font)
-    local txtWidth, txtHeight = draw.GetTextSize(titleText)
-    local titleHeight = txtHeight + Static.Style.ItemPadding
-
-    local mX, mY = table.unpack(input.GetMousePos())
-    local topKey = TimMenu.GetTopWindowAtPoint(mX, mY)
-    if topKey == key then
-        local hovered, clicked = Common.GetInteraction(win.X, win.Y, win.W, titleHeight)
-        if clicked then
-            -- Reset drag offset for new click and capture the window
-            win.IsDragging = false
-            TimMenu.CapturedWindow = key
-            -- Bring window on top by removing and reinserting its key
-            for i, k in ipairs(TimMenu.order) do
-                if k == key then
-                    table.remove(TimMenu.order, i)
-                    break
-                end
-            end
-            table.insert(TimMenu.order, key)
+    if visible then
+        if (gui.GetValue("clean screenshots") == 1 and not engine.IsTakingScreenshot()) then
+            win.lastFrame = currentFrame
+            win.X = Common.Clamp(win.X)
+            win.Y = Common.Clamp(win.Y)
+            -- Removed immediate drawing call:
+            -- TimMenu.DrawWindow(win)
+            TimMenu.LastWindowDrawnKey = key  -- update last drawn key
         end
-    end
 
-    if TimMenu.CapturedWindow == key then
-        Common.HandleWindowDrag(win, Static.Defaults.TITLE_BAR_HEIGHT, screenWidth, screenHeight)
+        local screenWidth, screenHeight = draw.GetScreenSize()
+        local titleText = win.title
+        draw.SetFont(Static.Style.Font)
+        local txtWidth, txtHeight = draw.GetTextSize(titleText)
+        local titleHeight = txtHeight + Static.Style.ItemPadding
+
+        local mX, mY = table.unpack(input.GetMousePos())
+        local topKey = TimMenu.GetTopWindowAtPoint(mX, mY)
+        if topKey == key then
+            local hovered, clicked = Common.GetInteraction(win.X, win.Y, win.W, titleHeight)
+            if clicked then
+                -- Reset drag offset for new click and capture the window
+                win.IsDragging = false
+                TimMenu.CapturedWindow = key
+                -- Bring window on top by removing and reinserting its key
+                for i, k in ipairs(TimMenu.order) do
+                    if k == key then
+                        table.remove(TimMenu.order, i)
+                        break
+                    end
+                end
+                table.insert(TimMenu.order, key)
+            end
+        end
+
+        if TimMenu.CapturedWindow == key then
+            Common.HandleWindowDrag(win, Static.Defaults.TITLE_BAR_HEIGHT, screenWidth, screenHeight)
+        end
     end
 
     return visible, win
@@ -144,8 +146,18 @@ function TimMenu.End()
     if not input.IsButtonDown(MOUSE_LEFT) then
         TimMenu.CapturedWindow = nil
     end
-    -- If this window is the last in the z-order, then draw all windows.
-    if TimMenu.LastWindowDrawnKey and TimMenu.LastWindowDrawnKey == TimMenu.order[#TimMenu.order] then
+    -- Determine the top visible window key.
+    local topVisible = nil
+    for i = #TimMenu.order, 1, -1 do
+        local key = TimMenu.order[i]
+        local win = TimMenu.windows[key]
+        if win and win.visible then
+            topVisible = key
+            break
+        end
+    end
+    -- Only draw if the top visible window key matches the last window drawn.
+    if TimMenu.LastWindowDrawnKey and TimMenu.LastWindowDrawnKey == topVisible then
         for i = 1, #TimMenu.order do
             local key = TimMenu.order[i]
             local win = TimMenu.windows[key]

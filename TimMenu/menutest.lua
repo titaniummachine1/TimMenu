@@ -2,21 +2,25 @@
 local TimMenu = require("TimMenu")
 
 local function OnDraw()
-    -- Create and draw the first window (ID defaults to title).
-    local visible1, win1 = TimMenu.Begin("Window_One", true)
-    if visible1 then
-        -- (Place your drawing code for Window_One here)
+    -- Begin (or update) a window with just a title (ID defaults to title).
+    if TimMenu.Begin("Window_One") then
+        -- (Window drawing code can go here.)
         TimMenu.End()
     end
 
-    -- Create and draw a second window with a custom unique ID.
-    local visible2, win2 = TimMenu.Begin("Window_One", true, "Window_One_SecondInstance")
-    if visible2 then
-        -- (Place your drawing code for the second instance here)
+    -- Begin (or update) a window with a title and a custom unique ID.
+    if TimMenu.Begin("Window_One", "Window_One_SecondInstance") then
+        -- (Additional window drawing code can go here.)
         TimMenu.End()
     end
 
-    -- Show debug information.
+    -- Begin (or update) a window with a title and a custom unique ID.
+    if TimMenu.Begin("Window_two", false, "window two") then
+        -- (Additional window drawing code can go here.)
+        TimMenu.End()
+    end
+
+    -- Show debug info.
     TimMenu.ShowDebug()
 end
 
