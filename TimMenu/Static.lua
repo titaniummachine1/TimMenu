@@ -17,7 +17,7 @@ Static.Colors = {
 
 ---@type ImStyle[]
 Static.Style = {
-    Font = Fonts.Verdana,
+    Font = nil, -- "verdana.ttf",
     ItemPadding = 5,
     ItemMargin = 5,
     FramePadding = 5,
