@@ -32,19 +32,16 @@ end
 --- @return boolean, table Visible flag and the window table.
 function TimMenu.Begin(title, visible, id)
     TimMenu.Refresh()
-
     assert(type(title) == "string", "TimMenu.Begin requires a string title")
     visible = (visible == nil) and true or visible
     if type(visible) == "string" then id, visible = visible, true end
-    local key = id or title
+    local key = (id or title)
     if type(key) ~= "string" then key = tostring(key) end
 
     local currentFrame = globals.FrameCount()
-
-    -- Prune orphaned windows
-    Utils.PruneOrphanedWindows(TimMenu.windows, currentFrame, 2)
-
     local win = TimMenu.windows[key]
+    
+    -- Create new window if needed
     if not win then
         win = Window.new({
             title = title,
@@ -62,35 +59,46 @@ function TimMenu.Begin(title, visible, id)
     end
 
     if visible then
-        if (gui.GetValue("clean screenshots") == 1 and not engine.IsTakingScreenshot()) then
-            win:update(currentFrame)
-            TimMenu.LastWindowDrawnKey = key
-        end
+        win.lastFrame = currentFrame
+        TimMenu.LastWindowDrawnKey = key
 
-        local screenWidth, screenHeight = draw.GetScreenSize()
-        draw.SetFont(Static.Style.Font)
-        local txtWidth, txtHeight = draw.GetTextSize(win.title)
-        local titleHeight = txtHeight + Static.Style.ItemPadding
-
+        -- Handle mouse interaction
         local mX, mY = table.unpack(input.GetMousePos())
-        local topKey = Utils.GetTopWindowAtPoint(TimMenu.order, TimMenu.windows, mX, mY, Static.Defaults.TITLE_BAR_HEIGHT)
-        if topKey == key then
-            local hovered, clicked = Common.GetInteraction(win.X, win.Y, win.W, titleHeight)
-            if clicked then
-                win.IsDragging = false
-                TimMenu.CapturedWindow = key
+        local titleHeight = Static.Defaults.TITLE_BAR_HEIGHT
+
+        -- Check if mouse is within window bounds
+        if mX >= win.X and mX <= win.X + win.W and
+           mY >= win.Y and mY <= win.Y + win.H + titleHeight then
+            -- If clicked, bring window to front
+            if input.IsButtonPressed(MOUSE_LEFT) then
+                -- Move window to end of order (top)
                 for i, k in ipairs(TimMenu.order) do
                     if k == key then
                         table.remove(TimMenu.order, i)
+                        table.insert(TimMenu.order, key)
                         break
                     end
                 end
-                table.insert(TimMenu.order, key)
+
+                -- If clicked in title bar, start dragging
+                if mY <= win.Y + titleHeight then
+                    win.IsDragging = true
+                    win.DragPos = { X = mX - win.X, Y = mY - win.Y }
+                    TimMenu.CapturedWindow = key
+                end
             end
         end
 
-        if TimMenu.CapturedWindow == key then
-            win:handleDrag(screenWidth, screenHeight, Static.Defaults.TITLE_BAR_HEIGHT)
+        -- Handle dragging
+        if TimMenu.CapturedWindow == key and win.IsDragging then
+            win.X = mX - win.DragPos.X
+            win.Y = mY - win.DragPos.Y
+
+            -- Stop dragging when mouse released
+            if not input.IsButtonDown(MOUSE_LEFT) then
+                win.IsDragging = false
+                TimMenu.CapturedWindow = nil
+            end
         end
     end
 
@@ -99,30 +107,17 @@ end
 
 --- Ends the current window.
 function TimMenu.End()
+    -- Release captured window if mouse released
     if not input.IsButtonDown(MOUSE_LEFT) then
         TimMenu.CapturedWindow = nil
     end
 
-    -- Removed orphan cleanup loop since __close handles cleanup on unload.
-    local topVisible = nil
-    for i = #TimMenu.order, 1, -1 do
+    -- Draw all visible windows in order (bottom to top)
+    for i = 1, #TimMenu.order do
         local key = TimMenu.order[i]
         local win = TimMenu.windows[key]
         if win and win.visible then
-            topVisible = key
-            break
-        end
-    end
-    if TimMenu.LastWindowDrawnKey and TimMenu.LastWindowDrawnKey == topVisible then
-        for i = 1, #TimMenu.order do
-            local key = TimMenu.order[i]
-            local win = TimMenu.windows[key]
-            if win and win.visible then
-                local success, err = pcall(function() win:draw() end)
-                if not success then
-                    print("Error drawing window " .. key .. ": " .. err)
-                end
-            end
+            win:draw()
         end
     end
 end
