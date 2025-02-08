@@ -16,17 +16,17 @@ local libLoaded, Lib = pcall(require, "LNXlib")
 assert(libLoaded, "LNXlib not found, please install it!")
 assert(Lib.GetVersion() >= 1.0, "LNXlib version is too old, please update it!")
 
-Common.Fonts        = lnxLib.UI.Fonts
-Common.KeyHelper    = lnxLib.Utils.KeyHelper
-Common.Input        = lnxLib.Utils.Input
-Common.Timer        = lnxLib.Utils.Timer
+Common.Lib        = Lib
 
-Common.Lib      = Lib
-Common.Log      = Lib.Utils.Logger.new("Cheater Detection")
-Common.Notify   = Lib.UI.Notify
-Common.Math, Common.Conversion = Common.Lib.Utils.Math, Common.Lib.Utils.Conversion
-Common.Helpers  = Common.TF2.Helpers
+Common.Fonts      = Lib.UI.Fonts
+Common.KeyHelper  = Lib.Utils.KeyHelper
+Common.Input      = Lib.Utils.Input
+Common.Timer      = Lib.Utils.Timer
 
+Common.Log        = Lib.Utils.Logger.new("Cheater Detection")
+Common.Notify     = Lib.UI.Notify
+Common.Math       = Common.Lib.Utils.Math
+Common.Conversion = Common.Lib.Utils.Conversion
 
 -- making static font updated to the verdana before staying staic forever
 Static.Style.Font = Common.Fonts.Verdana
