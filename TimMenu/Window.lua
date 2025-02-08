@@ -16,6 +16,9 @@ function Window.new(params)
     self.lastFrame = nil
     self.IsDragging = false
     self.DragPos = { X = 0, Y = 0 }
+    -- Set __close metamethod so it auto-cleans when used as a to-be-closed variable.
+    local mt = getmetatable(self)
+    mt.__close = Window.__close
     return self
 end
 
@@ -65,6 +68,13 @@ function Window:draw()
 
     draw.Color(table.unpack(Static.Colors.WindowBorder or {55,100,215,255}))
     draw.OutlinedRect(self.X, self.Y, self.X + self.W, self.Y + self.H)
+end
+
+--- __close metamethod: cleans up window state.
+function Window:__close()
+    self.lastFrame = nil
+    self.IsDragging = false
+    self.DragPos = { X = 0, Y = 0 }
 end
 
 return Window

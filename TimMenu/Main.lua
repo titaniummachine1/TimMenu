@@ -25,8 +25,8 @@ function TimMenu.Begin(title, visible, id)
     local key = (id or title)
     if type(key) ~= "string" then key = tostring(key) end
 
+    -- Removed explicit orphan cleanup.
     local currentFrame = globals.FrameCount()
-    Utils.PruneOrphanedWindows(TimMenu.windows, currentFrame, 2)
 
     local win = TimMenu.windows[key]
     if not win then
@@ -86,6 +86,8 @@ function TimMenu.End()
     if not input.IsButtonDown(MOUSE_LEFT) then
         TimMenu.CapturedWindow = nil
     end
+
+    -- Removed orphan cleanup loop since __close handles cleanup on unload.
     local topVisible = nil
     for i = #TimMenu.order, 1, -1 do
         local key = TimMenu.order[i]
