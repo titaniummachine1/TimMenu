@@ -39,8 +39,8 @@ function TimMenu.Begin(title, visible, id)
             title   = title,
             id      = key,
             visible = visible,
-            X       = Static.Defaults.DEFAULT_X,
-            Y       = Static.Defaults.DEFAULT_Y,
+            X       = Static.Defaults.DEFAULT_X + math.random(0, 150), -- slight random offset on X
+            Y       = Static.Defaults.DEFAULT_Y + math.random(0, 50), -- slight random offset on Y
             W       = Static.Defaults.DEFAULT_W,
             H       = Static.Defaults.DEFAULT_H,
         }
