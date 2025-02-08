@@ -28,8 +28,29 @@ Common.Notify     = Lib.UI.Notify
 Common.Math       = Common.Lib.Utils.Math
 Common.Conversion = Common.Lib.Utils.Conversion
 
--- making static font updated to the verdana before staying staic forever
+--------------------------------------------------------------------------------
+-- Updating Static Fonts
+--------------------------------------------------------------------------------
 Static.Style.Font = Common.Fonts.Verdana
+
+
+--------------------------------------------------------------------------------
+-- Common Functions
+--------------------------------------------------------------------------------
+
+--- Clamps a value between a lower and upper bound.
+---@param value number
+---@param lower number
+---@param upper number
+---@return number
+function Common.Clamp(value, lower, upper)
+    if value < lower then
+        return lower
+    elseif value > upper then
+        return upper
+    end
+    return value
+end
 
 --------------------------------------------------------------------------------
 -- Unload Callback: Clean up the module on unload.

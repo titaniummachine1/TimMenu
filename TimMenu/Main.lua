@@ -22,13 +22,6 @@ function TimMenu.Refresh()
 end
 TimMenu.Refresh() -- Refresh if run manually
 
--- Default window parameters.
-local DEFAULT_X = 50
-local DEFAULT_Y = 150
-local DEFAULT_W = 300
-local DEFAULT_H = 200
-local TITLE_BAR_HEIGHT = 25
-
 --------------------------------------------------------------------------------
 --[[ Helper: Prune Orphaned Windows ]]
 --------------------------------------------------------------------------------
@@ -48,11 +41,11 @@ end
 --[[ TimMenu API Functions ]]
 --------------------------------------------------------------------------------
 
---- Begins a window with the given title, visibility flag, and optional unique ID.
+--- Begins a window with the given title, optional visibility flag, and optional unique ID.
 --- If no unique ID is provided, the title is used.
 --- Parameters:
 ---   title (string): The window title.
----   visible (boolean): Whether the window should be drawn. Default is true.
+---   visible (boolean, optional): Whether the window should be drawn (defaults to true).
 ---   id (optional): A unique identifier (string or number) for the window.
 --- Returns:
 ---   visible (boolean) and the window table.
@@ -88,6 +81,10 @@ function TimMenu.Begin(title, visible, id)
     if visible then
         -- Update the window's last drawn frame.
         win.lastFrame = currentFrame
+        -- Clamp window positions to the screen bounds.
+        local screenWidth, screenHeight = draw.GetScreenSize()
+        win.x = Common.Clamp(win.x, 0, screenWidth - win.w)
+        win.y = Common.Clamp(win.y, 0, screenHeight - win.h)
         -- Draw the window.
         TimMenu.DrawWindow(win)
     end
@@ -97,7 +94,7 @@ end
 
 --- Ends the current window.
 function TimMenu.End()
-    -- Placeholder for additional finishing logic.
+    -- Placeholder for additional finishing logic if needed.
 end
 
 --- Draws the window (its frame, title bar, and border) based on its stored position and size.
@@ -111,7 +108,7 @@ function TimMenu.DrawWindow(win)
     draw.Color(table.unpack(Static.Colors.Title or {55, 100, 215, 255}))
     draw.FilledRect(win.x, win.y, win.x + win.w, win.y + TITLE_BAR_HEIGHT)
     -- Draw title text centered using Static.Colors.Text.
-    draw.SetFont(Static.Style.Font)
+    draw.SetFont(defaultFont)
     local txtWidth, txtHeight = draw.GetTextSize(win.title)
     local titleX = win.x + (win.w - txtWidth) / 2
     local titleY = win.y + (TITLE_BAR_HEIGHT - txtHeight) / 2

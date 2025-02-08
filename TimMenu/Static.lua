@@ -31,4 +31,12 @@ Static.Style = {
     Popup = false
 }
 
+Static.Defaults = {
+    DEFAULT_X = 50,
+    DEFAULT_Y = 150,
+    DEFAULT_W = 300,
+    DEFAULT_H = 200,
+    TITLE_BAR_HEIGHT = 25
+}
+
 return Static
