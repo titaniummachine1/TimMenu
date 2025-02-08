@@ -1,27 +1,15 @@
 -- TimMenu.lua
 -- A simple library for multi-window integration with automatic cleanup.
--- Usage: Simply call TimMenu.Begin("Title", [uniqueID]) and TimMenu.End() in your Draw callback.
+-- Usage: Simply call TimMenu.Begin("Title", [visible], [uniqueID]) and TimMenu.End() in your Draw callback.
 -- Windows that are not drawn for 5 frames are automatically removed.
--- If you start drawing a window again, it reappears.
---
--- Optionally unload lnxLib if needed (ensuring a fresh copy)
-if UnloadLib then
-    UnloadLib()
-end
+-- If you start drawing a window again (with visible = true), it reappears.
+-- This version uses a separate static module for Colors and Style.
 
-print("XD")
+-- Import the LNXlib module using common
+local Common = require("TimMenu.Common")
 
--- Import lnxLib
----@type boolean, lnxLib
-local libLoaded, lnxLib = pcall(require, "lnxLib")
-assert(libLoaded, "lnxLib not found, please install it!")
-assert(lnxLib.GetVersion() >= 1.000, "lnxLib version is too old, please update it!")
-
-local Fonts   = lnxLib.UI.Fonts
-local Notify  = lnxLib.UI.Notify
-local KeyHelper = lnxLib.Utils.KeyHelper
-local Input   = lnxLib.Utils.Input
-local Timer   = lnxLib.Utils.Timer
+-- Import the static module for Colors and Style.
+local Static = require("TimMenu.Static")  -- This module should return a table with .Colors and .Style
 
 -- Create the module table.
 TimMenu = TimMenu or {}
@@ -34,8 +22,12 @@ function TimMenu.Refresh()
 end
 TimMenu.Refresh() -- Refresh if run manually
 
--- Set a default font for drawing text.
-local defaultFont = Fonts.Verdana or draw.CreateFont("Verdana", 15, 500)
+-- Default window parameters.
+local DEFAULT_X = 50
+local DEFAULT_Y = 150
+local DEFAULT_W = 300
+local DEFAULT_H = 200
+local TITLE_BAR_HEIGHT = 25
 
 --------------------------------------------------------------------------------
 --[[ Helper: Prune Orphaned Windows ]]
@@ -56,13 +48,18 @@ end
 --[[ TimMenu API Functions ]]
 --------------------------------------------------------------------------------
 
---- Begins a window with the given title and optional unique ID.
---- If no ID is provided, the title is used as the key.
----@param title string
----@param id? any  Optional unique identifier (string or number); will be converted to string.
----@return boolean true if the window is (re)opened, and the window table.
-function TimMenu.Begin(title, id)
+--- Begins a window with the given title, visibility flag, and optional unique ID.
+--- If no unique ID is provided, the title is used.
+--- Parameters:
+---   title (string): The window title.
+---   visible (boolean): Whether the window should be drawn. Default is true.
+---   id (optional): A unique identifier (string or number) for the window.
+--- Returns:
+---   visible (boolean) and the window table.
+function TimMenu.Begin(title, visible, id)
     assert(type(title) == "string", "TimMenu.Begin requires a string title")
+    if visible == nil then visible = true end
+
     local key = id or title
     if type(key) ~= "string" then key = tostring(key) end
 
@@ -72,17 +69,57 @@ function TimMenu.Begin(title, id)
     local currentFrame = globals.FrameCount()
     local win = TimMenu.windows[key]
     if not win then
-        win = { title = title, id = key }
+        -- Create a new window with default position and size.
+        win = {
+            title = title,
+            id = key,
+            visible = visible,
+            x = DEFAULT_X,
+            y = DEFAULT_Y,
+            w = DEFAULT_W,
+            h = DEFAULT_H,
+        }
         TimMenu.windows[key] = win
+    else
+        -- Update the visible flag.
+        win.visible = visible
     end
-    -- Update the window's last drawn frame.
-    win.lastFrame = currentFrame
-    return true, win
+
+    if visible then
+        -- Update the window's last drawn frame.
+        win.lastFrame = currentFrame
+        -- Draw the window.
+        TimMenu.DrawWindow(win)
+    end
+
+    return visible, win
 end
 
 --- Ends the current window.
 function TimMenu.End()
-    -- Placeholder: add any finishing logic here if needed.
+    -- Placeholder for additional finishing logic.
+end
+
+--- Draws the window (its frame, title bar, and border) based on its stored position and size.
+---@param win table
+function TimMenu.DrawWindow(win)
+    assert(win and type(win) == "table", "DrawWindow requires a window table")
+    -- Draw window background using Static.Colors.Window.
+    draw.Color(table.unpack(Static.Colors.Window or {30, 30, 30, 255}))
+    draw.FilledRect(win.x, win.y + TITLE_BAR_HEIGHT, win.x + win.w, win.y + win.h)
+    -- Draw title bar background using Static.Colors.Title.
+    draw.Color(table.unpack(Static.Colors.Title or {55, 100, 215, 255}))
+    draw.FilledRect(win.x, win.y, win.x + win.w, win.y + TITLE_BAR_HEIGHT)
+    -- Draw title text centered using Static.Colors.Text.
+    draw.SetFont(Static.Style.Font)
+    local txtWidth, txtHeight = draw.GetTextSize(win.title)
+    local titleX = win.x + (win.w - txtWidth) / 2
+    local titleY = win.y + (TITLE_BAR_HEIGHT - txtHeight) / 2
+    draw.Color(table.unpack(Static.Colors.Text or {255, 255, 255, 255}))
+    draw.Text(titleX, titleY, win.title)
+    -- Draw window border using Static.Colors.WindowBorder.
+    draw.Color(table.unpack(Static.Colors.WindowBorder or {55, 100, 215, 255}))
+    draw.OutlinedRect(win.x, win.y, win.x + win.w, win.y + win.h)
 end
 
 --- Draws debug information about the currently registered windows.
@@ -90,7 +127,7 @@ end
 function TimMenu.ShowDebug()
     local currentFrame = globals.FrameCount()
 
-    draw.SetFont(defaultFont)
+    draw.SetFont(Static.Style.Font)
     draw.Color(255, 255, 255, 255)
 
     local headerX, headerY = 20, 20
@@ -113,16 +150,6 @@ function TimMenu.ShowDebug()
         yOffset = yOffset + lineSpacing
     end
 end
-
---------------------------------------------------------------------------------
--- Unload Callback: Clean up the module on unload.
---------------------------------------------------------------------------------
-local function OnUnload()
-    package.loaded["TimMenu"] = nil
-end
-
-callbacks.Unregister("Unload", "TimMenu_Unload")
-callbacks.Register("Unload", "TimMenu_Unload", OnUnload)
 
 --------------------------------------------------------------------------------
 -- Return the module table.
