@@ -67,8 +67,14 @@ end
 ---   visible (boolean) and the window table.
 function TimMenu.Begin(title, visible, id)
     assert(type(title) == "string", "TimMenu.Begin requires a string title")
-    if visible == nil then visible = true end
-
+    if visible == nil then 
+        visible = true 
+    end
+    -- If the second parameter is a string, treat it as the unique id and default visible to true.
+    if type(visible) == "string" then
+        id = visible
+        visible = true
+    end
     local key = id or title
     if type(key) ~= "string" then key = tostring(key) end
 
