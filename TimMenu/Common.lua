@@ -38,18 +38,11 @@ Static.Style.Font = Common.Fonts.Verdana
 -- Common Functions
 --------------------------------------------------------------------------------
 
---- Clamps a value between a lower and upper bound.
+--- Clamps a floating-point value to the closest integer.
 ---@param value number
----@param lower number
----@param upper number
 ---@return number
-function Common.Clamp(value, lower, upper)
-    if value < lower then
-        return lower
-    elseif value > upper then
-        return upper
-    end
-    return value
+function Common.Clamp(value)
+    return math.floor(value + 0.5)
 end
 
 --------------------------------------------------------------------------------

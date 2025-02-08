@@ -67,10 +67,10 @@ function TimMenu.Begin(title, visible, id)
             title = title,
             id = key,
             visible = visible,
-            x = DEFAULT_X,
-            y = DEFAULT_Y,
-            w = DEFAULT_W,
-            h = DEFAULT_H,
+            x = Static.Defaults.DEFAULT_X,
+            y = Static.Defaults.DEFAULT_Y,
+            w = Static.Defaults.DEFAULT_W,
+            h = Static.Defaults.DEFAULT_H,
         }
         TimMenu.windows[key] = win
     else
@@ -83,8 +83,8 @@ function TimMenu.Begin(title, visible, id)
         win.lastFrame = currentFrame
         -- Clamp window positions to the screen bounds.
         local screenWidth, screenHeight = draw.GetScreenSize()
-        win.x = Common.Clamp(win.x, 0, screenWidth - win.w)
-        win.y = Common.Clamp(win.y, 0, screenHeight - win.h)
+        win.x = Common.Clamp(win.x, 0)
+        win.y = Common.Clamp(win.y, 0)
         -- Draw the window.
         TimMenu.DrawWindow(win)
     end
@@ -101,19 +101,23 @@ end
 ---@param win table
 function TimMenu.DrawWindow(win)
     assert(win and type(win) == "table", "DrawWindow requires a window table")
+
     -- Draw window background using Static.Colors.Window.
     draw.Color(table.unpack(Static.Colors.Window or {30, 30, 30, 255}))
-    draw.FilledRect(win.x, win.y + TITLE_BAR_HEIGHT, win.x + win.w, win.y + win.h)
+    draw.FilledRect(win.x, win.y + Static.Defaults.TITLE_BAR_HEIGHT, win.x + win.w, win.y + win.h)
+
     -- Draw title bar background using Static.Colors.Title.
     draw.Color(table.unpack(Static.Colors.Title or {55, 100, 215, 255}))
-    draw.FilledRect(win.x, win.y, win.x + win.w, win.y + TITLE_BAR_HEIGHT)
+    draw.FilledRect(win.x, win.y, win.x + win.w, win.y + Static.Defaults.TITLE_BAR_HEIGHT)
+
     -- Draw title text centered using Static.Colors.Text.
-    draw.SetFont(defaultFont)
+    draw.SetFont(Static.Style.Font)
     local txtWidth, txtHeight = draw.GetTextSize(win.title)
-    local titleX = win.x + (win.w - txtWidth) / 2
-    local titleY = win.y + (TITLE_BAR_HEIGHT - txtHeight) / 2
+    local titleX = Common.Clamp(win.x + (win.w - txtWidth) / 2)
+    local titleY = Common.Clamp(win.y + (Static.Defaults.TITLE_BAR_HEIGHT - txtHeight) / 2)
     draw.Color(table.unpack(Static.Colors.Text or {255, 255, 255, 255}))
     draw.Text(titleX, titleY, win.title)
+
     -- Draw window border using Static.Colors.WindowBorder.
     draw.Color(table.unpack(Static.Colors.WindowBorder or {55, 100, 215, 255}))
     draw.OutlinedRect(win.x, win.y, win.x + win.w, win.y + win.h)
