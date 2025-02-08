@@ -96,7 +96,9 @@ function TimMenu.Begin(title, visible, id)
         win.lastFrame = currentFrame
         win.X = Common.Clamp(win.X)
         win.Y = Common.Clamp(win.Y)
-        TimMenu.DrawWindow(win)  -- Revert: Draw immediately as before
+        -- Removed immediate drawing call:
+        -- TimMenu.DrawWindow(win)
+        TimMenu.LastWindowDrawnKey = key  -- update last drawn key
     end
 
     local screenWidth, screenHeight = draw.GetScreenSize()
@@ -133,11 +135,22 @@ end
 
 --- Ends the current window.
 function TimMenu.End()
-    -- On mouse release, clear the captured window
     if not input.IsButtonDown(MOUSE_LEFT) then
         TimMenu.CapturedWindow = nil
     end
-    -- Removed ImMenu.EndFrame(), LateDraw(), and WindowStack pop.
+    -- If this window is the last in the z-order, then draw all windows.
+    if TimMenu.LastWindowDrawnKey and TimMenu.LastWindowDrawnKey == TimMenu.order[#TimMenu.order] then
+        for i = 1, #TimMenu.order do
+            local key = TimMenu.order[i]
+            local win = TimMenu.windows[key]
+            if win and win.visible then
+                local success, err = pcall(TimMenu.DrawWindow, win)
+                if not success then
+                    print("Error drawing window " .. key .. ": " .. err)
+                end
+            end
+        end
+    end
     return
 end
 
