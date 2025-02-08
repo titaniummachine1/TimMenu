@@ -1,10 +1,11 @@
 local Common = require("TimMenu.Common")
 local Static = require("TimMenu.Static")
 local Utils  = require("TimMenu.Utils")
+local Window = require("TimMenu.Window")
 WindowState = WindowState or require("TimMenu.WindowState")  -- global persistent state
 
 local TimMenu = {}  -- local instance
-TimMenu.windows = WindowState.windows  -- global shared state
+TimMenu.windows = WindowState.windows  -- shared state: key -> Window instance
 TimMenu.order   = WindowState.order
 TimMenu.CapturedWindow = nil
 TimMenu.LastWindowDrawnKey = nil
@@ -15,10 +16,9 @@ function TimMenu.Refresh()
     package.loaded["TimMenu.Utils"]  = nil
 end
 
---- Begins a new or updates an existing window.
+--- Begins or updates a window.
 function TimMenu.Begin(title, visible, id)
     TimMenu.Refresh()
-
     assert(type(title) == "string", "TimMenu.Begin requires a string title")
     visible = (visible == nil) and true or visible
     if type(visible) == "string" then id, visible = visible, true end
@@ -30,15 +30,15 @@ function TimMenu.Begin(title, visible, id)
 
     local win = TimMenu.windows[key]
     if not win then
-        win = {
-            title   = title,
-            id      = key,
+        win = Window.new({
+            title = title,
+            id = key,
             visible = visible,
-            X       = Static.Defaults.DEFAULT_X + math.random(0, 150),
-            Y       = Static.Defaults.DEFAULT_Y + math.random(0, 50),
-            W       = Static.Defaults.DEFAULT_W,
-            H       = Static.Defaults.DEFAULT_H,
-        }
+            X = Static.Defaults.DEFAULT_X + math.random(0, 150),
+            Y = Static.Defaults.DEFAULT_Y + math.random(0, 50),
+            W = Static.Defaults.DEFAULT_W,
+            H = Static.Defaults.DEFAULT_H,
+        })
         TimMenu.windows[key] = win
         table.insert(TimMenu.order, key)
     else
@@ -47,16 +47,13 @@ function TimMenu.Begin(title, visible, id)
 
     if visible then
         if (gui.GetValue("clean screenshots") == 1 and not engine.IsTakingScreenshot()) then
-            win.lastFrame = currentFrame
-            win.X = Common.Clamp(win.X)
-            win.Y = Common.Clamp(win.Y)
+            win:update(currentFrame)
             TimMenu.LastWindowDrawnKey = key
         end
 
         local screenWidth, screenHeight = draw.GetScreenSize()
-        local titleText = win.title
         draw.SetFont(Static.Style.Font)
-        local txtWidth, txtHeight = draw.GetTextSize(titleText)
+        local txtWidth, txtHeight = draw.GetTextSize(win.title)
         local titleHeight = txtHeight + Static.Style.ItemPadding
 
         local mX, mY = table.unpack(input.GetMousePos())
@@ -77,7 +74,7 @@ function TimMenu.Begin(title, visible, id)
         end
 
         if TimMenu.CapturedWindow == key then
-            Common.HandleWindowDrag(win, Static.Defaults.TITLE_BAR_HEIGHT, screenWidth, screenHeight)
+            win:handleDrag(screenWidth, screenHeight, Static.Defaults.TITLE_BAR_HEIGHT)
         end
     end
 
@@ -103,7 +100,7 @@ function TimMenu.End()
             local key = TimMenu.order[i]
             local win = TimMenu.windows[key]
             if win and win.visible then
-                local success, err = pcall(TimMenu.DrawWindow, win)
+                local success, err = pcall(function() win:draw() end)
                 if not success then
                     print("Error drawing window " .. key .. ": " .. err)
                 end
@@ -112,27 +109,7 @@ function TimMenu.End()
     end
 end
 
---- Renders the given window.
-function TimMenu.DrawWindow(win)
-    assert(win and type(win) == "table", "DrawWindow requires a window table")
-    draw.Color(table.unpack(Static.Colors.Window or {30,30,30,255}))
-    draw.FilledRect(win.X, win.Y + Static.Defaults.TITLE_BAR_HEIGHT, win.X + win.W, win.Y + win.H)
-
-    draw.Color(table.unpack(Static.Colors.Title or {55,100,215,255}))
-    draw.FilledRect(win.X, win.Y, win.X + win.W, win.Y + Static.Defaults.TITLE_BAR_HEIGHT)
-
-    draw.SetFont(Static.Style.Font)
-    local txtWidth, txtHeight = draw.GetTextSize(win.title)
-    local titleX = Common.Clamp(win.X + (win.W - txtWidth) / 2)
-    local titleY = Common.Clamp(win.Y + (Static.Defaults.TITLE_BAR_HEIGHT - txtHeight) / 2)
-    draw.Color(table.unpack(Static.Colors.Text or {255,255,255,255}))
-    draw.Text(titleX, titleY, win.title)
-
-    draw.Color(table.unpack(Static.Colors.WindowBorder or {55,100,215,255}))
-    draw.OutlinedRect(win.X, win.Y, win.X + win.W, win.Y + win.H)
-end
-
---- Displays debug information about active windows.
+--- Displays debug information.
 function TimMenu.ShowDebug()
     local currentFrame = globals.FrameCount()
     draw.SetFont(Static.Style.Font)
