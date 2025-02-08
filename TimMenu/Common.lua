@@ -45,6 +45,48 @@ function Common.Clamp(value)
     return math.floor(value + 0.5)
 end
 
+-- New: Helper function to handle window dragging logic with nil checks
+function Common.HandleWindowDrag(window, titleHeight, screenWidth, screenHeight)
+    -- Guard against nil window properties
+    local winX = window.X or 0
+    local winY = window.Y or 0
+    local winW = window.W or 100
+    local winH = window.H or 100
+    if not window.DragPos then window.DragPos = { X = 0, Y = 0 } end
+
+    local mX, mY = table.unpack(input.GetMousePos())
+    -- Check if the title area is clicked to start dragging
+    if not window.IsDragging and input.IsButtonDown(MOUSE_LEFT) then
+        if mX >= winX and mX <= winX + winW and mY >= winY and mY <= winY + titleHeight then
+            window.DragPos = { X = mX - winX, Y = mY - winY }
+            window.IsDragging = true
+        end
+    end
+    -- Stop dragging when mouse is released
+    if not input.IsButtonDown(MOUSE_LEFT) then
+        window.IsDragging = false
+    end
+    -- Update window position if dragging
+    if window.IsDragging then
+        local newX = mX - window.DragPos.X
+        local newY = mY - window.DragPos.Y
+        window.X = math.max(0, math.min(newX, screenWidth - winW))
+        window.Y = math.max(0, math.min(newY, screenHeight - winH - titleHeight))
+    end
+end
+
+-- New: Helper function for mouse interaction within a rectangle.
+function Common.GetInteraction(x, y, w, h)
+    local mX, mY = table.unpack(input.GetMousePos())
+    local hovered = (mX >= x) and (mX <= x + w) and (mY >= y) and (mY <= y + h)
+    -- Simple click detection: detect click only when button is pressed now and wasn't in the previous frame.
+    if Common._PrevMouseDown == nil then Common._PrevMouseDown = false end
+    local currentlyDown = input.IsButtonDown(MOUSE_LEFT)
+    local clicked = hovered and currentlyDown and (not Common._PrevMouseDown)
+    Common._PrevMouseDown = currentlyDown
+    return hovered, clicked
+end
+
 --------------------------------------------------------------------------------
 -- Unload Callback: Clean up the module on unload.
 --------------------------------------------------------------------------------
