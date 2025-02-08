@@ -96,7 +96,7 @@ function TimMenu.Begin(title, visible, id)
         win.lastFrame = currentFrame
         win.X = Common.Clamp(win.X)
         win.Y = Common.Clamp(win.Y)
-        TimMenu.DrawWindow(win)
+        TimMenu.DrawWindow(win)  -- Revert: Draw immediately as before
     end
 
     local screenWidth, screenHeight = draw.GetScreenSize()
@@ -107,19 +107,20 @@ function TimMenu.Begin(title, visible, id)
 
     local mX, mY = table.unpack(input.GetMousePos())
     local topKey = TimMenu.GetTopWindowAtPoint(mX, mY)
-    -- Only if this window is the top one under the mouse, process interaction.
-    if topKey == key then 
+    if topKey == key then
         local hovered, clicked = Common.GetInteraction(win.X, win.Y, win.W, titleHeight)
         if clicked then
-            win.IsDragging = false  -- Reset drag state for fresh offset on new click
+            -- Reset drag offset for new click and capture the window
+            win.IsDragging = false
             TimMenu.CapturedWindow = key
+            -- Bring window on top by removing and reinserting its key
             for i, k in ipairs(TimMenu.order) do
                 if k == key then
                     table.remove(TimMenu.order, i)
                     break
                 end
             end
-            table.insert(TimMenu.order, key)  -- Bring this window to top
+            table.insert(TimMenu.order, key)
         end
     end
 
