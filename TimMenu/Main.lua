@@ -1,32 +1,48 @@
+-- Main module for the TimMenu library
+
 local Common = require("TimMenu.Common")
 local Static = require("TimMenu.Static")
-local Utils  = require("TimMenu.Utils")
+local Utils = require("TimMenu.Utils")
 local Window = require("TimMenu.Window")
-WindowState = WindowState or require("TimMenu.WindowState")  -- global persistent state
+local WidgetStack = require("TimMenu.widgets.WidgetStack")
+local WindowState = require("TimMenu.WindowState")  -- global persistent state
 
-local TimMenu = {}  -- local instance
+local TimMenu = {}
+
+-- Initialize TimMenu
 TimMenu.windows = WindowState.windows  -- shared state: key -> Window instance
-TimMenu.order   = WindowState.order
+TimMenu.order = WindowState.order
 TimMenu.CapturedWindow = nil
 TimMenu.LastWindowDrawnKey = nil
+TimMenu.WidgetStack = WidgetStack
 
+-- Refresh function to clear loaded modules
 function TimMenu.Refresh()
     package.loaded["TimMenu.Common"] = nil
     package.loaded["TimMenu.Static"] = nil
-    package.loaded["TimMenu.Utils"]  = nil
+    package.loaded["TimMenu.Utils"] = nil
+    package.loaded["TimMenu.Window"] = nil
+    package.loaded["TimMenu.widgets.WidgetStack"] = nil
 end
 
---- Begins or updates a window.
+--- Begins a new or updates an existing window.
+--- @param title string Window title.
+--- @param visible? boolean Whether the window is visible (default: true).
+--- @param id? string|number Unique identifier (default: title).
+--- @return boolean, table Visible flag and the window table.
 function TimMenu.Begin(title, visible, id)
     TimMenu.Refresh()
+
     assert(type(title) == "string", "TimMenu.Begin requires a string title")
     visible = (visible == nil) and true or visible
     if type(visible) == "string" then id, visible = visible, true end
-    local key = (id or title)
+    local key = id or title
     if type(key) ~= "string" then key = tostring(key) end
 
-    -- Removed explicit orphan cleanup.
     local currentFrame = globals.FrameCount()
+
+    -- Prune orphaned windows
+    Utils.PruneOrphanedWindows(TimMenu.windows, currentFrame, 2)
 
     local win = TimMenu.windows[key]
     if not win then
@@ -131,5 +147,14 @@ function TimMenu.ShowDebug()
         yOffset = yOffset + lineSpacing
     end
 end
+
+-- Load widgets and attach them to TimMenu
+local Widgets = {}
+Widgets.Button = require("TimMenu.widgets.Button")
+-- Future widgets can be added to Widgets here
+
+-- Attach widget functions to TimMenu
+--TimMenu.Button = Widgets.Button.Draw
+TimMenu.Widgets = Widgets
 
 return TimMenu

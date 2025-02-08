@@ -19,6 +19,10 @@ function Window.new(params)
     -- Set __close metamethod so it auto-cleans when used as a to-be-closed variable.
     local mt = getmetatable(self)
     mt.__close = Window.__close
+    -- Define a default update method to avoid nil errors.
+    self.update = function(self, currentFrame)
+        self.lastFrame = currentFrame
+    end
     return self
 end
 
