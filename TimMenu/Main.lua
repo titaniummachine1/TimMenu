@@ -7,9 +7,6 @@ local Utils = require("TimMenu.Utils")
 local Window = require("TimMenu.Window")
 local Widgets = require("TimMenu.Widgets")  -- new require
 
-local currentFrameCount = 0
-local windowsThisFrame = 0
-
 -- Modified Refresh to preserve TimMenuGlobal
 function TimMenu.Refresh()
     -- Don't clear TimMenu if it's already initialized

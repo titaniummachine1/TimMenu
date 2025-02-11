@@ -106,22 +106,23 @@ end
 --- Returns: x, y coordinates for the widget inside the window.
 function Window:AddWidget(width, height)
     local padding = Globals.Defaults.WINDOW_CONTENT_PADDING
-    local x = self.cursorX  -- current x position for content
-    -- If centered, compute starting x based on window width and padding.
+    local x = self.cursorX
+    
+    -- If centered, compute starting x based on window width and padding
     if Globals.Style.Alignment == "center" then
         x = math.max(padding, math.floor((self.W - width) * 0.5))
     end
     local y = self.cursorY
 
-    -- Expand window if needed.
-    if (x + width) > self.W then
-        self.W = x + width
+    -- Include right padding in width check
+    if (x + width + padding) > self.W then
+        self.W = x + width + padding
     end
     if height > self.lineHeight then
         self.lineHeight = height
     end
 
-    -- Update cursor for next widget.
+    -- Update cursor for next widget (without adding padding - handled by next widget)
     self.cursorX = x + width
     local neededHeight = self.cursorY + self.lineHeight
     if neededHeight > self.H then
