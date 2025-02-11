@@ -31,7 +31,7 @@ Globals.Style = {
     Popup = false
 }
 
-Static.Defaults = {
+Globals.Defaults = {
     DEFAULT_X = 50,
     DEFAULT_Y = 150,
     DEFAULT_W = 300,
@@ -39,4 +39,4 @@ Static.Defaults = {
     TITLE_BAR_HEIGHT = 25
 }
 
-return Static
+return Globals

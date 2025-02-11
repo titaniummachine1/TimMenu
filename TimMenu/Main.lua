@@ -1,31 +1,26 @@
 -- Main module for the TimMenu library
+local TimMenu = {}
 
 local Common = require("TimMenu.Common")
 local Globals = require("TimMenu.Globals")
 local Utils = require("TimMenu.Utils")
 local Window = require("TimMenu.Window")
 
---glboal libryies assert jsut tio make it faster
-
-assert(globals, "imposible")
-
 -- Refresh function to clear loaded modules
 function TimMenu.Refresh()
     package.loaded["TimMenu"] = nil
 end
 
-local TimMenu = {}
-
 local function Setup()
     TimMenu.Refresh()
 
-    if not TimMenu then
+    if not TimMenuGlobal then
         -- Initialize TimMenu
-        TimMenu = {}
-        TimMenu.windows = {}
-        TimMenu.order = {}
-        TimMenu.CapturedWindow = nil
-        TimMenu.LastWindowDrawnKey = nil
+        TimMenuGlobal = {}
+        TimMenuGlobal.windows = {}
+        TimMenuGlobal.order = {}
+        TimMenuGlobal.CapturedWindow = nil
+        TimMenuGlobal.LastWindowDrawnKey = nil
     end
 end
 
@@ -44,7 +39,7 @@ function TimMenu.Begin(title, visible, id)
     local key = (id or title)
  
     local currentFrame = globals.FrameCount()
-    local win = TimMenu.windows[key]
+    local win = TimMenuGlobal.windows[key]
 
     -- Create new window if needed
     if not win then
@@ -57,8 +52,8 @@ function TimMenu.Begin(title, visible, id)
             W = Globals.Defaults.DEFAULT_W,
             H = Globals.Defaults.DEFAULT_H,
         })
-        TimMenu.windows[key] = win
-        table.insert(TimMenu.order, key)
+        TimMenuGlobal.windows[key] = win
+        table.insert(TimMenuGlobal.order, key)
     else
         win.visible = visible -- onl value tha can and should change sometimes
     end
@@ -73,48 +68,43 @@ function TimMenu.Begin(title, visible, id)
         -- Check if mouse is within window bounds
         if mX >= win.X and mX <= win.X + win.W and
            mY >= win.Y and mY <= win.Y + win.H + titleHeight then
+
             -- If clicked, bring window to front
             if input.IsButtonPressed(MOUSE_LEFT) then
                 -- Move window to end of order (top)
-                for i, k in ipairs(TimMenu.order) do
-                    if k == key then
-                        table.remove(TimMenu.order, i)
-                        table.insert(TimMenu.order, key)
-                        break
-                    end
+                local index = table.find(TimMenu.order, key)
+                if index then
+                    table.remove(TimMenuGlobal.order, index)
+                    table.insert(TimMenuGlobal.order, key)
                 end
 
                 -- If clicked in title bar, start dragging
                 if mY <= win.Y + titleHeight then
                     win.IsDragging = true
                     win.DragPos = { X = mX - win.X, Y = mY - win.Y }
-                    TimMenu.CapturedWindow = key
+                    TimMenuGlobal.CapturedWindow = key
                 end
             end
         end
 
         -- Handle dragging
-        if TimMenu.CapturedWindow == key and win.IsDragging then
+        if TimMenuGlobal.CapturedWindow == key and win.IsDragging then
             win.X = mX - win.DragPos.X
             win.Y = mY - win.DragPos.Y
 
             -- Stop dragging when mouse released
-            if not input.IsButtonDown(MOUSE_LEFT) then
+            if input.IsButtonReleased(MOUSE_LEFT) then
                 win.IsDragging = false
-                TimMenu.CapturedWindow = nil
+                TimMenuGlobal.CapturedWindow = nil
             end
         end
     end
 
-    return visible, win
+    return win
 end
 
 --- Ends the current window.
 function TimMenu.End()
-    -- Release captured window if mouse released
-    if not input.IsButtonDown(MOUSE_LEFT) then
-        TimMenu.CapturedWindow = nil
-    end
 
     -- Draw all visible windows in order (bottom to top)
     for i = 1, #TimMenu.order do
@@ -146,14 +136,5 @@ function TimMenu.ShowDebug()
         yOffset = yOffset + lineSpacing
     end
 end
-
--- Load widgets and attach them to TimMenu
-local Widgets = {}
-Widgets.Button = require("TimMenu.widgets.Button")
--- Future widgets can be added to Widgets here
-
--- Attach widget functions to TimMenu
---TimMenu.Button = Widgets.Button.Draw
-TimMenu.Widgets = Widgets
 
 return TimMenu
