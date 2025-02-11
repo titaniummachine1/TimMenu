@@ -10,14 +10,15 @@ local Widgets = require("TimMenu.Widgets")  -- new require
 local currentFrameCount = 0
 local windowsThisFrame = 0
 
--- Refresh function to clear loaded modules
+-- Modified Refresh to preserve TimMenuGlobal
 function TimMenu.Refresh()
-    package.loaded["TimMenu"] = nil
+    -- Don't clear TimMenu if it's already initialized
+    if not TimMenuGlobal then
+        Setup()
+    end
 end
 
 local function Setup()
-    TimMenu.Refresh()
-
     if not TimMenuGlobal then
         -- Initialize TimMenu
         TimMenuGlobal = {}
@@ -36,15 +37,9 @@ Setup()
 --- @param id? string|number Unique identifier (default: title).
 --- @return boolean, table Visible flag and the window table.
 function TimMenu.Begin(title, visible, id)
-    -- At the start of a new frame, reset the window counter
-    local frame = globals.FrameCount()
-    if frame ~= currentFrameCount then
-        currentFrameCount = frame
-        windowsThisFrame = 0
-    end
-    windowsThisFrame = windowsThisFrame + 1
-
-    TimMenu.Refresh()
+    local windowIndex = Utils.BeginFrame()
+    -- Remove duplicate frame counting code
+    TimMenu.Refresh()  -- Only refreshes if not initialized
     assert(type(title) == "string", "TimMenu.Begin requires a string title")
     visible = (visible == nil) and true or visible
     if type(visible) == "string" then id, visible = visible, true end
@@ -125,15 +120,11 @@ end
 --- Ends the current window.
 function TimMenu.End()
     Utils.PruneOrphanedWindows(TimMenuGlobal.windows, TimMenuGlobal.order)
-
-    -- Count how many windows we have total
-    local totalWindows = #TimMenuGlobal.order
-
-    -- Only draw all windows when we're on the last End() call for this frame
-    if windowsThisFrame == totalWindows then
+    
+    -- Draw all windows when processing the last window
+    if Utils.GetWindowCount() == #TimMenuGlobal.order then
         for i = 1, #TimMenuGlobal.order do
-            local key = TimMenuGlobal.order[i]
-            local win = TimMenuGlobal.windows[key]
+            local win = TimMenuGlobal.windows[TimMenuGlobal.order[i]]
             if win and win.visible then
                 win:draw()
             end

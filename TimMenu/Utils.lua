@@ -1,5 +1,22 @@
 local Utils = {}
 
+local currentFrameCount = 0
+local windowsThisFrame = 0
+
+function Utils.BeginFrame()
+    local frame = globals.FrameCount()
+    if frame ~= currentFrameCount then
+        currentFrameCount = frame
+        windowsThisFrame = 0
+    end
+    windowsThisFrame = windowsThisFrame + 1
+    return windowsThisFrame
+end
+
+function Utils.GetWindowCount()
+    return windowsThisFrame
+end
+
 -- Prune windows that haven't been drawn for a specified frame threshold.
 -- Updated: Prune windows and clean the order array.
 function Utils.PruneOrphanedWindows(windows, order)

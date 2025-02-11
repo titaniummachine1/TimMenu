@@ -39,34 +39,6 @@ function Common.Clamp(value)
     return math.floor(value + 0.5)
 end
 
--- Modified: Helper function to handle window dragging logic with rigid offset
-function Common.HandleWindowDrag(window, titleHeight, screenWidth, screenHeight)
-    local winX = window.X or 0
-    local winY = window.Y or 0
-    local winW = window.W or 100
-    local winH = window.H or 100
-    if not window.DragPos then window.DragPos = { X = 0, Y = 0 } end
-
-    local mX, mY = table.unpack(input.GetMousePos())
-    if not window.IsDragging and input.IsButtonDown(MOUSE_LEFT) then
-        if mX >= winX and mX <= winX + winW and mY >= winY and mY <= winY + titleHeight then
-            window.DragPos = { X = mX - winX, Y = mY - winY }
-            window.IsDragging = true
-        end
-    end
-
-    if window.IsDragging then
-        local newX = mX - window.DragPos.X
-        local newY = mY - window.DragPos.Y
-        window.X = math.max(0, math.min(newX, screenWidth - winW))
-        window.Y = math.max(0, math.min(newY, screenHeight - winH - titleHeight))
-    end
-
-    if not input.IsButtonDown(MOUSE_LEFT) then
-        window.IsDragging = false
-    end
-end
-
 -- New: Helper function for mouse interaction within a rectangle.
 function Common.GetInteraction(x, y, w, h)
     local mX, mY = table.unpack(input.GetMousePos())

@@ -4,9 +4,23 @@ local Globals = require("TimMenu.Globals")
 local Window = {}
 Window.__index = Window
 
+local function CreateDefaultParams(title, id, visible)
+    return {
+        title = title,
+        id = id or title,
+        visible = (visible == nil) and true or visible,
+        X = Globals.Defaults.DEFAULT_X + math.random(0, 150),
+        Y = Globals.Defaults.DEFAULT_Y + math.random(0, 50),
+        W = Globals.Defaults.DEFAULT_W,
+        H = Globals.Defaults.DEFAULT_H
+    }
+end
+
 function Window.new(params)
-    local self = {}
-    setmetatable(self, Window) -- normal metatable, no weak mode
+    if type(params) == "string" then
+        params = CreateDefaultParams(params)
+    end
+    local self = setmetatable({}, Window) -- normal metatable, no weak mode
     self.title   = params.title
     self.id      = params.id or params.title
     self.visible = (params.visible == nil) and true or params.visible
