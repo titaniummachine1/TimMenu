@@ -69,8 +69,8 @@ function TimMenu.Begin(title, visible, id)
         local mX, mY = table.unpack(input.GetMousePos())
         local titleHeight = Globals.Defaults.TITLE_BAR_HEIGHT
 
-        local topKey = Utils.GetWindowUnderMouse(TimMenuGlobal.order, TimMenuGlobal.windows, mX, mY, titleHeight)
-        if topKey == key then
+        local InteractedWindowKey = Utils.GetWindowUnderMouse(TimMenuGlobal.order, TimMenuGlobal.windows, mX, mY, titleHeight)
+        if InteractedWindowKey == key then
             if input.IsButtonPressed(MOUSE_LEFT) then
                 -- Move window to end of order (top)
                 local index = table.find(TimMenuGlobal.order, key)
