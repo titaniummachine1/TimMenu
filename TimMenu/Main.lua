@@ -39,7 +39,8 @@ function TimMenu.Begin(title, visible, id)
     visible = (visible == nil) and true or visible
     if type(visible) == "string" then id, visible = visible, true end
     local key = (id or title)
- 
+    lastkey = key --keep for last draw check
+
     local currentFrame = globals.FrameCount()
     local win = TimMenuGlobal.windows[key]
 
