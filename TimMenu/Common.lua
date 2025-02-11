@@ -3,7 +3,7 @@
 
 local Common = {}
 
-local Globals = require("TimMenu.Globals") -- Import the static module for Colors and Style.
+local Globals = require("TimMenu.Globals") -- Import the Globals module for Colors and Style.
 
 pcall(UnloadLib) -- if it fails then forget about it it means it wasnt loaded in first place and were clean
 
@@ -24,7 +24,7 @@ Common.Math       = Common.Lib.Utils.Math
 Common.Conversion = Common.Lib.Utils.Conversion
 
 --------------------------------------------------------------------------------
--- Updating Static Fonts
+-- Updating Globals Fonts
 --------------------------------------------------------------------------------
 Globals.Style.Font = Common.Fonts.Verdana
 

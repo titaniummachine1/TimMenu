@@ -72,7 +72,7 @@ function TimMenu.Begin(title, visible, id)
             -- If clicked, bring window to front
             if input.IsButtonPressed(MOUSE_LEFT) then
                 -- Move window to end of order (top)
-                local index = table.find(TimMenu.order, key)
+                local index = table.find(TimMenuGlobal.order, key)
                 if index then
                     table.remove(TimMenuGlobal.order, index)
                     table.insert(TimMenuGlobal.order, key)
@@ -105,11 +105,20 @@ end
 
 --- Ends the current window.
 function TimMenu.End()
+    -- Prune windows not updated within the threshold (2 frames)
+    Utils.PruneOrphanedWindows(TimMenuGlobal.windows)
+    -- Clean the order array by removing keys without corresponding windows
+    for i = #TimMenuGlobal.order, 1, -1 do
+        local key = TimMenuGlobal.order[i]
+        if not TimMenuGlobal.windows[key] then
+            table.remove(TimMenuGlobal.order, i)
+        end
+    end
 
-    -- Draw all visible windows in order (bottom to top)
-    for i = 1, #TimMenu.order do
-        local key = TimMenu.order[i]
-        local win = TimMenu.windows[key]
+    -- Draw remaining active windows in order (bottom to top)
+    for i = 1, #TimMenuGlobal.order do
+        local key = TimMenuGlobal.order[i]
+        local win = TimMenuGlobal.windows[key]
         if win and win.visible then
             win:draw()
         end
@@ -119,17 +128,17 @@ end
 --- Displays debug information.
 function TimMenu.ShowDebug()
     local currentFrame = globals.FrameCount()
-    draw.SetFont(Static.Style.Font)
+    draw.SetFont(Globals.Style.Font)
     draw.Color(255,255,255,255)
     local headerX, headerY = 20, 20
     local lineSpacing = 20
 
     local count = 0
-    for _ in pairs(TimMenu.windows) do count = count + 1 end
+    for _ in pairs(TimMenuGlobal.windows) do count = count + 1 end
 
     draw.Text(headerX, headerY, "Active Windows (" .. count .. "):")
     local yOffset = headerY + lineSpacing
-    for key, win in pairs(TimMenu.windows) do
+    for key, win in pairs(TimMenuGlobal.windows) do
         local delay = currentFrame - (win.lastFrame or currentFrame)
         local info = "ID: " .. key .. " | " .. win.title .. " (Delay: " .. delay .. ")"
         draw.Text(headerX, yOffset, info)
