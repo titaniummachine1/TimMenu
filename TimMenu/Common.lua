@@ -39,15 +39,21 @@ function Common.Clamp(value)
     return math.floor(value + 0.5)
 end
 
+-- Track button state globally
+local wasPressed = false
+
 -- New: Helper function for mouse interaction within a rectangle.
 function Common.GetInteraction(x, y, w, h)
     local mX, mY = table.unpack(input.GetMousePos())
     local hovered = (mX >= x) and (mX <= x + w) and (mY >= y) and (mY <= y + h)
-    -- Simple click detection: detect click only when button is pressed now and wasn't in the previous frame.
-    if Common._PrevMouseDown == nil then Common._PrevMouseDown = false end
-    local currentlyDown = input.IsButtonDown(MOUSE_LEFT)
-    local clicked = hovered and currentlyDown and (not Common._PrevMouseDown)
-    Common._PrevMouseDown = currentlyDown
+    local isPressed = input.IsButtonDown(MOUSE_LEFT)
+
+    -- Only trigger click when button is pressed and wasn't pressed last frame
+    local clicked = hovered and isPressed and not wasPressed
+
+    -- Update state for next frame
+    wasPressed = isPressed
+    
     return hovered, clicked
 end
 

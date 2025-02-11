@@ -23,6 +23,7 @@ local function Setup()
         TimMenuGlobal.order = {}
         TimMenuGlobal.CapturedWindow = nil
         TimMenuGlobal.LastWindowDrawnKey = nil
+        TimMenuGlobal.currentActiveWindow = nil  -- Add currentActiveWindow to track which window is being processed
     end
 end
 
@@ -42,6 +43,7 @@ function TimMenu.Begin(title, visible, id)
     if type(visible) == "string" then id, visible = visible, true end
     local key = (id or title)
     TimMenuGlobal.LastWindowDrawnKey = key  -- Use global instead of local lastkey
+    TimMenuGlobal.currentActiveWindow = key  -- Track which window we're currently processing
 
     local currentFrame = globals.FrameCount()
     local win = TimMenuGlobal.windows[key]
@@ -127,6 +129,9 @@ function TimMenu.End()
             end
         end
     end
+
+    -- Reset current window when done
+    TimMenuGlobal.currentActiveWindow = nil
 end
 
 --- Returns the current window (last drawn window).
@@ -140,7 +145,8 @@ end
 --- Returns true if clicked.
 function TimMenu.Button(label)
     local win = TimMenu.GetCurrentWindow()
-    if win then
+    -- Only process button if we're in the correct window context
+    if win and TimMenuGlobal.currentActiveWindow == win.id then
         return Widgets.Button(win, label)
     end
     return false
