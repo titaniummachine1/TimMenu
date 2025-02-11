@@ -1,29 +1,25 @@
 -- Main module for the TimMenu library
 
 local Common = require("TimMenu.Common")
-local Static = require("TimMenu.Static")
+local Globals = require("TimMenu.Globals")
 local Utils = require("TimMenu.Utils")
 local Window = require("TimMenu.Window")
-local WidgetStack = require("TimMenu.widgets.WidgetStack")
-local WindowState = require("TimMenu.WindowState")  -- global persistent state
-
-local TimMenu = {}
-
--- Initialize TimMenu
-TimMenu.windows = WindowState.windows  -- shared state: key -> Window instance
-TimMenu.order = WindowState.order
-TimMenu.CapturedWindow = nil
-TimMenu.LastWindowDrawnKey = nil
-TimMenu.WidgetStack = WidgetStack
 
 -- Refresh function to clear loaded modules
 function TimMenu.Refresh()
-    package.loaded["TimMenu.Common"] = nil
-    package.loaded["TimMenu.Static"] = nil
-    package.loaded["TimMenu.Utils"] = nil
-    package.loaded["TimMenu.Window"] = nil
-    package.loaded["TimMenu.widgets.WidgetStack"] = nil
+    package.loaded["TimMenu"] = nil
 end
+
+local function Setup()
+    TimMenu.Refresh()
+    -- Initialize TimMenu
+    TimMenu = {}
+    TimMenu.windows = WindowState.windows  -- shared state: key -> Window instance
+    TimMenu.CapturedWindow = nil
+    TimMenu.LastWindowDrawnKey = nil
+end
+
+Setup()
 
 --- Begins a new or updates an existing window.
 --- @param title string Window title.
@@ -66,25 +62,10 @@ function TimMenu.Begin(title, visible, id)
         local mX, mY = table.unpack(input.GetMousePos())
         local titleHeight = Static.Defaults.TITLE_BAR_HEIGHT
 
-        -- Find topmost window being clicked (check from front to back)
-        local isTopWindow = true
-        for i = #TimMenu.order, 1, -1 do
-            local checkKey = TimMenu.order[i]
-            if checkKey == key then break end -- Stop when we reach current window
-            local checkWin = TimMenu.windows[checkKey]
-            if checkWin and checkWin.visible then
-                -- If a window above this one contains the mouse, this isn't the top window
-                if mX >= checkWin.X and mX <= checkWin.X + checkWin.W and
-                   mY >= checkWin.Y and mY <= checkWin.Y + checkWin.H + titleHeight then
-                    isTopWindow = false
-                    break
-                end
-            end
-        end
-
-        -- Only handle mouse interaction if this is the topmost window at the mouse position
-        if isTopWindow and mX >= win.X and mX <= win.X + win.W and
+        -- Check if mouse is within window bounds
+        if mX >= win.X and mX <= win.X + win.W and
            mY >= win.Y and mY <= win.Y + win.H + titleHeight then
+            -- If clicked, bring window to front
             if input.IsButtonPressed(MOUSE_LEFT) then
                 -- Move window to end of order (top)
                 for i, k in ipairs(TimMenu.order) do

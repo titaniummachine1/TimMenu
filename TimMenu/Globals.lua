@@ -1,7 +1,7 @@
-local Static = {}
+local Globals = {}
 
 ---@type ImColor[]
-Static.Colors = {
+Globals.Colors = {
     Title = { 55, 100, 215, 255 },
     Text = { 255, 255, 255, 255 },
     Window = { 30, 30, 30, 255 },
@@ -16,7 +16,7 @@ Static.Colors = {
 }
 
 ---@type ImStyle[]
-Static.Style = {
+Globals.Style = {
     Font = nil, -- "verdana.ttf",
     ItemPadding = 5,
     ItemMargin = 5,
