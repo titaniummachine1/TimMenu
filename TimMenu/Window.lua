@@ -88,17 +88,21 @@ end
 --- Called when adding a widget so the window auto-expands to fit content.
 --- width, height: the widget's measured size
 function Window:AddWidget(width, height)
-    -- Move cursor if there's not enough horizontal space
-    if (self.cursorX + width) > self.W then
-        self.W = self.cursorX + width
+    local x = self.cursorX
+    -- If centered, place the widget in the horizontal center
+    if Globals.Style.Alignment == "center" then
+        x = math.max(0, (self.W - width) * 0.5)
     end
-    -- Track the tallest widget on this "row"
+
+    -- Expand window if needed
+    if (x + width) > self.W then
+        self.W = x + width
+    end
     if height > self.lineHeight then
         self.lineHeight = height
     end
-    -- Move cursor for next widget in row
-    self.cursorX = self.cursorX + width
-    -- If this goes beyond window bounds, expand window
+
+    self.cursorX = x + width
     local neededHeight = self.cursorY + self.lineHeight
     if neededHeight > self.H then
         self.H = neededHeight

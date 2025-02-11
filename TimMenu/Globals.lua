@@ -28,7 +28,8 @@ Globals.Style = {
     CheckboxBorder = false,
     SliderBorder = false,
     Border = false,
-    Popup = false
+    Popup = false,
+    Alignment = "left"  -- or "center"
 }
 
 Globals.Defaults = {
