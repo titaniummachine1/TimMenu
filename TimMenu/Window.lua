@@ -5,7 +5,8 @@ local Window = {}
 Window.__index = Window
 
 function Window.new(params)
-    local self = setmetatable({}, Window)
+    local self = {} 
+    setmetatable(self, { __index = Window, __mode = "v" }) -- weak values; instance can be gc'd if unreferenced
     self.title   = params.title
     self.id      = params.id or params.title
     self.visible = (params.visible == nil) and true or params.visible
@@ -34,24 +35,7 @@ function Window:update(currentFrame)
     end
 end
 
-function Window:handleDrag(screenWidth, screenHeight, titleHeight)
-    local mX, mY = table.unpack(input.GetMousePos())
-    if not self.IsDragging and input.IsButtonDown(MOUSE_LEFT) then
-        if mX >= self.X and mX <= self.X + self.W and mY >= self.Y and mY <= self.Y + titleHeight then
-            self.DragPos = { X = mX - self.X, Y = mY - self.Y }
-            self.IsDragging = true
-        end
-    end
-    if self.IsDragging then
-        local newX = mX - self.DragPos.X
-        local newY = mY - self.DragPos.Y
-        self.X = math.max(0, math.min(newX, screenWidth - self.W))
-        self.Y = math.max(0, math.min(newY, screenHeight - self.H - titleHeight))
-    end
-    if not input.IsButtonDown(MOUSE_LEFT) then
-        self.IsDragging = false
-    end
-end
+-- Removed the handleDrag function as dragging is now handled in Main.lua.
 
 function Window:draw()
     local titleText = self.title

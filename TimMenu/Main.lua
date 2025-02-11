@@ -20,6 +20,7 @@ local function Setup()
         -- Initialize TimMenu
         TimMenuGlobal = {}
         TimMenuGlobal.windows = {}
+        setmetatable(TimMenuGlobal.windows, { __mode = "v" }) -- weak values so unused windows are gc'd
         TimMenuGlobal.order = {}
         TimMenuGlobal.CapturedWindow = nil
         TimMenuGlobal.LastWindowDrawnKey = nil
@@ -105,6 +106,7 @@ end
 
 --- Ends the current window.
 function TimMenu.End()
+    --proly need to be executed by each window in case 9/10 failed
     Utils.PruneOrphanedWindows(TimMenuGlobal.windows, TimMenuGlobal.order)
 
     --if this window is last in order then draw windows
