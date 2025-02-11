@@ -6,6 +6,8 @@ local Globals = require("TimMenu.Globals")
 local Utils = require("TimMenu.Utils")
 local Window = require("TimMenu.Window")
 
+local lastkey = nil
+
 -- Refresh function to clear loaded modules
 function TimMenu.Refresh()
     package.loaded["TimMenu"] = nil
@@ -103,6 +105,11 @@ end
 --- Ends the current window.
 function TimMenu.End()
     Utils.PruneOrphanedWindows(TimMenuGlobal.windows, TimMenuGlobal.order)
+
+    --if this window is last in order then draw windows
+    if lastkey ~= TimMenuGlobal.order[#TimMenuGlobal.order] then
+        return
+    end
 
     -- Draw all visible windows in order (bottom to top)
     for i = 1, #TimMenuGlobal.order do
