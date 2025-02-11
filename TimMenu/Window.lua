@@ -1,5 +1,5 @@
 local Common = require("TimMenu.Common")
-local Static = require("TimMenu.Static")
+local Globals = require("TimMenu.Globals")
 
 local Window = {}
 Window.__index = Window
@@ -9,10 +9,10 @@ function Window.new(params)
     self.title   = params.title
     self.id      = params.id or params.title
     self.visible = (params.visible == nil) and true or params.visible
-    self.X       = params.X or (Static.Defaults.DEFAULT_X + math.random(0, 150))
-    self.Y       = params.Y or (Static.Defaults.DEFAULT_Y + math.random(0, 50))
-    self.W       = params.W or Static.Defaults.DEFAULT_W
-    self.H       = params.H or Static.Defaults.DEFAULT_H
+    self.X       = params.X or (Globals.Defaults.DEFAULT_X + math.random(0, 150))
+    self.Y       = params.Y or (Globals.Defaults.DEFAULT_Y + math.random(0, 50))
+    self.W       = params.W or Globals.Defaults.DEFAULT_W
+    self.H       = params.H or Globals.Defaults.DEFAULT_H
     self.lastFrame = nil
     self.IsDragging = false
     self.DragPos = { X = 0, Y = 0 }
@@ -55,22 +55,22 @@ end
 
 function Window:draw()
     local titleText = self.title
-    draw.SetFont(Static.Style.Font)
+    draw.SetFont(Globals.Style.Font)
     local txtWidth, txtHeight = draw.GetTextSize(titleText)
-    local titleHeight = txtHeight + Static.Style.ItemPadding
+    local titleHeight = txtHeight + Globals.Style.ItemPadding
 
-    draw.Color(table.unpack(Static.Colors.Window or {30,30,30,255}))
+    draw.Color(table.unpack(Globals.Colors.Window or {30,30,30,255}))
     draw.FilledRect(self.X, self.Y + titleHeight, self.X + self.W, self.Y + self.H)
 
-    draw.Color(table.unpack(Static.Colors.Title or {55,100,215,255}))
+    draw.Color(table.unpack(Globals.Colors.Title or {55,100,215,255}))
     draw.FilledRect(self.X, self.Y, self.X + self.W, self.Y + titleHeight)
 
     local titleX = Common.Clamp(self.X + (self.W - txtWidth) / 2)
     local titleY = Common.Clamp(self.Y + (titleHeight - txtHeight) / 2)
-    draw.Color(table.unpack(Static.Colors.Text or {255,255,255,255}))
+    draw.Color(table.unpack(Globals.Colors.Text or {255,255,255,255}))
     draw.Text(titleX, titleY, titleText)
 
-    draw.Color(table.unpack(Static.Colors.WindowBorder or {55,100,215,255}))
+    draw.Color(table.unpack(Globals.Colors.WindowBorder or {55,100,215,255}))
     draw.OutlinedRect(self.X, self.Y, self.X + self.W, self.Y + self.H)
 end
 

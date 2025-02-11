@@ -3,14 +3,9 @@
 
 local Common = {}
 
-local Static = require("TimMenu.Static") -- Import the static module for Colors and Style.
+local Globals = require("TimMenu.Globals") -- Import the static module for Colors and Style.
 
 pcall(UnloadLib) -- if it fails then forget about it it means it wasnt loaded in first place and were clean
-
--- Unload the module if it's already loaded
-if package.loaded["ImMenu"] then
-    package.loaded["ImMenu"] = nil
-end
 
 local libLoaded, Lib = pcall(require, "LNXlib")
 assert(libLoaded, "LNXlib not found, please install it!")
@@ -31,7 +26,7 @@ Common.Conversion = Common.Lib.Utils.Conversion
 --------------------------------------------------------------------------------
 -- Updating Static Fonts
 --------------------------------------------------------------------------------
-Static.Style.Font = Common.Fonts.Verdana
+Globals.Style.Font = Common.Fonts.Verdana
 
 --------------------------------------------------------------------------------
 -- Common Functions
