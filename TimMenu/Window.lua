@@ -5,8 +5,8 @@ local Window = {}
 Window.__index = Window
 
 function Window.new(params)
-    local self = {} 
-    setmetatable(self, { __index = Window, __mode = "v" }) -- weak values; instance can be gc'd if unreferenced
+    local self = {}
+    setmetatable(self, Window) -- normal metatable, no weak mode
     self.title   = params.title
     self.id      = params.id or params.title
     self.visible = (params.visible == nil) and true or params.visible

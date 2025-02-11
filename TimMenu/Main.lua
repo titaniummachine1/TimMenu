@@ -19,8 +19,7 @@ local function Setup()
     if not TimMenuGlobal then
         -- Initialize TimMenu
         TimMenuGlobal = {}
-        TimMenuGlobal.windows = {}
-        setmetatable(TimMenuGlobal.windows, { __mode = "v" }) -- weak values so unused windows are gc'd
+        TimMenuGlobal.windows = {}  -- no weak references now
         TimMenuGlobal.order = {}
         TimMenuGlobal.CapturedWindow = nil
         TimMenuGlobal.LastWindowDrawnKey = nil
@@ -64,22 +63,22 @@ function TimMenu.Begin(title, visible, id)
 
     if visible and not engine.IsTakingScreenshot() then
         win.lastFrame = currentFrame
-
-        -- Handle mouse interaction
         local mX, mY = table.unpack(input.GetMousePos())
         local titleHeight = Globals.Defaults.TITLE_BAR_HEIGHT
 
         local InteractedWindowKey = Utils.GetWindowUnderMouse(TimMenuGlobal.order, TimMenuGlobal.windows, mX, mY, titleHeight)
+        local btnPressed = input.IsButtonPressed(MOUSE_LEFT)
+
         if InteractedWindowKey == key then
-            if input.IsButtonPressed(MOUSE_LEFT) then
-                -- Move window to end of order (top)
+            if btnPressed then
+                -- Bring window to front
                 local index = table.find(TimMenuGlobal.order, key)
                 if index then
                     table.remove(TimMenuGlobal.order, index)
                     table.insert(TimMenuGlobal.order, key)
                 end
 
-                -- If clicked in title bar, start dragging
+                -- Start dragging if in title bar
                 if mY <= win.Y + titleHeight then
                     win.IsDragging = true
                     win.DragPos = { X = mX - win.X, Y = mY - win.Y }
@@ -88,16 +87,19 @@ function TimMenu.Begin(title, visible, id)
             end
         end
 
-        -- Handle dragging
+        --[[
+        Update the dragging position.(outside to prevent slipery windows)
+        We avoid re-checking for mouse interaction here to ensure smooth dragging, even if the window is moved quickly.
+        ]]
         if TimMenuGlobal.CapturedWindow == key and win.IsDragging then
             win.X = mX - win.DragPos.X
             win.Y = mY - win.DragPos.Y
+        end
 
-            -- Stop dragging when mouse released
-            if input.IsButtonReleased(MOUSE_LEFT) then
-                win.IsDragging = false
-                TimMenuGlobal.CapturedWindow = nil
-            end
+        -- Stop dragging when mouse button is released
+        if input.IsButtonReleased(MOUSE_LEFT) then
+            win.IsDragging = false
+            TimMenuGlobal.CapturedWindow = nil
         end
     end
 
