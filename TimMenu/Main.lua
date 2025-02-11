@@ -108,7 +108,6 @@ end
 
 --- Ends the current window.
 function TimMenu.End()
-    --proly need to be executed by each window in case 9/10 failed
     Utils.PruneOrphanedWindows(TimMenuGlobal.windows, TimMenuGlobal.order)
 
     --if this window is last in order then draw windows
@@ -116,7 +115,8 @@ function TimMenu.End()
         return
     end
 
-    -- Draw all visible windows in order (bottom to top)
+    -- Draw all visible windows in order (bottom to top),
+    -- each window handles its own internal layering in win:draw().
     for i = 1, #TimMenuGlobal.order do
         local key = TimMenuGlobal.order[i]
         local win = TimMenuGlobal.windows[key]

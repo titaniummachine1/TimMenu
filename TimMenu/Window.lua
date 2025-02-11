@@ -17,6 +17,11 @@ function Window.new(params)
     self.lastFrame = nil
     self.IsDragging = false
     self.DragPos = { X = 0, Y = 0 }
+    -- Initialize a table of layers
+    self.Layers = {}
+    for i = 1, 5 do
+        self.Layers[i] = {}
+    end
     -- Set __close metamethod so it auto-cleans when used as a to-be-closed variable.
     local mt = getmetatable(self)
     mt.__close = Window.__close
@@ -24,6 +29,9 @@ function Window.new(params)
     self.update = function(self, currentFrame)
         self.lastFrame = currentFrame
     end
+    self.cursorX = 0
+    self.cursorY = 0
+    self.lineHeight = 0
     return self
 end
 
@@ -36,6 +44,13 @@ function Window:update(currentFrame)
 end
 
 -- Removed the handleDrag function as dragging is now handled in Main.lua.
+
+-- Queue a drawing function under a specified layer
+function Window:QueueDrawAtLayer(layer, drawFunc, ...)
+    if self.Layers[layer] then
+        table.insert(self.Layers[layer], { fn = drawFunc, args = { ... } })
+    end
+end
 
 function Window:draw()
     local titleText = self.title
@@ -56,6 +71,50 @@ function Window:draw()
 
     draw.Color(table.unpack(Globals.Colors.WindowBorder or {55,100,215,255}))
     draw.OutlinedRect(self.X, self.Y, self.X + self.W, self.Y + self.H)
+
+    -- Process each layer in order
+    for i = 1, #self.Layers do
+        for _, entry in ipairs(self.Layers[i]) do
+            entry.fn(table.unpack(entry.args))
+        end
+    end
+
+    -- Clear layer calls for the next frame
+    for i = 1, #self.Layers do
+        self.Layers[i] = {}
+    end
+end
+
+--- Called when adding a widget so the window auto-expands to fit content.
+--- width, height: the widget's measured size
+function Window:AddWidget(width, height)
+    -- Move cursor if there's not enough horizontal space
+    if (self.cursorX + width) > self.W then
+        self.W = self.cursorX + width
+    end
+    -- Track the tallest widget on this "row"
+    if height > self.lineHeight then
+        self.lineHeight = height
+    end
+    -- Move cursor for next widget in row
+    self.cursorX = self.cursorX + width
+    -- If this goes beyond window bounds, expand window
+    local neededHeight = self.cursorY + self.lineHeight
+    if neededHeight > self.H then
+        self.H = neededHeight
+    end
+end
+
+--- Provide a simple way to "new line" to place subsequent widgets below
+function Window:NextLine(spacing)
+    spacing = spacing or 5
+    self.cursorY = self.cursorY + self.lineHeight + spacing
+    self.cursorX = 0
+    self.lineHeight = 0
+    -- Expand window if needed
+    if self.cursorY > self.H then
+        self.H = self.cursorY
+    end
 end
 
 --- __close metamethod: cleans up window state.
