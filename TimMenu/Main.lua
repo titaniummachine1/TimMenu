@@ -5,18 +5,28 @@ local Globals = require("TimMenu.Globals")
 local Utils = require("TimMenu.Utils")
 local Window = require("TimMenu.Window")
 
+--glboal libryies assert jsut tio make it faster
+
+assert(globals, "imposible")
+
 -- Refresh function to clear loaded modules
 function TimMenu.Refresh()
     package.loaded["TimMenu"] = nil
 end
 
+local TimMenu = {}
+
 local function Setup()
     TimMenu.Refresh()
-    -- Initialize TimMenu
-    TimMenu = {}
-    TimMenu.windows = WindowState.windows  -- shared state: key -> Window instance
-    TimMenu.CapturedWindow = nil
-    TimMenu.LastWindowDrawnKey = nil
+
+    if not TimMenu then
+        -- Initialize TimMenu
+        TimMenu = {}
+        TimMenu.windows = {}
+        TimMenu.order = {}
+        TimMenu.CapturedWindow = nil
+        TimMenu.LastWindowDrawnKey = nil
+    end
 end
 
 Setup()
@@ -32,35 +42,33 @@ function TimMenu.Begin(title, visible, id)
     visible = (visible == nil) and true or visible
     if type(visible) == "string" then id, visible = visible, true end
     local key = (id or title)
-    if type(key) ~= "string" then key = tostring(key) end
-
+ 
     local currentFrame = globals.FrameCount()
     local win = TimMenu.windows[key]
-    
+
     -- Create new window if needed
     if not win then
         win = Window.new({
             title = title,
             id = key,
             visible = visible,
-            X = Static.Defaults.DEFAULT_X + math.random(0, 150),
-            Y = Static.Defaults.DEFAULT_Y + math.random(0, 50),
-            W = Static.Defaults.DEFAULT_W,
-            H = Static.Defaults.DEFAULT_H,
+            X = Globals.Defaults.DEFAULT_X + math.random(0, 150),
+            Y = Globals.Defaults.DEFAULT_Y + math.random(0, 50),
+            W = Globals.Defaults.DEFAULT_W,
+            H = Globals.Defaults.DEFAULT_H,
         })
         TimMenu.windows[key] = win
         table.insert(TimMenu.order, key)
     else
-        win.visible = visible
+        win.visible = visible -- onl value tha can and should change sometimes
     end
 
-    if visible then
+    if visible and not engine.IsTakingScreenshot() then
         win.lastFrame = currentFrame
-        TimMenu.LastWindowDrawnKey = key
 
         -- Handle mouse interaction
         local mX, mY = table.unpack(input.GetMousePos())
-        local titleHeight = Static.Defaults.TITLE_BAR_HEIGHT
+        local titleHeight = Globals.Defaults.TITLE_BAR_HEIGHT
 
         -- Check if mouse is within window bounds
         if mX >= win.X and mX <= win.X + win.W and
