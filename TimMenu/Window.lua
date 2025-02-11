@@ -62,13 +62,6 @@ function Window:draw()
     draw.Color(table.unpack(Globals.Colors.Window or {30,30,30,255}))
     draw.FilledRect(self.X, self.Y + titleHeight, self.X + self.W, self.Y + self.H)
 
-    -- Process widget layers immediately so widgets appear.
-    for i = 1, #self.Layers do
-        for _, entry in ipairs(self.Layers[i]) do
-            entry.fn(table.unpack(entry.args))
-        end
-    end
-
     -- Then draw the title bar and window border on top.
     draw.Color(table.unpack(Globals.Colors.Title or {55,100,215,255}))
     draw.FilledRect(self.X, self.Y, self.X + self.W, self.Y + titleHeight)
@@ -81,6 +74,13 @@ function Window:draw()
     draw.Color(table.unpack(Globals.Colors.WindowBorder or {55,100,215,255}))
     draw.OutlinedRect(self.X, self.Y, self.X + self.W, self.Y + self.H)
 
+    -- Process widget layers immediately so widgets appear.
+    for i = 1, #self.Layers do
+        for _, entry in ipairs(self.Layers[i]) do
+            entry.fn(table.unpack(entry.args))
+        end
+    end
+
     -- Clear layer calls for the next frame.
     for i = 1, #self.Layers do
         self.Layers[i] = {}
@@ -89,14 +89,17 @@ end
 
 --- Called when adding a widget so the window auto-expands to fit content.
 --- width, height: the widget's measured size
+--- Returns: x, y coordinates for the widget inside the window.
 function Window:AddWidget(width, height)
-    local x = self.cursorX
-    -- If centered, place the widget in the horizontal center
+    local padding = Globals.Defaults.WINDOW_CONTENT_PADDING
+    local x = self.cursorX  -- current x position for content
+    -- If centered, compute starting x based on window width and padding.
     if Globals.Style.Alignment == "center" then
-        x = math.max(0, (self.W - width) * 0.5)
+        x = math.max(padding, math.floor((self.W - width) * 0.5))
     end
+    local y = self.cursorY
 
-    -- Expand window if needed
+    -- Expand window if needed.
     if (x + width) > self.W then
         self.W = x + width
     end
@@ -104,11 +107,14 @@ function Window:AddWidget(width, height)
         self.lineHeight = height
     end
 
+    -- Update cursor for next widget.
     self.cursorX = x + width
     local neededHeight = self.cursorY + self.lineHeight
     if neededHeight > self.H then
         self.H = neededHeight
     end
+
+    return x, y
 end
 
 --- Provide a simple way to "new line" to place subsequent widgets below

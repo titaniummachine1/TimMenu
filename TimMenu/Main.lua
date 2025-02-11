@@ -8,6 +8,8 @@ local Window = require("TimMenu.Window")
 local Widgets = require("TimMenu.Widgets")  -- new require
 
 local lastkey = nil
+local currentFrameCount = 0
+local windowsThisFrame = 0
 
 -- Refresh function to clear loaded modules
 function TimMenu.Refresh()
@@ -35,6 +37,14 @@ Setup()
 --- @param id? string|number Unique identifier (default: title).
 --- @return boolean, table Visible flag and the window table.
 function TimMenu.Begin(title, visible, id)
+    -- At the start of a new frame, reset the window counter
+    local frame = globals.FrameCount()
+    if frame ~= currentFrameCount then
+        currentFrameCount = frame
+        windowsThisFrame = 0
+    end
+    windowsThisFrame = windowsThisFrame + 1
+
     TimMenu.Refresh()
     assert(type(title) == "string", "TimMenu.Begin requires a string title")
     visible = (visible == nil) and true or visible
@@ -117,18 +127,17 @@ end
 function TimMenu.End()
     Utils.PruneOrphanedWindows(TimMenuGlobal.windows, TimMenuGlobal.order)
 
-    --if this window is last in order then draw windows
-    if lastkey ~= TimMenuGlobal.order[#TimMenuGlobal.order] then
-        return
-    end
+    -- Count how many windows we have total
+    local totalWindows = #TimMenuGlobal.order
 
-    -- Draw all visible windows in order (bottom to top),
-    -- each window handles its own internal layering in win:draw().
-    for i = 1, #TimMenuGlobal.order do
-        local key = TimMenuGlobal.order[i]
-        local win = TimMenuGlobal.windows[key]
-        if win and win.visible then
-            win:draw()
+    -- Only draw all windows when we're on the last End() call for this frame
+    if windowsThisFrame == totalWindows then
+        for i = 1, #TimMenuGlobal.order do
+            local key = TimMenuGlobal.order[i]
+            local win = TimMenuGlobal.windows[key]
+            if win and win.visible then
+                win:draw()
+            end
         end
     end
 end

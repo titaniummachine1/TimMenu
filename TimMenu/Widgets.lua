@@ -12,20 +12,13 @@ function Widgets.Button(win, label)
     local width = textWidth + (padding * 2)
     local height = textHeight + (padding * 2)
 
-    -- Let the window auto-expand
-    win:AddWidget(width, height)
+    -- Get widget coordinates while auto-expanding the window.
+    local x, y = win:AddWidget(width, height)
 
-    -- We must capture current position for drawing
-    local x = win.cursorX - width
-    local y = win.cursorY
-    if Globals.Style.Alignment == "center" then
-        x = math.max(0, (win.W - width) * 0.5)
-    end
-
-    -- Check for click
+    -- Check for click using absolute coordinates.
     local hovered, clicked = Common.GetInteraction(win.X + x, win.Y + y, width, height)
 
-    -- Queue some drawing
+    -- Queue button drawing.
     win:QueueDrawAtLayer(2, function()
         if hovered then
             draw.Color(100,100,100,255)
