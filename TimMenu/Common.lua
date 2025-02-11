@@ -18,7 +18,7 @@ Common.KeyHelper  = Lib.Utils.KeyHelper
 Common.Input      = Lib.Utils.Input
 Common.Timer      = Lib.Utils.Timer
 
-Common.Log        = Lib.Utils.Logger.new("Cheater Detection")
+Common.Log        = Lib.Utils.Logger.new("TimMenu")
 Common.Notify     = Lib.UI.Notify
 Common.Math       = Common.Lib.Utils.Math
 Common.Conversion = Common.Lib.Utils.Conversion
