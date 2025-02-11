@@ -5,6 +5,7 @@ local Common = require("TimMenu.Common")
 local Globals = require("TimMenu.Globals")
 local Utils = require("TimMenu.Utils")
 local Window = require("TimMenu.Window")
+local Widgets = require("TimMenu.Widgets")  -- new require
 
 local lastkey = nil
 
@@ -103,6 +104,12 @@ function TimMenu.Begin(title, visible, id)
         end
     end
 
+    -- Reset widget layout counters each frame using content padding.
+    local padding = Globals.Defaults.WINDOW_CONTENT_PADDING
+    win.cursorX = padding
+    win.cursorY = Globals.Defaults.TITLE_BAR_HEIGHT + padding
+    win.lineHeight = 0
+
     return win
 end
 
@@ -124,6 +131,23 @@ function TimMenu.End()
             win:draw()
         end
     end
+end
+
+--- Returns the current window (last drawn window).
+function TimMenu.GetCurrentWindow()
+    if lastkey then
+        return TimMenuGlobal.windows[lastkey]
+    end
+end
+
+--- Calls the Widgets.Button API on the current window.
+--- Returns true if clicked.
+function TimMenu.Button(label)
+    local win = TimMenu.GetCurrentWindow()
+    if win then
+        return Widgets.Button(win, label)
+    end
+    return false
 end
 
 --- Displays debug information.

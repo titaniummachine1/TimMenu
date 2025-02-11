@@ -58,9 +58,18 @@ function Window:draw()
     local txtWidth, txtHeight = draw.GetTextSize(titleText)
     local titleHeight = txtHeight + Globals.Style.ItemPadding
 
+    -- Draw window background.
     draw.Color(table.unpack(Globals.Colors.Window or {30,30,30,255}))
     draw.FilledRect(self.X, self.Y + titleHeight, self.X + self.W, self.Y + self.H)
 
+    -- Process widget layers immediately so widgets appear.
+    for i = 1, #self.Layers do
+        for _, entry in ipairs(self.Layers[i]) do
+            entry.fn(table.unpack(entry.args))
+        end
+    end
+
+    -- Then draw the title bar and window border on top.
     draw.Color(table.unpack(Globals.Colors.Title or {55,100,215,255}))
     draw.FilledRect(self.X, self.Y, self.X + self.W, self.Y + titleHeight)
 
@@ -72,14 +81,7 @@ function Window:draw()
     draw.Color(table.unpack(Globals.Colors.WindowBorder or {55,100,215,255}))
     draw.OutlinedRect(self.X, self.Y, self.X + self.W, self.Y + self.H)
 
-    -- Process each layer in order
-    for i = 1, #self.Layers do
-        for _, entry in ipairs(self.Layers[i]) do
-            entry.fn(table.unpack(entry.args))
-        end
-    end
-
-    -- Clear layer calls for the next frame
+    -- Clear layer calls for the next frame.
     for i = 1, #self.Layers do
         self.Layers[i] = {}
     end
@@ -113,7 +115,7 @@ end
 function Window:NextLine(spacing)
     spacing = spacing or 5
     self.cursorY = self.cursorY + self.lineHeight + spacing
-    self.cursorX = 0
+    self.cursorX = Globals.Defaults.WINDOW_CONTENT_PADDING  -- reset to left padding
     self.lineHeight = 0
     -- Expand window if needed
     if self.cursorY > self.H then
