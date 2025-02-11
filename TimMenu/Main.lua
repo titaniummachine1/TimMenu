@@ -7,7 +7,6 @@ local Utils = require("TimMenu.Utils")
 local Window = require("TimMenu.Window")
 local Widgets = require("TimMenu.Widgets")  -- new require
 
-local lastkey = nil
 local currentFrameCount = 0
 local windowsThisFrame = 0
 
@@ -50,7 +49,7 @@ function TimMenu.Begin(title, visible, id)
     visible = (visible == nil) and true or visible
     if type(visible) == "string" then id, visible = visible, true end
     local key = (id or title)
-    lastkey = key --keep for last draw check
+    TimMenuGlobal.LastWindowDrawnKey = key  -- Use global instead of local lastkey
 
     local currentFrame = globals.FrameCount()
     local win = TimMenuGlobal.windows[key]
@@ -144,8 +143,8 @@ end
 
 --- Returns the current window (last drawn window).
 function TimMenu.GetCurrentWindow()
-    if lastkey then
-        return TimMenuGlobal.windows[lastkey]
+    if TimMenuGlobal.LastWindowDrawnKey then
+        return TimMenuGlobal.windows[TimMenuGlobal.LastWindowDrawnKey]
     end
 end
 
