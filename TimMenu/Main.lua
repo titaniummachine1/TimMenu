@@ -105,15 +105,8 @@ end
 
 --- Ends the current window.
 function TimMenu.End()
-    -- Prune windows not updated within the threshold (2 frames)
-    Utils.PruneOrphanedWindows(TimMenuGlobal.windows)
-    -- Clean the order array by removing keys without corresponding windows
-    for i = #TimMenuGlobal.order, 1, -1 do
-        local key = TimMenuGlobal.order[i]
-        if not TimMenuGlobal.windows[key] then
-            table.remove(TimMenuGlobal.order, i)
-        end
-    end
+    -- Prune windows and clean their order.
+    Utils.PruneOrphanedWindows(TimMenuGlobal.windows, TimMenuGlobal.order)
 
     -- Draw remaining active windows in order (bottom to top)
     for i = 1, #TimMenuGlobal.order do
