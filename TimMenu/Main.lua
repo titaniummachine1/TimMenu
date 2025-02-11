@@ -65,11 +65,8 @@ function TimMenu.Begin(title, visible, id)
         local mX, mY = table.unpack(input.GetMousePos())
         local titleHeight = Globals.Defaults.TITLE_BAR_HEIGHT
 
-        -- Check if mouse is within window bounds
-        if mX >= win.X and mX <= win.X + win.W and
-           mY >= win.Y and mY <= win.Y + win.H + titleHeight then
-
-            -- If clicked, bring window to front
+        local topKey = Utils.GetWindowUnderMouse(TimMenuGlobal.order, TimMenuGlobal.windows, mX, mY, titleHeight)
+        if topKey == key then
             if input.IsButtonPressed(MOUSE_LEFT) then
                 -- Move window to end of order (top)
                 local index = table.find(TimMenuGlobal.order, key)
@@ -105,10 +102,9 @@ end
 
 --- Ends the current window.
 function TimMenu.End()
-    -- Prune windows and clean their order.
     Utils.PruneOrphanedWindows(TimMenuGlobal.windows, TimMenuGlobal.order)
 
-    -- Draw remaining active windows in order (bottom to top)
+    -- Draw all visible windows in order (bottom to top)
     for i = 1, #TimMenuGlobal.order do
         local key = TimMenuGlobal.order[i]
         local win = TimMenuGlobal.windows[key]

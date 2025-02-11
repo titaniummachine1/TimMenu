@@ -21,17 +21,21 @@ function Utils.PruneOrphanedWindows(windows, order)
     end
 end
 
+function Utils.IsMouseOverWindow(win, mouseX, mouseY, titleHeight)
+    return mouseX >= win.X
+       and mouseX <= win.X + win.W
+       and mouseY >= win.Y
+       and mouseY <= win.Y + win.H + titleHeight
+end
+
 -- Returns the top window key at a given point.
-function Utils.GetTopWindowAtPoint(order, windows, x, y, titleBarHeight)
+function Utils.GetWindowUnderMouse(order, windows, x, y, titleBarHeight)
+    -- Loop from top to bottom (end to start), returning the first window under mouse.
     for i = #order, 1, -1 do
         local key = order[i]
         local win = windows[key]
-        if win then
-            local withinXBounds = x >= win.X and x <= win.X + win.W
-            local withinYBounds = y >= win.Y and y <= win.Y + titleBarHeight
-            if withinXBounds and withinYBounds then
-                return key
-            end
+        if win and Utils.IsMouseOverWindow(win, x, y, titleBarHeight) then
+            return key
         end
     end
     return nil
