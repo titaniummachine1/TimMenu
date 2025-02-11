@@ -25,7 +25,7 @@ function Utils.IsMouseOverWindow(win, mouseX, mouseY, titleHeight)
     return mouseX >= win.X
        and mouseX <= win.X + win.W
        and mouseY >= win.Y
-       and mouseY <= win.Y + win.H + titleHeight
+       and mouseY <= win.Y + win.H
 end
 
 -- Returns the top window key at a given point.
