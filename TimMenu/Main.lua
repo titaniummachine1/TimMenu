@@ -1,19 +1,13 @@
 -- Main module for the TimMenu library
 local TimMenu = {}
 
+package.loaded["TimMenu"] = nil
+
 local Common = require("TimMenu.Common")
 local Globals = require("TimMenu.Globals")
 local Utils = require("TimMenu.Utils")
 local Window = require("TimMenu.Window")
 local Widgets = require("TimMenu.Widgets")  -- new require
-
--- Modified Refresh to preserve TimMenuGlobal
-function TimMenu.Refresh()
-    -- Don't clear TimMenu if it's already initialized
-    if not TimMenuGlobal then
-        Setup()
-    end
-end
 
 local function Setup()
     if not TimMenuGlobal then
@@ -25,6 +19,13 @@ local function Setup()
         TimMenuGlobal.LastWindowDrawnKey = nil
         TimMenuGlobal.currentActiveWindow = nil  -- Add currentActiveWindow to track which window is being processed
     end
+end
+
+-- Modified Refresh to preserve TimMenuGlobal
+function TimMenu.Refresh()
+    -- Don't clear TimMenu if it's already initialized
+    package.loaded["TimMenu"] = nil
+    Setup()
 end
 
 Setup()

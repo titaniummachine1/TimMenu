@@ -1,4 +1,5 @@
 local Globals = {}
+local Common = require("TimMenu.Common")
 
 ---@type ImColor[]
 Globals.Colors = {
@@ -17,7 +18,7 @@ Globals.Colors = {
 
 ---@type ImStyle[]
 Globals.Style = {
-    Font = nil, -- "verdana.ttf",
+    Font = Common.Fonts.Verdana, -- "verdana.ttf",
     ItemPadding = 5,
     ItemMargin = 5,
     FramePadding = 5,
