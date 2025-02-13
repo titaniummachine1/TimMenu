@@ -1,7 +1,6 @@
 local Globals = {}
-local Common = require("TimMenu.Common")
 
----@type ImColor[]
+-- Color definitions
 Globals.Colors = {
     Title = { 55, 100, 215, 255 },
     Text = { 255, 255, 255, 255 },
@@ -16,13 +15,13 @@ Globals.Colors = {
     Border = { 0, 0, 0, 200 }
 }
 
----@type ImStyle[]
+-- Style settings
 Globals.Style = {
-    Font = Common.Fonts.Verdana, -- "verdana.ttf",
+    Font = draw.CreateFont("Verdana", 14, 510), -- "verdana.ttf",
     ItemPadding = 5,
     ItemMargin = 5,
     FramePadding = 5,
-    ItemSize = nil,
+    ItemSize = 10,
     WindowBorder = true,
     FrameBorder = false,
     ButtonBorder = false,

@@ -66,68 +66,64 @@ function Window:QueueDrawAtLayer(layer, drawFunc, ...)
     end
 end
 
+-- Pre-calculate static colors
+local DefaultWindowColor = Globals.Colors.Window or {30,30,30,255}
+local DefaultTitleColor = Globals.Colors.Title or {55,100,215,255}
+local DefaultTextColor = Globals.Colors.Text or {255,255,255,255}
+local DefaultBorderColor = Globals.Colors.WindowBorder or {55,100,215,255}
+
 function Window:draw()
-    local titleText = self.title
     draw.SetFont(Globals.Style.Font)
-    local txtWidth, txtHeight = draw.GetTextSize(titleText)
+    local txtWidth, txtHeight = draw.GetTextSize(self.title)
     local titleHeight = txtHeight + Globals.Style.ItemPadding
 
-    -- Draw window background.
-    draw.Color(table.unpack(Globals.Colors.Window or {30,30,30,255}))
+    -- Draw window parts in order: background, title bar, border, text
+    draw.Color(table.unpack(DefaultWindowColor))
     draw.FilledRect(self.X, self.Y + titleHeight, self.X + self.W, self.Y + self.H)
 
-    -- Then draw the title bar and window border on top.
-    draw.Color(table.unpack(Globals.Colors.Title or {55,100,215,255}))
+    draw.Color(table.unpack(DefaultTitleColor))
     draw.FilledRect(self.X, self.Y, self.X + self.W, self.Y + titleHeight)
 
-    local titleX = Common.Clamp(self.X + (self.W - txtWidth) / 2)
-    local titleY = Common.Clamp(self.Y + (titleHeight - txtHeight) / 2)
-    draw.Color(table.unpack(Globals.Colors.Text or {255,255,255,255}))
-    draw.Text(titleX, titleY, titleText)
-
-    draw.Color(table.unpack(Globals.Colors.WindowBorder or {55,100,215,255}))
+    draw.Color(table.unpack(DefaultBorderColor))
     draw.OutlinedRect(self.X, self.Y, self.X + self.W, self.Y + self.H)
 
-    -- Process widget layers immediately so widgets appear.
-    for i = 1, #self.Layers do
-        for _, entry in ipairs(self.Layers[i]) do
+    -- Draw title text last
+    local titleX = Common.Clamp(self.X + (self.W - txtWidth) / 2)
+    local titleY = Common.Clamp(self.Y + (titleHeight - txtHeight) / 2)
+    draw.Color(table.unpack(DefaultTextColor))
+    draw.Text(titleX, titleY, self.title)
+
+    -- Process widget layers in order
+    for layer = 1, #self.Layers do
+        local layerEntries = self.Layers[layer]
+        for _, entry in ipairs(layerEntries) do
             entry.fn(table.unpack(entry.args))
         end
-    end
-
-    -- Clear layer calls for the next frame.
-    for i = 1, #self.Layers do
-        self.Layers[i] = {}
+        self.Layers[layer] = {} -- Clear after processing
     end
 end
 
---- Called when adding a widget so the window auto-expands to fit content.
---- width, height: the widget's measured size
---- Returns: x, y coordinates for the widget inside the window.
+--- Calculates widget position and updates window size if needed
+--- @param width number The widget width
+--- @param height number The widget height
+--- @return number, number The x, y coordinates for the widget
 function Window:AddWidget(width, height)
     local padding = Globals.Defaults.WINDOW_CONTENT_PADDING
     local x = self.cursorX
-    
-    -- If centered, compute starting x based on window width and padding
+    local y = self.cursorY
+
+    -- Calculate x position based on alignment
     if Globals.Style.Alignment == "center" then
         x = math.max(padding, math.floor((self.W - width) * 0.5))
     end
-    local y = self.cursorY
 
-    -- Include right padding in width check
-    if (x + width + padding) > self.W then
-        self.W = x + width + padding
-    end
-    if height > self.lineHeight then
-        self.lineHeight = height
-    end
+    -- Update window dimensions if needed
+    self.W = math.max(self.W, x + width + padding)
+    self.lineHeight = math.max(self.lineHeight, height)
+    self.H = math.max(self.H, y + self.lineHeight)
 
-    -- Update cursor for next widget (without adding padding - handled by next widget)
+    -- Update cursor position
     self.cursorX = x + width
-    local neededHeight = self.cursorY + self.lineHeight
-    if neededHeight > self.H then
-        self.H = neededHeight
-    end
 
     return x, y
 end

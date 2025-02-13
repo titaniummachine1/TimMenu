@@ -5,23 +5,42 @@ local Common = {}
 
 local Globals = require("TimMenu.Globals") -- Import the Globals module for Colors and Style.
 
-pcall(UnloadLib) -- if it fails then forget about it it means it wasnt loaded in first place and were clean
+-- Attempt to unload any existing LNXlib instance
+local function safeUnload()
+    local success = pcall(UnloadLib)
+    if not success then
+        -- Library wasn't loaded, which is fine
+    end
+end
 
-local libLoaded, Lib = pcall(require, "LNXlib")
-assert(libLoaded, "LNXlib not found, please install it!")
-assert(Lib.GetVersion() >= 1.0, "LNXlib version is too old, please update it!")
+-- Load and validate LNXlib
+local function loadLNXlib()
+    local libLoaded, Lib = pcall(require, "LNXlib")
+    if not libLoaded then
+        error("Failed to load LNXlib. Please ensure it is installed correctly.")
+    end
+    
+    if not Lib.GetVersion or Lib.GetVersion() < 1.0 then
+        error("LNXlib version is too old. Please update to version 1.0 or newer.")
+    end
+    
+    return Lib
+end
 
-Common.Lib        = Lib
+-- Initialize library
+safeUnload()
+local Lib = loadLNXlib()
 
-Common.Fonts      = Lib.UI.Fonts
-Common.KeyHelper  = Lib.Utils.KeyHelper
-Common.Input      = Lib.Utils.Input
-Common.Timer      = Lib.Utils.Timer
-
-Common.Log        = Lib.Utils.Logger.new("TimMenu")
-Common.Notify     = Lib.UI.Notify
-Common.Math       = Common.Lib.Utils.Math
-Common.Conversion = Common.Lib.Utils.Conversion
+-- Expose required functionality
+Common.Lib = Lib
+Common.Fonts = Lib.UI.Fonts
+Common.KeyHelper = Lib.Utils.KeyHelper
+Common.Input = Lib.Utils.Input
+Common.Timer = Lib.Utils.Timer
+Common.Log = Lib.Utils.Logger.new("TimMenu")
+Common.Notify = Lib.UI.Notify
+Common.Math = Lib.Utils.Math
+Common.Conversion = Lib.Utils.Conversion
 
 --------------------------------------------------------------------------------
 -- Common Functions

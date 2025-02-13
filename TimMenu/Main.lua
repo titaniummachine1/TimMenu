@@ -25,7 +25,6 @@ end
 function TimMenu.Refresh()
     -- Don't clear TimMenu if it's already initialized
     package.loaded["TimMenu"] = nil
-    Setup()
 end
 
 Setup()
@@ -34,7 +33,7 @@ Setup()
 --- @param title string Window title.
 --- @param visible? boolean Whether the window is visible (default: true).
 --- @param id? string|number Unique identifier (default: title).
---- @return boolean, table Visible flag and the window table.
+--- @return table window table.
 function TimMenu.Begin(title, visible, id)
     local windowIndex = Utils.BeginFrame()
     -- Remove duplicate frame counting code
@@ -50,6 +49,7 @@ function TimMenu.Begin(title, visible, id)
     local win = TimMenuGlobal.windows[key]
 
     -- Create new window if needed
+    -- Create or update window
     if not win then
         win = Window.new({
             title = title,
@@ -63,46 +63,41 @@ function TimMenu.Begin(title, visible, id)
         TimMenuGlobal.windows[key] = win
         table.insert(TimMenuGlobal.order, key)
     else
-        win.visible = visible -- onl value tha can and should change sometimes
+        win.visible = visible
     end
 
+    -- Handle window interaction
     if visible and not engine.IsTakingScreenshot() then
         win.lastFrame = currentFrame
         local mX, mY = table.unpack(input.GetMousePos())
         local titleHeight = Globals.Defaults.TITLE_BAR_HEIGHT
+        local isTopWindow = Utils.GetWindowUnderMouse(TimMenuGlobal.order, TimMenuGlobal.windows, mX, mY, titleHeight) == key
 
-        local InteractedWindowKey = Utils.GetWindowUnderMouse(TimMenuGlobal.order, TimMenuGlobal.windows, mX, mY, titleHeight)
-        local btnPressed = input.IsButtonPressed(MOUSE_LEFT)
+        -- Handle window focus and dragging
+        if isTopWindow and input.IsButtonPressed(MOUSE_LEFT) then
+            -- Bring window to front
+            local index = table.find(TimMenuGlobal.order, key)
+            if index then
+                table.remove(TimMenuGlobal.order, index)
+                table.insert(TimMenuGlobal.order, key)
+            end
 
-        if InteractedWindowKey == key then
-            if btnPressed then
-                -- Bring window to front
-                local index = table.find(TimMenuGlobal.order, key)
-                if index then
-                    table.remove(TimMenuGlobal.order, index)
-                    table.insert(TimMenuGlobal.order, key)
-                end
-
-                -- Start dragging if in title bar
-                if mY <= win.Y + titleHeight then
-                    win.IsDragging = true
-                    win.DragPos = { X = mX - win.X, Y = mY - win.Y }
-                    TimMenuGlobal.CapturedWindow = key
-                end
+            -- Start dragging if clicked in title bar
+            if mY <= win.Y + titleHeight then
+                win.IsDragging = true
+                win.DragPos = { X = mX - win.X, Y = mY - win.Y }
+                TimMenuGlobal.CapturedWindow = key
             end
         end
 
-        --[[
-        Update the dragging position.(outside to prevent slipery windows)
-        We avoid re-checking for mouse interaction here to ensure smooth dragging, even if the window is moved quickly.
-        ]]
+        -- Update window position while dragging
         if TimMenuGlobal.CapturedWindow == key and win.IsDragging then
             win.X = mX - win.DragPos.X
             win.Y = mY - win.DragPos.Y
         end
 
-        -- Stop dragging when mouse button is released
-        if input.IsButtonReleased(MOUSE_LEFT) then
+        -- Stop dragging on mouse release
+        if win.IsDragging and input.IsButtonReleased(MOUSE_LEFT) then
             win.IsDragging = false
             TimMenuGlobal.CapturedWindow = nil
         end
