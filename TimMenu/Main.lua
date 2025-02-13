@@ -152,7 +152,7 @@ function TimMenu.Button(label)
     return false
 end
 
---- Displays debug information..
+--- Displays debug information...
 function TimMenu.ShowDebug()
     local currentFrame = globals.FrameCount()
     draw.SetFont(Globals.Style.Font)
