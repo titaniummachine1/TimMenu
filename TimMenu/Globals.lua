@@ -36,7 +36,7 @@ Globals.Defaults = {
     DEFAULT_X = 50,
     DEFAULT_Y = 150,
     DEFAULT_W = 100,
-    DEFAULT_H = 50,
+    DEFAULT_H = 75,
     TITLE_BAR_HEIGHT = 25,
     WINDOW_CONTENT_PADDING = 10  -- added for inner padding on all sides
 }

@@ -16,33 +16,41 @@ local function CreateDefaultParams(title, id, visible)
     }
 end
 
+--- __close metamethod: cleans up window state.
+function Window:__close()
+    self.lastFrame = nil
+    self.IsDragging = false
+    self.DragPos = { X = 0, Y = 0 }
+end
+
+function Window:update()
+    self.lastFrame = Globals.FrameCount()
+end
+
 function Window.new(params)
     if type(params) == "string" then
         params = CreateDefaultParams(params)
     end
-    local self = setmetatable({}, Window) -- normal metatable, no weak mode
-    self.title   = params.title
-    self.id      = params.id or params.title
-    self.visible = (params.visible == nil) and true or params.visible
-    self.X       = params.X or (Globals.Defaults.DEFAULT_X + math.random(0, 150))
-    self.Y       = params.Y or (Globals.Defaults.DEFAULT_Y + math.random(0, 50))
-    self.W       = params.W or Globals.Defaults.DEFAULT_W
-    self.H       = params.H or Globals.Defaults.DEFAULT_H
-    self.lastFrame = nil
+    local self      = setmetatable({}, Window) -- normal metatable, no weak mode
+    self.title      = params.title
+    self.id         = params.id or params.title
+    self.visible    = (params.visible == nil) and true or params.visible
+    self.X          = params.X or (Globals.Defaults.DEFAULT_X + math.random(0, 150))
+    self.Y          = params.Y or (Globals.Defaults.DEFAULT_Y + math.random(0, 50))
+    self.W          = params.W or Globals.Defaults.DEFAULT_W
+    self.H          = params.H or Globals.Defaults.DEFAULT_H
+    self.lastFrame  = nil
     self.IsDragging = false
-    self.DragPos = { X = 0, Y = 0 }
+    self.DragPos    = { X = 0, Y = 0 }
     -- Initialize a table of layers
-    self.Layers = {}
+    self.Layers     = {}
     for i = 1, 5 do
         self.Layers[i] = {}
     end
     -- Set __close metamethod so it auto-cleans when used as a to-be-closed variable.
     local mt = getmetatable(self)
     mt.__close = Window.__close
-    -- Define a default update method to avoid nil errors.
-    self.update = function(self, currentFrame)
-        self.lastFrame = currentFrame
-    end
+
     self.cursorX = 0
     self.cursorY = 0
     self.lineHeight = 0
@@ -50,11 +58,6 @@ function Window.new(params)
 end
 
 function Window:update(currentFrame)
-    if self.visible and (gui.GetValue("clean screenshots") == 1 and not engine.IsTakingScreenshot()) then
-        self.lastFrame = currentFrame
-        self.X = Common.Clamp(self.X)
-        self.Y = Common.Clamp(self.Y)
-    end
 end
 
 -- Removed the handleDrag function as dragging is now handled in Main.lua.
@@ -67,10 +70,10 @@ function Window:QueueDrawAtLayer(layer, drawFunc, ...)
 end
 
 -- Pre-calculate static colors
-local DefaultWindowColor = Globals.Colors.Window or {30,30,30,255}
-local DefaultTitleColor = Globals.Colors.Title or {55,100,215,255}
-local DefaultTextColor = Globals.Colors.Text or {255,255,255,255}
-local DefaultBorderColor = Globals.Colors.WindowBorder or {55,100,215,255}
+local DefaultWindowColor = Globals.Colors.Window or { 30, 30, 30, 255 }
+local DefaultTitleColor = Globals.Colors.Title or { 55, 100, 215, 255 }
+local DefaultTextColor = Globals.Colors.Text or { 255, 255, 255, 255 }
+local DefaultBorderColor = Globals.Colors.WindowBorder or { 55, 100, 215, 255 }
 
 function Window:draw()
     draw.SetFont(Globals.Style.Font)
@@ -132,19 +135,12 @@ end
 function Window:NextLine(spacing)
     spacing = spacing or 5
     self.cursorY = self.cursorY + self.lineHeight + spacing
-    self.cursorX = Globals.Defaults.WINDOW_CONTENT_PADDING  -- reset to left padding
+    self.cursorX = Globals.Defaults.WINDOW_CONTENT_PADDING -- reset to left padding
     self.lineHeight = 0
     -- Expand window if needed
     if self.cursorY > self.H then
         self.H = self.cursorY
     end
-end
-
---- __close metamethod: cleans up window state.
-function Window:__close()
-    self.lastFrame = nil
-    self.IsDragging = false
-    self.DragPos = { X = 0, Y = 0 }
 end
 
 return Window

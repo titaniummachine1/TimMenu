@@ -35,10 +35,6 @@ Setup()
 --- @param id? string|number Unique identifier (default: title).
 --- @return table? window table.(if nil means it wasnt visible or taking screenshot)
 function TimMenu.Begin(title, visible, id)
-    if not visible or engine.IsTakingScreenshot() then
-        return nil
-    end
-
     --input parsing--
     assert(type(title) == "string", "TimMenu.Begin requires a string title")
     visible = (visible == nil) and true or visible
@@ -66,8 +62,12 @@ function TimMenu.Begin(title, visible, id)
     end
 
     --keep this window alive from pruning--
-    local currentFrame = globals.FrameCount()
-    win.lastFrame = currentFrame
+    win.update()
+
+    --returns nil if window is not visible or taking screenshot
+    if not visible or engine.IsTakingScreenshot() then
+        return nil
+    end
 
     -- Handle window interaction
     local mX, mY = table.unpack(input.GetMousePos())
