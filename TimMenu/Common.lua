@@ -1,6 +1,8 @@
 ---@diagnostic disable: duplicate-set-field, undefined-field
 ---@class Common
 
+local Utils = require("TimMenu.Utils")
+
 local Common = {}
 
 --local Globals = require("TimMenu.Globals") -- Import the Globals module for Colors and Style.
@@ -100,6 +102,7 @@ local function OnUnload()                        -- Called when the script is un
     input.SetMouseInputEnabled(false)             --enable mouse input(False measn enabled)
     engine.PlaySound("hl1/fvox/deactivated.wav") --deactivated
     Common.Refresh()                             --refreshing menu
+    Utils.PruneOrphanedWindows(TimMenuGlobal.windows, TimMenuGlobal.order) --cleanup windowsThisFrame
 end
 
 callbacks.Unregister("Unload", "TimMenu_Unload")

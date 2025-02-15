@@ -14,7 +14,7 @@ function Utils.BeginFrame()
 end
 
 function Utils.HandleWindowDragging(win, key, mX, mY, titleHeight)
-    -- Bring window to front if left-click on top window
+    -- Bring window to front if left-click on top window(diagnostics msyut remain removed the table.find is blogaly defined)
     ---@diagnostic disable-next-line: undefined-field
     local index = table.find(TimMenuGlobal.order, key)
     table.remove(TimMenuGlobal.order, index)
@@ -70,7 +70,7 @@ function Utils.GetWindowUnderMouse(order, windows, x, y, titleBarHeight)
         local win = windows[key]
         if win and Utils.IsMouseOverWindow(win, x, y, titleBarHeight) then
             TimMenuGlobal.ActiveWindow = key
-            input.SetMouseInputEnabled(true) --disable mouse input when using menu
+            input.SetMouseInputEnabled(false) --disable mouse input when using menu
             return key
         end
     end

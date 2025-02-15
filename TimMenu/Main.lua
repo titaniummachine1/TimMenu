@@ -13,8 +13,8 @@ local function Setup()
         TimMenuGlobal = {}
         TimMenuGlobal.windows = {}
         TimMenuGlobal.order = {}
-        TimMenuGlobal.ActiveWindow = nil -- Add ActiveWindow to track which window is being hovered over
-        TimMenuGlobal.lastWindowKey = nil
+        TimMenuGlobal.ActiveWindow = nil -- track the window under mouse
+        TimMenuGlobal.lastWindowKey = nil -- to store the last started window
     end
 end
 
@@ -24,15 +24,14 @@ Setup()
 --- @param title string Window title.
 --- @param visible? boolean Whether the window is visible (default: true).
 --- @param id? string|number Unique identifier (default: title).
---- @return boolean, table? .(if nil means it wasnt visible or taking screenshot)
+--- @return boolean, table? (if false, window is either not visible or a screenshot is being taken)
 function TimMenu.Begin(title, visible, id)
-    --input parsing--
+    local windowCallIndex = Utils.BeginFrame()
+
     assert(type(title) == "string", "TimMenu.Begin requires a string title")
     visible = (visible == nil) and true or visible
     if type(visible) == "string" then id, visible = visible, true end
     local key = (id or title)
-    --input parsing--
-
     local win = TimMenuGlobal.windows[key]
 
     -- Create new window if needed
@@ -52,10 +51,13 @@ function TimMenu.Begin(title, visible, id)
         win.visible = visible
     end
 
-    --keep this window alive from pruning--
+    -- Update window properties
     win:update()
 
-    --returns false if window is not visible or taking screenshot
+    -- Set the current window key for widget calls (ensures correct window context)
+    TimMenuGlobal.lastWindowKey = key
+
+    -- Return false if window is not visible or if a screenshot is being taken
     if not visible or (gui.GetValue("clean screenshots") == 1 and engine.IsTakingScreenshot()) then
         return false
     end
@@ -65,7 +67,7 @@ function TimMenu.Begin(title, visible, id)
     local titleHeight = Globals.Defaults.TITLE_BAR_HEIGHT
     local isTopWindow = Utils.GetWindowUnderMouse(TimMenuGlobal.order, TimMenuGlobal.windows, mX, mY, titleHeight) == key
 
-    -- If window is topmost and LMB pressed, handle dragging.
+    -- If window is topmost and left mouse button pressed, handle dragging.
     if isTopWindow and input.IsButtonPressed(MOUSE_LEFT) then
         Utils.HandleWindowDragging(win, key, mX, mY, titleHeight)
     end
@@ -90,17 +92,23 @@ function TimMenu.Begin(title, visible, id)
     return true, win
 end
 
---- Ends the current window.
+--- Ends the current window and triggers drawing of all visible windows.
 function TimMenu.End()
+    assert(TimMenuGlobal, "TimMenuGlobal is nil in End()")
+    assert(type(TimMenuGlobal.windows) == "table", "TimMenuGlobal.windows is not a table")
+    assert(type(TimMenuGlobal.order) == "table", "TimMenuGlobal.order is not a table")
+
     Utils.PruneOrphanedWindows(TimMenuGlobal.windows, TimMenuGlobal.order)
 
-    -- Draw all windows when processing the last window
-    if Utils.GetWindowCount() == #TimMenuGlobal.order then
-        for i = 1, #TimMenuGlobal.order do
-            local win = TimMenuGlobal.windows[TimMenuGlobal.order[i]]
-            if win and win.visible then
-                win:draw()
-            end
+    -- Only warn about serious mismatches
+    local orderLength = #TimMenuGlobal.order
+
+    -- Draw all windows in order
+    for i = 1, orderLength do
+        local key = TimMenuGlobal.order[i]
+        local win = TimMenuGlobal.windows[key]
+        if win and win.visible then
+            win:draw()
         end
     end
 end
@@ -116,14 +124,13 @@ end
 --- Returns true if clicked.
 function TimMenu.Button(label)
     local win = TimMenu.GetCurrentWindow()
-    -- Only process button if we're in the correct window context
     if win and TimMenuGlobal.ActiveWindow == win.id then
         return Widgets.Button(win, label)
     end
     return false
 end
 
---- Displays debug information...
+--- Displays debug information.
 function TimMenu.ShowDebug()
     local currentFrame = globals.FrameCount()
     draw.SetFont(Globals.Style.Font)
@@ -132,7 +139,9 @@ function TimMenu.ShowDebug()
     local lineSpacing = 20
 
     local count = 0
-    for _ in pairs(TimMenuGlobal.windows) do count = count + 1 end
+    for _ in pairs(TimMenuGlobal.windows) do
+        count = count + 1
+    end
 
     draw.Text(headerX, headerY, "Active Windows (" .. count .. "):")
     local yOffset = headerY + lineSpacing
