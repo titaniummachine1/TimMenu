@@ -67,7 +67,7 @@ function Common.GetInteraction(x, y, w, h)
 
     -- Update state for next frame
     wasPressed = isPressed
-    
+
     return hovered, clicked
 end
 
@@ -76,9 +76,10 @@ end
 --------------------------------------------------------------------------------
 
 local function OnUnload() -- Called when the script is unloaded
-    package.loaded["TimMenu"] = nil
     UnloadLib() --unloading lualib
+    input.SetMouseInputEnabled(true) --enable mouse input(hopefuly prevent soft lock on load)
     engine.PlaySound("hl1/fvox/deactivated.wav") --deactivated
+    package.loaded["TimMenu"] = nil
 end
 
 callbacks.Unregister("Unload", "TimMenu_Unload")

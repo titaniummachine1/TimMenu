@@ -13,11 +13,9 @@ local function Setup()
     if not TimMenuGlobal then
         -- Initialize TimMenu
         TimMenuGlobal = {}
-        TimMenuGlobal.windows = {}  -- no weak references now
+        TimMenuGlobal.windows = {}
         TimMenuGlobal.order = {}
-        TimMenuGlobal.CapturedWindow = nil
-        TimMenuGlobal.LastWindowDrawnKey = nil
-        TimMenuGlobal.currentActiveWindow = nil  -- Add currentActiveWindow to track which window is being processed
+        TimMenuGlobal.ActiveWindow = nil  -- Add ActiveWindow to track which window is being hovered over
     end
 end
 
@@ -33,23 +31,26 @@ Setup()
 --- @param title string Window title.
 --- @param visible? boolean Whether the window is visible (default: true).
 --- @param id? string|number Unique identifier (default: title).
---- @return table window table.
+--- @return table? window table.(if nill means it wasnt visible or taking screenshot)
 function TimMenu.Begin(title, visible, id)
-    local windowIndex = Utils.BeginFrame()
-    -- Remove duplicate frame counting code
-    TimMenu.Refresh()  -- Only refreshes if not initialized
+
+    if not visible or engine.IsTakingScreenshot() then
+        return nil
+    end
+
+    --input parsing--
     assert(type(title) == "string", "TimMenu.Begin requires a string title")
     visible = (visible == nil) and true or visible
     if type(visible) == "string" then id, visible = visible, true end
     local key = (id or title)
-    TimMenuGlobal.LastWindowDrawnKey = key  -- Use global instead of local lastkey
-    TimMenuGlobal.currentActiveWindow = key  -- Track which window we're currently processing
+    --input parsing--
+
+    TimMenuGlobal.ActiveWindow = key  -- Track which window we're currently processing
 
     local currentFrame = globals.FrameCount()
     local win = TimMenuGlobal.windows[key]
 
     -- Create new window if needed
-    -- Create or update window
     if not win then
         win = Window.new({
             title = title,
@@ -67,40 +68,45 @@ function TimMenu.Begin(title, visible, id)
     end
 
     -- Handle window interaction
-    if visible and not engine.IsTakingScreenshot() then
         win.lastFrame = currentFrame
         local mX, mY = table.unpack(input.GetMousePos())
         local titleHeight = Globals.Defaults.TITLE_BAR_HEIGHT
         local isTopWindow = Utils.GetWindowUnderMouse(TimMenuGlobal.order, TimMenuGlobal.windows, mX, mY, titleHeight) == key
 
+        if isTopWindow then
+            TimMenuGlobal.ActiveWindow = key --make this window active when we hover over it
+        end
+
         -- Handle window focus and dragging
         if isTopWindow and input.IsButtonPressed(MOUSE_LEFT) then
+            input.SetMouseInputEnabled(false) --make mouse not interact with game when using menu
+
             -- Bring window to front
             local index = table.find(TimMenuGlobal.order, key)
             if index then
-                table.remove(TimMenuGlobal.order, index)
-                table.insert(TimMenuGlobal.order, key)
-            end
-
-            -- Start dragging if clicked in title bar
-            if mY <= win.Y + titleHeight then
-                win.IsDragging = true
-                win.DragPos = { X = mX - win.X, Y = mY - win.Y }
-                TimMenuGlobal.CapturedWindow = key
-            end
+            table.remove(TimMenuGlobal.order, index)
+            table.insert(TimMenuGlobal.order, key)
         end
 
-        -- Update window position while dragging
-        if TimMenuGlobal.CapturedWindow == key and win.IsDragging then
-            win.X = mX - win.DragPos.X
-            win.Y = mY - win.DragPos.Y
+        -- Start dragging if clicked in title bar
+        if mY <= win.Y + titleHeight then
+            win.IsDragging = true
+            win.DragPos = { X = mX - win.X, Y = mY - win.Y }
+            TimMenuGlobal.CapturedWindow = key
         end
+    else
+        input.SetMouseInputEnabled(true) --make mouse interact with game when not using menu
+    end
 
-        -- Stop dragging on mouse release
-        if win.IsDragging and input.IsButtonReleased(MOUSE_LEFT) then
-            win.IsDragging = false
-            TimMenuGlobal.CapturedWindow = nil
-        end
+    -- Update window position while dragging
+    if TimMenuGlobal.CapturedWindow == key and win.IsDragging then
+        win.X = mX - win.DragPos.X
+        win.Y = mY - win.DragPos.Y
+    end
+    -- Stop dragging on mouse release
+    if win.IsDragging and input.IsButtonReleased(MOUSE_LEFT) then
+        win.IsDragging = false
+        TimMenuGlobal.CapturedWindow = nil
     end
 
     -- Reset widget layout counters each frame using content padding.
@@ -127,7 +133,7 @@ function TimMenu.End()
     end
 
     -- Reset current window when done
-    TimMenuGlobal.currentActiveWindow = nil
+    TimMenuGlobal.ActiveWindow = nil
 end
 
 --- Returns the current window (last drawn window).
@@ -142,7 +148,7 @@ end
 function TimMenu.Button(label)
     local win = TimMenu.GetCurrentWindow()
     -- Only process button if we're in the correct window context
-    if win and TimMenuGlobal.currentActiveWindow == win.id then
+    if win and TimMenuGlobal.ActiveWindow == win.id then
         return Widgets.Button(win, label)
     end
     return false
