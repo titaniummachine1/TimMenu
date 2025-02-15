@@ -13,6 +13,19 @@ function Utils.BeginFrame()
     return windowsThisFrame
 end
 
+function Utils.HandleWindowDragging(win, key, mX, mY, titleHeight)
+    -- Bring window to front if left-click on top window
+    local index = table.find(TimMenuGlobal.order, key)
+    table.remove(TimMenuGlobal.order, index)
+    table.insert(TimMenuGlobal.order, key)
+
+    -- Start dragging if title bar clicked
+    if mY <= win.Y + titleHeight then
+        win.IsDragging = true
+        win.DragPos = { X = mX - win.X, Y = mY - win.Y }
+    end
+end
+
 function Utils.GetWindowCount()
     return windowsThisFrame
 end

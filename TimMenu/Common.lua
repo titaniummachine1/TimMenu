@@ -3,11 +3,11 @@
 
 local Common = {}
 
-local Globals = require("TimMenu.Globals") -- Import the Globals module for Colors and Style.
+--local Globals = require("TimMenu.Globals") -- Import the Globals module for Colors and Style.
 
--- Attempt to unload any existing LNXlib instance
-local function safeUnload()
-    pcall(UnloadLib)
+-- Remove the direct nil assignment and package reloading from Refresh().
+function Common.Refresh()
+    package.loaded["TimMenu"] = nil
 end
 
 -- Load and validate LNXlib
@@ -25,7 +25,6 @@ local function loadLNXlib()
 end
 
 -- Initialize library
-safeUnload()
 local Lib = loadLNXlib()
 
 -- Expose required functionality
@@ -73,10 +72,9 @@ end
 --------------------------------------------------------------------------------
 
 local function OnUnload()                        -- Called when the script is unloaded
-    UnloadLib()                                  --unloading lualib
     input.SetMouseInputEnabled(true)             --enable mouse input(hopefuly prevent soft lock on load)
     engine.PlaySound("hl1/fvox/deactivated.wav") --deactivated
-    TimMenu.Refresh()                            --refreshing menu
+    Common.Refresh()                            --refreshing menu
 end
 
 callbacks.Unregister("Unload", "TimMenu_Unload")

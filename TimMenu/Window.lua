@@ -57,11 +57,6 @@ function Window.new(params)
     return self
 end
 
-function Window:update(currentFrame)
-end
-
--- Removed the handleDrag function as dragging is now handled in Main.lua.
-
 -- Queue a drawing function under a specified layer
 function Window:QueueDrawAtLayer(layer, drawFunc, ...)
     if self.Layers[layer] then

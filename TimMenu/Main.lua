@@ -1,8 +1,6 @@
 -- Main module for the TimMenu library
 local TimMenu = {}
 
-package.loaded["TimMenu"] = nil
-
 local Common = require("TimMenu.Common")
 local Globals = require("TimMenu.Globals")
 local Utils = require("TimMenu.Utils")
@@ -18,13 +16,6 @@ local function Setup()
         TimMenuGlobal.ActiveWindow = nil -- Add ActiveWindow to track which window is being hovered over
         TimMenuGlobal.lastWindowKey = nil
     end
-end
-
--- Modified Refresh to preserve TimMenuGlobal
-function TimMenu.Refresh()
-    -- Don't clear TimMenu if it's already initialized
-    TimMenuGlobal = nil
-    package.loaded["TimMenu"] = nil
 end
 
 Setup()
@@ -62,7 +53,7 @@ function TimMenu.Begin(title, visible, id)
     end
 
     --keep this window alive from pruning--
-    win.update()
+    win:update()
 
     --returns nil if window is not visible or taking screenshot
     if not visible or engine.IsTakingScreenshot() then
@@ -74,19 +65,9 @@ function TimMenu.Begin(title, visible, id)
     local titleHeight = Globals.Defaults.TITLE_BAR_HEIGHT
     local isTopWindow = Utils.GetWindowUnderMouse(TimMenuGlobal.order, TimMenuGlobal.windows, mX, mY, titleHeight) == key
 
-    -- Handle window focus and dragging
+    -- If window is topmost and LMB pressed, handle dragging.
     if isTopWindow and input.IsButtonPressed(MOUSE_LEFT) then
-        -- Bring window to front
-        local index = table.find(TimMenuGlobal.order, key) --index is known to exist in order
-
-        table.remove(TimMenuGlobal.order, index) --remove from current position
-        table.insert(TimMenuGlobal.order, key) --add to start of order
-
-        -- Start dragging if clicked in title bar
-        if mY <= win.Y + titleHeight then
-            win.IsDragging = true
-            win.DragPos = { X = mX - win.X, Y = mY - win.Y }
-        end
+        Utils.HandleWindowDragging(win, key, mX, mY, titleHeight)
     end
 
     -- Update window position while dragging
