@@ -37,31 +37,33 @@ function Utils.PruneOrphanedWindows(windows, order)
     local currentFrame = globals.FrameCount()
     local threshold = 2
 
-    -- Remove delayed windows
+    -- Remove windows that haven't updated within threshold frames
     local loadIdCounts = {}
     for key, win in pairs(windows) do
+        -- If lastFrame is too old, remove it
         if not win.lastFrame or (currentFrame - win.lastFrame) >= threshold then
             windows[key] = nil
         else
+            -- Track which loadId still has active windows
             loadIdCounts[win.loadId] = (loadIdCounts[win.loadId] or 0) + 1
         end
     end
 
-    -- Clean order array
+    -- Clean up window order to remove missing windows
     for i = #order, 1, -1 do
         if not windows[order[i]] then
             table.remove(order, i)
         end
     end
 
-    -- Remove loadIds with no active windows
+    -- Remove loadIds that no longer have active windows
     for caller, lId in pairs(TimMenuGlobal.loadOrder) do
         if not loadIdCounts[lId] then
             TimMenuGlobal.loadOrder[caller] = nil
         end
     end
 
-    -- Find the highest loadId still active
+    -- Determine the highest loadId still active
     local lastActiveId = 0
     for _, lId in pairs(TimMenuGlobal.loadOrder) do
         if lId > lastActiveId then

@@ -20,6 +20,25 @@ end
 
 Setup()
 
+local function getOrCreateWindow(key, title, loadId, visible)
+    local win = TimMenuGlobal.windows[key]
+    if not win then
+        -- Create a new window using our Window utility
+        win = Window.new({
+            title = title,
+            id = key,
+            visible = visible,
+            -- Window positions & sizes are set within Window.new by defaults
+        })
+        win.loadId = loadId
+        TimMenuGlobal.windows[key] = win
+        table.insert(TimMenuGlobal.order, key)
+    else
+        win.visible = visible
+    end
+    return win
+end
+
 --- Begins a new or updates an existing window.
 --- @param title string Window title.
 --- @param visible? boolean Whether the window is visible (default: true).
@@ -35,31 +54,13 @@ function TimMenu.Begin(title, visible, id)
         TimMenuGlobal.loadOrder[caller] = loadId
     end
 
-    local windowCallIndex = Utils.BeginFrame()
+    Utils.BeginFrame() -- Simplify capture of windowCallIndex if needed
 
     assert(type(title) == "string", "TimMenu.Begin requires a string title")
     visible = (visible == nil) and true or visible
     if type(visible) == "string" then id, visible = visible, true end
     local key = (id or title)
-    local win = TimMenuGlobal.windows[key]
-
-    -- Create new window if needed
-    if not win then
-        win = Window.new({
-            title = title,
-            id = key,
-            visible = visible,
-            X = Globals.Defaults.DEFAULT_X + math.random(0, 150),
-            Y = Globals.Defaults.DEFAULT_Y + math.random(0, 50),
-            W = Globals.Defaults.DEFAULT_W,
-            H = Globals.Defaults.DEFAULT_H,
-        })
-        win.loadId = loadId
-        TimMenuGlobal.windows[key] = win
-        table.insert(TimMenuGlobal.order, key)
-    else
-        win.visible = visible
-    end
+    local win = getOrCreateWindow(key, title, loadId, visible)
 
     -- Update window properties
     win:update()

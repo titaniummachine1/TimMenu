@@ -4,15 +4,16 @@ local Globals = require("TimMenu.Globals")
 local Window = {}
 Window.__index = Window
 
-local function CreateDefaultParams(title, id, visible)
+local function applyDefaults(params)
+    -- Provide a fallback for each setting if not provided
     return {
-        title = title,
-        id = id or title,
-        visible = (visible == nil) and true or visible,
-        X = Globals.Defaults.DEFAULT_X + math.random(0, 150),
-        Y = Globals.Defaults.DEFAULT_Y + math.random(0, 50),
-        W = Globals.Defaults.DEFAULT_W,
-        H = Globals.Defaults.DEFAULT_H
+        title   = params.title   or "Untitled",
+        id      = params.id      or params.title,
+        visible = (params.visible == nil) and true or params.visible,
+        X       = params.X or (Globals.Defaults.DEFAULT_X + math.random(0, 150)),
+        Y       = params.Y or (Globals.Defaults.DEFAULT_Y + math.random(0, 50)),
+        W       = params.W or Globals.Defaults.DEFAULT_W,
+        H       = params.H or Globals.Defaults.DEFAULT_H
     }
 end
 
@@ -28,17 +29,21 @@ function Window:update()
 end
 
 function Window.new(params)
+    -- Ensure parameters exist
     if type(params) == "string" then
-        params = CreateDefaultParams(params)
+        params = { title = params }
     end
-    local self      = setmetatable({}, Window) -- normal metatable, no weak mode
+    params = applyDefaults(params)
+
+    -- Create our window object with simple composition
+    local self = setmetatable({}, Window)
     self.title      = params.title
-    self.id         = params.id or params.title
-    self.visible    = (params.visible == nil) and true or params.visible
-    self.X          = params.X or (Globals.Defaults.DEFAULT_X + math.random(0, 150))
-    self.Y          = params.Y or (Globals.Defaults.DEFAULT_Y + math.random(0, 50))
-    self.W          = params.W or Globals.Defaults.DEFAULT_W
-    self.H          = params.H or Globals.Defaults.DEFAULT_H
+    self.id         = params.id
+    self.visible    = params.visible
+    self.X          = params.X
+    self.Y          = params.Y
+    self.W          = params.W
+    self.H          = params.H
     self.lastFrame  = nil
     self.IsDragging = false
     self.DragPos    = { X = 0, Y = 0 }
