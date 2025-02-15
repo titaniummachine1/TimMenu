@@ -15,6 +15,7 @@ end
 
 function Utils.HandleWindowDragging(win, key, mX, mY, titleHeight)
     -- Bring window to front if left-click on top window
+    ---@diagnostic disable-next-line: undefined-field
     local index = table.find(TimMenuGlobal.order, key)
     table.remove(TimMenuGlobal.order, index)
     table.insert(TimMenuGlobal.order, key)
