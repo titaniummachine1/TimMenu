@@ -65,22 +65,29 @@ function TimMenu.Begin(title, visible, id)
     -- Handle window interaction
     local mX, mY = table.unpack(input.GetMousePos())
     local titleHeight = Globals.Defaults.TITLE_BAR_HEIGHT
-    local isTopWindow = Utils.GetWindowUnderMouse(TimMenuGlobal.order, TimMenuGlobal.windows, mX, mY, titleHeight) == key
 
-    -- If window is topmost and left mouse button pressed, handle dragging.
-    if isTopWindow and input.IsButtonPressed(MOUSE_LEFT) then
-        Utils.HandleWindowDragging(win, key, mX, mY, titleHeight)
+    -- Only check for new window interaction if we're not already dragging
+    if not win.IsDragging then
+        local isTopWindow = Utils.GetWindowUnderMouse(TimMenuGlobal.order, TimMenuGlobal.windows, mX, mY, titleHeight) == key
+        
+        if isTopWindow and input.IsButtonPressed(MOUSE_LEFT) then
+            Utils.HandleWindowDragging(win, key, mX, mY, titleHeight)
+        end
     end
 
-    -- Update window position while dragging
-    if TimMenuGlobal.ActiveWindow == key and win.IsDragging then
+    -- Update window position while dragging - don't check if mouse is over window
+    if win.IsDragging then
         win.X = mX - win.DragPos.X
         win.Y = mY - win.DragPos.Y
+        -- Keep window as active while dragging
+        TimMenuGlobal.ActiveWindow = key
     end
 
-    -- Stop dragging on mouse release
+    -- Stop dragging only on mouse release
     if win.IsDragging and input.IsButtonReleased(MOUSE_LEFT) then
         win.IsDragging = false
+        -- Recheck which window is under mouse after stopping drag
+        TimMenuGlobal.ActiveWindow = Utils.GetWindowUnderMouse(TimMenuGlobal.order, TimMenuGlobal.windows, mX, mY, titleHeight)
     end
 
     -- Reset widget layout counters each frame using content padding.
