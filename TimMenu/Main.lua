@@ -56,7 +56,7 @@ function TimMenu.Begin(title, visible, id)
     win:update()
 
     --returns false if window is not visible or taking screenshot
-    if not visible or engine.IsTakingScreenshot() then
+    if not visible or (gui.GetValue("clean screenshots") == 1 and engine.IsTakingScreenshot()) then
         return false
     end
 
