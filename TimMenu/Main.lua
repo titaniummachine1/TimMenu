@@ -124,7 +124,7 @@ end
 --- Returns true if clicked.
 function TimMenu.Button(label)
     local win = TimMenu.GetCurrentWindow()
-    if win and TimMenuGlobal.ActiveWindow == win.id then
+    if win then
         return Widgets.Button(win, label)
     end
     return false
