@@ -7,7 +7,7 @@ local Common = require("TimMenu.Common")
 local Globals = require("TimMenu.Globals")
 local Utils = require("TimMenu.Utils")
 local Window = require("TimMenu.Window")
-local Widgets = require("TimMenu.Widgets")  -- new require
+local Widgets = require("TimMenu.Widgets") -- new require
 
 local function Setup()
     if not TimMenuGlobal then
@@ -15,7 +15,7 @@ local function Setup()
         TimMenuGlobal = {}
         TimMenuGlobal.windows = {}
         TimMenuGlobal.order = {}
-        TimMenuGlobal.ActiveWindow = nil  -- Add ActiveWindow to track which window is being hovered over
+        TimMenuGlobal.ActiveWindow = nil -- Add ActiveWindow to track which window is being hovered over
     end
 end
 
@@ -44,8 +44,6 @@ function TimMenu.Begin(title, visible, id)
     local key = (id or title)
     --input parsing--
 
-    TimMenuGlobal.ActiveWindow = key  -- Track which window we're currently processing
-
     local currentFrame = globals.FrameCount()
     local win = TimMenuGlobal.windows[key]
 
@@ -67,22 +65,17 @@ function TimMenu.Begin(title, visible, id)
     end
 
     -- Handle window interaction
-        win.lastFrame = currentFrame
-        local mX, mY = table.unpack(input.GetMousePos())
-        local titleHeight = Globals.Defaults.TITLE_BAR_HEIGHT
-        local isTopWindow = Utils.GetWindowUnderMouse(TimMenuGlobal.order, TimMenuGlobal.windows, mX, mY, titleHeight) == key
+    win.lastFrame = currentFrame
+    local mX, mY = table.unpack(input.GetMousePos())
+    local titleHeight = Globals.Defaults.TITLE_BAR_HEIGHT
+    local isTopWindow = Utils.GetWindowUnderMouse(TimMenuGlobal.order, TimMenuGlobal.windows, mX, mY, titleHeight) == key
 
-        if isTopWindow then
-            TimMenuGlobal.ActiveWindow = key --make this window active when we hover over it
-        end
+    -- Handle window focus and dragging
+    if isTopWindow and input.IsButtonPressed(MOUSE_LEFT) then
 
-        -- Handle window focus and dragging
-        if isTopWindow and input.IsButtonPressed(MOUSE_LEFT) then
-            input.SetMouseInputEnabled(false) --make mouse not interact with game when using menu
-
-            -- Bring window to front
-            local index = table.find(TimMenuGlobal.order, key)
-            if index then
+        -- Bring window to front
+        local index = table.find(TimMenuGlobal.order, key)
+        if index then
             table.remove(TimMenuGlobal.order, index)
             table.insert(TimMenuGlobal.order, key)
         end
@@ -91,21 +84,17 @@ function TimMenu.Begin(title, visible, id)
         if mY <= win.Y + titleHeight then
             win.IsDragging = true
             win.DragPos = { X = mX - win.X, Y = mY - win.Y }
-            TimMenuGlobal.CapturedWindow = key
         end
-    else
-        input.SetMouseInputEnabled(true) --make mouse interact with game when not using menu
     end
 
     -- Update window position while dragging
-    if TimMenuGlobal.CapturedWindow == key and win.IsDragging then
+    if TimMenuGlobal.ActiveWindow == key and win.IsDragging then
         win.X = mX - win.DragPos.X
         win.Y = mY - win.DragPos.Y
     end
     -- Stop dragging on mouse release
     if win.IsDragging and input.IsButtonReleased(MOUSE_LEFT) then
         win.IsDragging = false
-        TimMenuGlobal.CapturedWindow = nil
     end
 
     -- Reset widget layout counters each frame using content padding.
@@ -120,7 +109,7 @@ end
 --- Ends the current window.
 function TimMenu.End()
     Utils.PruneOrphanedWindows(TimMenuGlobal.windows, TimMenuGlobal.order)
-    
+
     -- Draw all windows when processing the last window
     if Utils.GetWindowCount() == #TimMenuGlobal.order then
         for i = 1, #TimMenuGlobal.order do
@@ -157,7 +146,7 @@ end
 function TimMenu.ShowDebug()
     local currentFrame = globals.FrameCount()
     draw.SetFont(Globals.Style.Font)
-    draw.Color(255,255,255,255)
+    draw.Color(255, 255, 255, 255)
     local headerX, headerY = 20, 20
     local lineSpacing = 20
 

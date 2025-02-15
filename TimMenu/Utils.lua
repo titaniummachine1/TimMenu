@@ -47,14 +47,22 @@ end
 
 -- Returns the top window key at a given point.
 function Utils.GetWindowUnderMouse(order, windows, x, y, titleBarHeight)
+    --if this isnt he window udner mouse set activewindwo to nil
+    TimMenuGlobal.ActiveWindow = nil
+
     -- Loop from top to bottom (end to start), returning the first window under mouse.
     for i = #order, 1, -1 do
         local key = order[i]
         local win = windows[key]
         if win and Utils.IsMouseOverWindow(win, x, y, titleBarHeight) then
+            TimMenuGlobal.ActiveWindow = key
+            input.SetMouseInputEnabled(false) --disable mouse input when using menu
             return key
         end
     end
+
+    input.SetMouseInputEnabled(true) --enable mouse input when not using menu
+
     return nil
 end
 
