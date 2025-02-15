@@ -5,20 +5,40 @@ local Common = {}
 
 --local Globals = require("TimMenu.Globals") -- Import the Globals module for Colors and Style.
 
--- Remove the direct nil assignment and package reloading from Refresh().
-function Common.Refresh()
-    package.loaded["TimMenu"] = nil
+--------------------------------------------------------------------------------------
+--Library loading--
+--------------------------------------------------------------------------------------
+
+-- Function to download content from a URL
+local function downloadFile(url)
+    local body = http.Get(url)
+    if body and body ~= "" then
+        return body
+    else
+        error("Failed to download file from " .. url)
+    end
 end
+
+local latestReleaseURL = "https://github.com/lnx00/Lmaobox-Library/releases/latest/download/lnxLib.lua"
 
 -- Load and validate LNXlib
 local function loadLNXlib()
     local libLoaded, Lib = pcall(require, "LNXlib")
-    if not libLoaded then
-        error("Failed to load LNXlib. Please ensure it is installed correctly.")
-    end
+    if not libLoaded or not Lib.GetVersion or Lib.GetVersion() < 1.0 then
+        print("LNXlib not found or version is too old. Attempting to download the latest version...")
 
-    if not Lib.GetVersion or Lib.GetVersion() < 1.0 then
-        error("LNXlib version is too old. Please update to version 1.0 or newer.")
+        -- Download and load lnxLib.lua
+        local lnxLibContent = downloadFile(latestReleaseURL)
+        local lnxLibFunction, loadError = load(lnxLibContent)
+        if lnxLibFunction then
+            lnxLibFunction()
+            libLoaded, Lib = pcall(require, "LNXlib")
+            if not libLoaded then
+                error("Failed to load LNXlib after downloading: " .. loadError)
+            end
+        else
+            error("Error loading lnxLib: " .. loadError)
+        end
     end
 
     return Lib
@@ -41,6 +61,11 @@ Common.Conversion = Lib.Utils.Conversion
 --------------------------------------------------------------------------------
 -- Common Functions
 --------------------------------------------------------------------------------
+
+-- Remove the direct nil assignment and package reloading from Refresh().
+function Common.Refresh()
+    package.loaded["TimMenu"] = nil
+end
 
 --- Clamps a floating-point value to the closest integer.
 ---@param value number
@@ -72,9 +97,9 @@ end
 --------------------------------------------------------------------------------
 
 local function OnUnload()                        -- Called when the script is unloaded
-    input.SetMouseInputEnabled(true)             --enable mouse input(hopefuly prevent soft lock on load)
+    input.SetMouseInputEnabled(false)             --enable mouse input(False measn enabled)
     engine.PlaySound("hl1/fvox/deactivated.wav") --deactivated
-    Common.Refresh()                            --refreshing menu
+    Common.Refresh()                             --refreshing menu
 end
 
 callbacks.Unregister("Unload", "TimMenu_Unload")

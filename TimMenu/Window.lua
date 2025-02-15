@@ -24,7 +24,7 @@ function Window:__close()
 end
 
 function Window:update()
-    self.lastFrame = Globals.FrameCount()
+    self.lastFrame = globals.FrameCount()
 end
 
 function Window.new(params)

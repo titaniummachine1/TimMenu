@@ -69,12 +69,12 @@ function Utils.GetWindowUnderMouse(order, windows, x, y, titleBarHeight)
         local win = windows[key]
         if win and Utils.IsMouseOverWindow(win, x, y, titleBarHeight) then
             TimMenuGlobal.ActiveWindow = key
-            input.SetMouseInputEnabled(false) --disable mouse input when using menu
+            input.SetMouseInputEnabled(true) --disable mouse input when using menu
             return key
         end
     end
 
-    input.SetMouseInputEnabled(true) --enable mouse input when not using menu
+    input.SetMouseInputEnabled(false) --enable mouse input when not using menu
 
     return nil
 end
