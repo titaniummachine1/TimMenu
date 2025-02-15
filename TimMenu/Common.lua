@@ -7,10 +7,7 @@ local Globals = require("TimMenu.Globals") -- Import the Globals module for Colo
 
 -- Attempt to unload any existing LNXlib instance
 local function safeUnload()
-    local success = pcall(UnloadLib)
-    if not success then
-        -- Library wasn't loaded, which is fine
-    end
+    pcall(UnloadLib)
 end
 
 -- Load and validate LNXlib
@@ -19,11 +16,11 @@ local function loadLNXlib()
     if not libLoaded then
         error("Failed to load LNXlib. Please ensure it is installed correctly.")
     end
-    
+
     if not Lib.GetVersion or Lib.GetVersion() < 1.0 then
         error("LNXlib version is too old. Please update to version 1.0 or newer.")
     end
-    
+
     return Lib
 end
 
@@ -75,17 +72,17 @@ end
 -- Unload Callback: Clean up the module on unload.
 --------------------------------------------------------------------------------
 
-local function OnUnload() -- Called when the script is unloaded
-    UnloadLib() --unloading lualib
-    input.SetMouseInputEnabled(true) --enable mouse input(hopefuly prevent soft lock on load)
+local function OnUnload()                        -- Called when the script is unloaded
+    UnloadLib()                                  --unloading lualib
+    input.SetMouseInputEnabled(true)             --enable mouse input(hopefuly prevent soft lock on load)
     engine.PlaySound("hl1/fvox/deactivated.wav") --deactivated
-    package.loaded["TimMenu"] = nil
+    TimMenu.Refresh()                            --refreshing menu
 end
 
 callbacks.Unregister("Unload", "TimMenu_Unload")
 callbacks.Register("Unload", "TimMenu_Unload", OnUnload)
 
---[[ Play sound when loaded ]]--
+--[[ Play sound when loaded ]] --
 engine.PlaySound("hl1/fvox/activated.wav")
 
 return Common

@@ -16,12 +16,14 @@ local function Setup()
         TimMenuGlobal.windows = {}
         TimMenuGlobal.order = {}
         TimMenuGlobal.ActiveWindow = nil -- Add ActiveWindow to track which window is being hovered over
+        TimMenuGlobal.lastWindowKey = nil
     end
 end
 
 -- Modified Refresh to preserve TimMenuGlobal
 function TimMenu.Refresh()
     -- Don't clear TimMenu if it's already initialized
+    TimMenuGlobal = nil
     package.loaded["TimMenu"] = nil
 end
 
@@ -92,6 +94,7 @@ function TimMenu.Begin(title, visible, id)
         win.X = mX - win.DragPos.X
         win.Y = mY - win.DragPos.Y
     end
+
     -- Stop dragging on mouse release
     if win.IsDragging and input.IsButtonReleased(MOUSE_LEFT) then
         win.IsDragging = false
@@ -119,15 +122,12 @@ function TimMenu.End()
             end
         end
     end
-
-    -- Reset current window when done
-    TimMenuGlobal.ActiveWindow = nil
 end
 
 --- Returns the current window (last drawn window).
 function TimMenu.GetCurrentWindow()
-    if TimMenuGlobal.LastWindowDrawnKey then
-        return TimMenuGlobal.windows[TimMenuGlobal.LastWindowDrawnKey]
+    if TimMenuGlobal.lastWindowKey then
+        return TimMenuGlobal.windows[TimMenuGlobal.lastWindowKey]
     end
 end
 
