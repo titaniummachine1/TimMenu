@@ -114,20 +114,14 @@ end
 
 --- Ends the current window and triggers drawing of all visible windows.
 function TimMenu.End()
-    assert(TimMenuGlobal, "TimMenuGlobal is nil in End()")
-
-    -- Always try to prune - Utils.PruneOrphanedWindows will check if we should
+    -- Always try to prune windows
     Utils.PruneOrphanedWindows(TimMenuGlobal.windows, TimMenuGlobal.order)
 
-    -- Only draw if this script's loadId matches TimMenuGlobal.currentLoadId
-    local caller = debug.getinfo(2, "S").source
-    local myLoadId = TimMenuGlobal.loadOrder[caller]
-    if myLoadId and myLoadId == TimMenuGlobal.currentLoadId then
-        for i = 1, #TimMenuGlobal.order do
-            local win = TimMenuGlobal.windows[TimMenuGlobal.order[i]]
-            if win and win.visible then
-                win:draw()
-            end
+    -- Draw every visible window regardless of loadId.
+    for i = 1, #TimMenuGlobal.order do
+        local win = TimMenuGlobal.windows[TimMenuGlobal.order[i]]
+        if win and win.visible then
+            win:draw()
         end
     end
 end
