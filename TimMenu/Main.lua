@@ -44,7 +44,6 @@ function TimMenu.Begin(title, visible, id)
     local key = (id or title)
     --input parsing--
 
-    local currentFrame = globals.FrameCount()
     local win = TimMenuGlobal.windows[key]
 
     -- Create new window if needed
@@ -64,21 +63,22 @@ function TimMenu.Begin(title, visible, id)
         win.visible = visible
     end
 
-    -- Handle window interaction
+    --keep this window alive from pruning--
+    local currentFrame = globals.FrameCount()
     win.lastFrame = currentFrame
+
+    -- Handle window interaction
     local mX, mY = table.unpack(input.GetMousePos())
     local titleHeight = Globals.Defaults.TITLE_BAR_HEIGHT
     local isTopWindow = Utils.GetWindowUnderMouse(TimMenuGlobal.order, TimMenuGlobal.windows, mX, mY, titleHeight) == key
 
     -- Handle window focus and dragging
     if isTopWindow and input.IsButtonPressed(MOUSE_LEFT) then
-
         -- Bring window to front
-        local index = table.find(TimMenuGlobal.order, key)
-        if index then
-            table.remove(TimMenuGlobal.order, index)
-            table.insert(TimMenuGlobal.order, key)
-        end
+        local index = table.find(TimMenuGlobal.order, key) --index is known to exist in order
+
+        table.remove(TimMenuGlobal.order, index) --remove from current position
+        table.insert(TimMenuGlobal.order, key) --add to start of order
 
         -- Start dragging if clicked in title bar
         if mY <= win.Y + titleHeight then
