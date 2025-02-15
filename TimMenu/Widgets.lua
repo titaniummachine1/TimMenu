@@ -12,16 +12,24 @@ end
 
 -- Helper to check if widget can be interacted with
 local function canInteract(win, bounds)
-    -- Check if this window is currently being interacted with
+    -- First check if window is active
     if TimMenuGlobal.ActiveWindow ~= win.id then
         return false
     end
 
-    -- Get mouse position
     local mX, mY = table.unpack(input.GetMousePos())
     
-    -- Check if mouse is within widget bounds
-    return isInBounds(mX, mY, bounds)
+    -- Check if mouse is within bounds
+    if not isInBounds(mX, mY, bounds) then
+        return false
+    end
+
+    -- Check if point is blocked by any window above this one
+    if Utils.IsPointBlocked(TimMenuGlobal.order, TimMenuGlobal.windows, mX, mY, win.id) then
+        return false
+    end
+
+    return true
 end
 
 function Widgets.Button(win, label)

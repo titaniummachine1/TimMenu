@@ -8,14 +8,14 @@ local Window = require("TimMenu.Window")
 local Widgets = require("TimMenu.Widgets") -- new require
 
 local function Setup()
-    if not TimMenuGlobal then
-        -- Initialize TimMenu
-        TimMenuGlobal = {}
-        TimMenuGlobal.windows = {}
-        TimMenuGlobal.order = {}
-        TimMenuGlobal.ActiveWindow = nil -- track the window under mouse
-        TimMenuGlobal.lastWindowKey = nil -- to store the last started window
-    end
+    -- Initialize TimMenu
+    TimMenuGlobal = {}
+    TimMenuGlobal.windows = {}
+    TimMenuGlobal.order = {}
+    TimMenuGlobal.loadOrder = {}          -- Track which script loaded windows in what order
+    TimMenuGlobal.currentLoadId = 0       -- Current script's load ID
+    TimMenuGlobal.ActiveWindow = nil      -- track the window under mouse
+    TimMenuGlobal.lastWindowKey = nil     -- to store the last started window
 end
 
 Setup()
@@ -26,6 +26,15 @@ Setup()
 --- @param id? string|number Unique identifier (default: title).
 --- @return boolean, table? (if false, window is either not visible or a screenshot is being taken)
 function TimMenu.Begin(title, visible, id)
+    -- Track new script loads
+    local caller = debug.getinfo(2, "S").source
+    local loadId = TimMenuGlobal.loadOrder[caller]
+    if not loadId then
+        TimMenuGlobal.currentLoadId = TimMenuGlobal.currentLoadId + 1
+        loadId = TimMenuGlobal.currentLoadId
+        TimMenuGlobal.loadOrder[caller] = loadId
+    end
+
     local windowCallIndex = Utils.BeginFrame()
 
     assert(type(title) == "string", "TimMenu.Begin requires a string title")
@@ -45,6 +54,7 @@ function TimMenu.Begin(title, visible, id)
             W = Globals.Defaults.DEFAULT_W,
             H = Globals.Defaults.DEFAULT_H,
         })
+        win.loadId = loadId
         TimMenuGlobal.windows[key] = win
         table.insert(TimMenuGlobal.order, key)
     else
@@ -68,8 +78,9 @@ function TimMenu.Begin(title, visible, id)
 
     -- Only check for new window interaction if we're not already dragging
     if not win.IsDragging then
-        local isTopWindow = Utils.GetWindowUnderMouse(TimMenuGlobal.order, TimMenuGlobal.windows, mX, mY, titleHeight) == key
-        
+        local isTopWindow = Utils.GetWindowUnderMouse(TimMenuGlobal.order, TimMenuGlobal.windows, mX, mY, titleHeight) ==
+        key
+
         if isTopWindow and input.IsButtonPressed(MOUSE_LEFT) then
             Utils.HandleWindowDragging(win, key, mX, mY, titleHeight)
         end
@@ -87,7 +98,8 @@ function TimMenu.Begin(title, visible, id)
     if win.IsDragging and input.IsButtonReleased(MOUSE_LEFT) then
         win.IsDragging = false
         -- Recheck which window is under mouse after stopping drag
-        TimMenuGlobal.ActiveWindow = Utils.GetWindowUnderMouse(TimMenuGlobal.order, TimMenuGlobal.windows, mX, mY, titleHeight)
+        TimMenuGlobal.ActiveWindow = Utils.GetWindowUnderMouse(TimMenuGlobal.order, TimMenuGlobal.windows, mX, mY,
+            titleHeight)
     end
 
     -- Reset widget layout counters each frame using content padding.
@@ -102,20 +114,19 @@ end
 --- Ends the current window and triggers drawing of all visible windows.
 function TimMenu.End()
     assert(TimMenuGlobal, "TimMenuGlobal is nil in End()")
-    assert(type(TimMenuGlobal.windows) == "table", "TimMenuGlobal.windows is not a table")
-    assert(type(TimMenuGlobal.order) == "table", "TimMenuGlobal.order is not a table")
 
+    -- Always try to prune - Utils.PruneOrphanedWindows will check if we should
     Utils.PruneOrphanedWindows(TimMenuGlobal.windows, TimMenuGlobal.order)
 
-    -- Only warn about serious mismatches
-    local orderLength = #TimMenuGlobal.order
-
-    -- Draw all windows in order
-    for i = 1, orderLength do
-        local key = TimMenuGlobal.order[i]
-        local win = TimMenuGlobal.windows[key]
-        if win and win.visible then
-            win:draw()
+    -- Only draw if this script's loadId matches TimMenuGlobal.currentLoadId
+    local caller = debug.getinfo(2, "S").source
+    local myLoadId = TimMenuGlobal.loadOrder[caller]
+    if myLoadId and myLoadId == TimMenuGlobal.currentLoadId then
+        for i = 1, #TimMenuGlobal.order do
+            local win = TimMenuGlobal.windows[TimMenuGlobal.order[i]]
+            if win and win.visible then
+                win:draw()
+            end
         end
     end
 end

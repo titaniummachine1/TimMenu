@@ -34,22 +34,41 @@ end
 -- Prune windows that haven't been drawn for a specified frame threshold.
 -- Updated: Prune windows and clean the order array.
 function Utils.PruneOrphanedWindows(windows, order)
-    local threshold = 2
     local currentFrame = globals.FrameCount()
+    local threshold = 2
+
+    -- Remove delayed windows
+    local loadIdCounts = {}
     for key, win in pairs(windows) do
         if not win.lastFrame or (currentFrame - win.lastFrame) >= threshold then
             windows[key] = nil
+        else
+            loadIdCounts[win.loadId] = (loadIdCounts[win.loadId] or 0) + 1
         end
     end
-    -- Clean the order array by removing keys without corresponding windows.
-    if order then
-        for i = #order, 1, -1 do
-            local key = order[i]
-            if not windows[key] then
-                table.remove(order, i)
-            end
+
+    -- Clean order array
+    for i = #order, 1, -1 do
+        if not windows[order[i]] then
+            table.remove(order, i)
         end
     end
+
+    -- Remove loadIds with no active windows
+    for caller, lId in pairs(TimMenuGlobal.loadOrder) do
+        if not loadIdCounts[lId] then
+            TimMenuGlobal.loadOrder[caller] = nil
+        end
+    end
+
+    -- Find the highest loadId still active
+    local lastActiveId = 0
+    for _, lId in pairs(TimMenuGlobal.loadOrder) do
+        if lId > lastActiveId then
+            lastActiveId = lId
+        end
+    end
+    TimMenuGlobal.currentLoadId = lastActiveId
 end
 
 function Utils.IsMouseOverWindow(win, mouseX, mouseY, titleHeight)
@@ -57,6 +76,24 @@ function Utils.IsMouseOverWindow(win, mouseX, mouseY, titleHeight)
        and mouseX <= win.X + win.W
        and mouseY >= win.Y
        and mouseY <= win.Y + win.H
+end
+
+-- Add new function to check if a point is blocked by any window above
+function Utils.IsPointBlocked(order, windows, x, y, currentWindowKey)
+    -- Check all windows above current window in z-order
+    local foundCurrent = false
+    for i = #order, 1, -1 do
+        local key = order[i]
+        if key == currentWindowKey then
+            foundCurrent = true
+            break
+        end
+        local win = windows[key]
+        if win and win.visible and Utils.IsMouseOverWindow(win, x, y, win.H) then
+            return true -- Point is blocked by a window above
+        end
+    end
+    return false
 end
 
 -- Returns the top window key at a given point.
