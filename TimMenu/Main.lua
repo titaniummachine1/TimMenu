@@ -24,7 +24,7 @@ Setup()
 --- @param title string Window title.
 --- @param visible? boolean Whether the window is visible (default: true).
 --- @param id? string|number Unique identifier (default: title).
---- @return table? window table.(if nil means it wasnt visible or taking screenshot)
+--- @return boolean, table? .(if nil means it wasnt visible or taking screenshot)
 function TimMenu.Begin(title, visible, id)
     --input parsing--
     assert(type(title) == "string", "TimMenu.Begin requires a string title")
@@ -55,9 +55,9 @@ function TimMenu.Begin(title, visible, id)
     --keep this window alive from pruning--
     win:update()
 
-    --returns nil if window is not visible or taking screenshot
+    --returns false if window is not visible or taking screenshot
     if not visible or engine.IsTakingScreenshot() then
-        return nil
+        return false
     end
 
     -- Handle window interaction
@@ -87,7 +87,7 @@ function TimMenu.Begin(title, visible, id)
     win.cursorY = Globals.Defaults.TITLE_BAR_HEIGHT + padding
     win.lineHeight = 0
 
-    return win
+    return true, win
 end
 
 --- Ends the current window.
