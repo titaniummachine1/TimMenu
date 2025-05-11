@@ -80,6 +80,9 @@ function TimMenu.Begin(title, visible, id)
 	-- Reset window's internal layout cursor for this frame's widgets
 	win:resetCursor()
 
+	-- Clear any previously recorded sectors for this window each frame
+	win._sectorStack = {}
+
 	if not win.visible or (gui.GetValue("clean screenshots") == 1 and engine.IsTakingScreenshot()) then
 		return false
 	end
