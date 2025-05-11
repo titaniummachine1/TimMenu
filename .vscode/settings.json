@@ -1,15 +1,21 @@
 {
-    // Use IntelliSense to learn about possible attributes.
-    // Hover to view descriptions of existing attributes.
-    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
-       "version": "0.2.0",
-    "configurations": [
-        {
-            "type": "lua",
-            "request": "launch",
-            "name": "Debug",
-            "program": "${workspaceFolder}/test/Test.lua"
-        }
-    ],
-    
+    "editor.formatOnSave": true,
+    "[lua]": {
+      "editor.defaultFormatter": "JohnnyMorganz.stylua", 
+      // Or if using LuaFormat: "editor.defaultFormatter": "koihik.vscode-lua-format",
+      "editor.formatOnSave": true
+    },
+    "stylua.searchParentDirectories": true,
+    "emeraldwalk.runonsave": {
+        "commands": [
+            {
+                "match": "\\.lua$",
+                "isAsync": true,
+                "cmd": "${workspaceFolder}/BundleAndDeploy.bat",
+                "message": "Attempting to run default build task for ${fileBasename}...",
+                "autoShowOutputPanel": "error"
+            }
+        ]
+    },
+    "stylua.targetReleaseVersion": "latest"
 }
