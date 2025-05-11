@@ -1,148 +1,74 @@
 local TimMenu = {}
 
--- Restore original global initialization of TimMenuGlobal
+-- Simplified global state
 local function Setup()
-	-- Main module for the TimMenu library
-	-- Force reload the main TimMenu bundle
-	if package.loaded["TimMenu"] then
-		package.loaded["TimMenu"] = nil
-	end
-
-	TimMenuGlobal = {}
-	TimMenuGlobal.windows = {}
-	TimMenuGlobal.order = {}
-	TimMenuGlobal.loadOrder = {} -- Track which script loaded windows in what order
-	TimMenuGlobal.currentLoadId = 0 -- Current script's load ID
-	TimMenuGlobal.ActiveWindow = nil -- track the window under mouse
-	TimMenuGlobal.lastWindowKey = nil -- to store the last started window
+	TimMenuGlobal = {
+		windows = {}, -- Stores window objects, keyed by ID
+		order = {}, -- Array of window IDs, defining Z-order (last = topmost)
+	}
 end
 
-print("Setup")
 Setup()
+
+-- Local variable to track the window currently being defined by Begin/End
+local _currentWindow = nil
 
 local Common = require("TimMenu.Common")
 local Globals = require("TimMenu.Globals")
 local Utils = require("TimMenu.Utils")
 local Window = require("TimMenu.Window")
-local Widgets = require("TimMenu.Widgets") -- new require
+local Widgets = require("TimMenu.Widgets")
 
-local function getOrCreateWindow(key, title, loadId, visible)
+print("[TimMenu/Main.lua] Utils loaded:", type(Utils), Utils) -- See if Utils is a table
+if Utils then
+	print("[TimMenu/Main.lua] Utils.BeginFrame type:", type(Utils.BeginFrame)) -- See if BeginFrame is a function
+end
+
+local function getOrCreateWindow(key, title, visible)
 	local win = TimMenuGlobal.windows[key]
 	if not win then
-		-- Create a new window using our Window utility
-		win = Window.new({
-			title = title,
-			id = key,
-			visible = visible,
-			-- Window positions & sizes are set within Window.new by defaults
-		})
-		win.loadId = loadId
+		win = Window.new({ title = title, id = key, visible = visible })
 		TimMenuGlobal.windows[key] = win
-		table.insert(TimMenuGlobal.order, key)
+		table.insert(TimMenuGlobal.order, key) -- Add to end (top) by default
 	else
-		win.visible = visible
+		win.visible = visible -- Update visibility if it already exists
 	end
 	return win
 end
 
---- Begins a new or updates an existing window.
---- @param title string Window title.
---- @param visible? boolean Whether the window is visible (default: true).
---- @param id? string|number Unique identifier (default: title).
---- @return boolean, table? (if false, window is either not visible or a screenshot is being taken)
 function TimMenu.Begin(title, visible, id)
-	-- Track new script loads
-	local caller = debug.getinfo(2, "S").source
-	local loadId = TimMenuGlobal.loadOrder[caller]
-	if not loadId then
-		TimMenuGlobal.currentLoadId = TimMenuGlobal.currentLoadId + 1
-		loadId = TimMenuGlobal.currentLoadId
-		TimMenuGlobal.loadOrder[caller] = loadId
-	end
-
-	Utils.BeginFrame() -- Simplify capture of windowCallIndex if needed
-
 	assert(type(title) == "string", "TimMenu.Begin requires a string title")
 	visible = (visible == nil) and true or visible
-	if type(visible) == "string" then
+	if type(visible) == "string" then -- Handle shorthand TimMenu.Begin("Title", "id")
 		id, visible = visible, true
 	end
 	local key = (id or title)
-	local win = getOrCreateWindow(key, title, loadId, visible)
 
-	-- Update window properties
-	win:update()
+	local win = getOrCreateWindow(key, title, visible)
+	win:update() -- This will now mark it as touched this frame
 
-	-- Set the current window key for widget calls (ensures correct window context)
-	TimMenuGlobal.lastWindowKey = key
+	_currentWindow = win -- Set for widget calls
 
-	-- Return false if window is not visible or if a screenshot is being taken
-	if not visible or (gui.GetValue("clean screenshots") == 1 and engine.IsTakingScreenshot()) then
+	-- Reset window's internal layout cursor for this frame's widgets
+	win:resetCursor()
+
+	if not win.visible or (gui.GetValue("clean screenshots") == 1 and engine.IsTakingScreenshot()) then
 		return false
 	end
-
-	-- Handle window interaction
-	local mX, mY = table.unpack(input.GetMousePos())
-	local titleHeight = Globals.Defaults.TITLE_BAR_HEIGHT
-
-	-- Only check for new window interaction if we're not already dragging
-	if not win.IsDragging then
-		local isTopWindow = Utils.GetWindowUnderMouse(TimMenuGlobal.order, TimMenuGlobal.windows, mX, mY, titleHeight)
-			== key
-
-		if isTopWindow and input.IsButtonPressed(MOUSE_LEFT) then
-			Utils.HandleWindowDragging(win, key, mX, mY, titleHeight)
-		end
-	end
-
-	-- Update window position while dragging - don't check if mouse is over window
-	if win.IsDragging then
-		win.X = mX - win.DragPos.X
-		win.Y = mY - win.DragPos.Y
-		-- Keep window as active while dragging
-		TimMenuGlobal.ActiveWindow = key
-	end
-
-	-- Stop dragging only on mouse release
-	if win.IsDragging and input.IsButtonReleased(MOUSE_LEFT) then
-		win.IsDragging = false
-		-- Recheck which window is under mouse after stopping drag
-		TimMenuGlobal.ActiveWindow =
-			Utils.GetWindowUnderMouse(TimMenuGlobal.order, TimMenuGlobal.windows, mX, mY, titleHeight)
-	end
-
-	-- Reset widget layout counters each frame using content padding.
-	local padding = Globals.Defaults.WINDOW_CONTENT_PADDING
-	win.cursorX = padding
-	win.cursorY = Globals.Defaults.TITLE_BAR_HEIGHT + padding
-	win.lineHeight = 0
 
 	return true, win
 end
 
---- Ends the current window and triggers drawing of all visible windows.
 function TimMenu.End()
-	-- Always try to prune windows
-	Utils.PruneOrphanedWindows(TimMenuGlobal.windows, TimMenuGlobal.order)
-
-	-- Draw every visible window regardless of loadId.
-	for i = 1, #TimMenuGlobal.order do
-		local win = TimMenuGlobal.windows[TimMenuGlobal.order[i]]
-		if win and win.visible then
-			win:draw()
-		end
-	end
+	-- This is now a no-op. Drawing and main logic are handled by _TimMenu_GlobalDraw.
+	_currentWindow = nil -- Clear current window context
 end
 
---- Returns the current window (last drawn window).
 function TimMenu.GetCurrentWindow()
-	if TimMenuGlobal.lastWindowKey then
-		return TimMenuGlobal.windows[TimMenuGlobal.lastWindowKey]
-	end
+	return _currentWindow
 end
 
 --- Calls the Widgets.Button API on the current window.
---- Returns true if clicked.
 function TimMenu.Button(label)
 	local win = TimMenu.GetCurrentWindow()
 	if win then
@@ -152,15 +78,32 @@ function TimMenu.Button(label)
 end
 
 --- Draws a checkbox and returns its new state.
---- @param label string text label for the checkbox
---- @param state boolean current state
---- @return boolean new state
 function TimMenu.Checkbox(label, state)
 	local win = TimMenu.GetCurrentWindow()
 	if win then
-		return Widgets.Checkbox(win, label, state)
+		return Widgets.Checkbox(win, label, state) -- State will be managed by the window now
 	end
 	return state
+end
+
+--- Draws static text in the current window.
+--- @param text string The string to display.
+function TimMenu.Text(text)
+	local win = TimMenu.GetCurrentWindow()
+	if not win then
+		return
+	end
+	-- Measure text
+	draw.SetFont(Globals.Style.Font)
+	local w, h = draw.GetTextSize(text)
+	-- Reserve space in layout
+	local x, y = win:AddWidget(w, h)
+	-- Queue drawing at base layer
+	win:QueueDrawAtLayer(1, function()
+		draw.Color(table.unpack(Globals.Colors.Text))
+		draw.SetFont(Globals.Style.Font)
+		draw.Text(win.X + x, win.Y + y, text)
+	end)
 end
 
 --- Displays debug information.
@@ -171,23 +114,30 @@ function TimMenu.ShowDebug()
 	local headerX, headerY = 20, 20
 	local lineSpacing = 20
 
-	local count = 0
+	local windowCount = 0
 	for _ in pairs(TimMenuGlobal.windows) do
-		count = count + 1
+		windowCount = windowCount + 1
 	end
+	draw.Text(headerX, headerY, "Active Windows (" .. windowCount .. "):")
 
-	draw.Text(headerX, headerY, "Active Windows (" .. count .. "):")
 	local yOffset = headerY + lineSpacing
-	for key, win in pairs(TimMenuGlobal.windows) do
-		local delay = currentFrame - (win.lastFrame or currentFrame)
-		local info = "ID: " .. key .. " | " .. win.title .. " (Delay: " .. delay .. ")"
-		draw.Text(headerX, yOffset, info)
-		yOffset = yOffset + lineSpacing
+	-- Iterate in Z-order for debug display
+	for i = 1, #TimMenuGlobal.order do
+		local key = TimMenuGlobal.order[i]
+		local win = TimMenuGlobal.windows[key]
+		if win then
+			local delay = currentFrame - (win._lastFrameTouched or currentFrame)
+			local info = "ID: " .. key .. " | " .. win.title .. " (Z: " .. i .. ", Delay: " .. delay .. ")"
+			if not win.visible then
+				info = info .. " (Hidden)"
+			end
+			draw.Text(headerX, yOffset, info)
+			yOffset = yOffset + lineSpacing
+		end
 	end
 end
 
---- Moves the cursor to the next line in the current window, resetting horizontal stacking.
---- @param spacing? number Optional spacing between lines.
+--- Moves the cursor to the next line in the current window.
 function TimMenu.NextLine(spacing)
 	local win = TimMenu.GetCurrentWindow()
 	if win then
@@ -195,8 +145,96 @@ function TimMenu.NextLine(spacing)
 	end
 end
 
---[[ Play sound when loaded ]]
---
+--- Draws a slider and returns the new value and whether it changed.
+function TimMenu.Slider(label, value, min, max, step)
+	local win = TimMenu.GetCurrentWindow()
+	if win then
+		return Widgets.Slider(win, label, value, min, max, step)
+	end
+	return value, false
+end
+
+-- Named function for the global draw callback
+local function _TimMenu_GlobalDraw()
+	local mouseX, mouseY = table.unpack(input.GetMousePos())
+	local focusedWindowKey = nil
+
+	-- 1. Pruning Pass: Remove windows not updated this frame
+	local currentFrame = globals.FrameCount()
+	local keysToRemove = {}
+	for key, win in pairs(TimMenuGlobal.windows) do
+		if not win._lastFrameTouched or (currentFrame - win._lastFrameTouched) > 1 then
+			table.insert(keysToRemove, key)
+		end
+	end
+	for _, key in ipairs(keysToRemove) do
+		TimMenuGlobal.windows[key] = nil
+		for i = #TimMenuGlobal.order, 1, -1 do
+			if TimMenuGlobal.order[i] == key then
+				table.remove(TimMenuGlobal.order, i)
+				break
+			end
+		end
+	end
+
+	-- 2. Determine Focused Window (topmost under mouse)
+	-- Iterate from top of z-order (end of table) downwards
+	for i = #TimMenuGlobal.order, 1, -1 do
+		local key = TimMenuGlobal.order[i]
+		local win = TimMenuGlobal.windows[key]
+		if win and win.visible and win:_HitTest(mouseX, mouseY) then
+			focusedWindowKey = key
+			break -- Found the topmost, stop searching
+		end
+	end
+
+	-- 3. Interaction Logic Pass (iterate all windows, but only focused one interacts fully)
+	for i = 1, #TimMenuGlobal.order do
+		local key = TimMenuGlobal.order[i]
+		local win = TimMenuGlobal.windows[key]
+		if win and win.visible then
+			local isFocused = (key == focusedWindowKey)
+			win:_UpdateLogic(
+				mouseX,
+				mouseY,
+				isFocused,
+				input.IsButtonPressed(MOUSE_LEFT),
+				input.IsButtonDown(MOUSE_LEFT),
+				input.IsButtonReleased(MOUSE_LEFT)
+			)
+
+			-- Click-to-front and start drag
+			if isFocused and input.IsButtonPressed(MOUSE_LEFT) then
+				-- Bring to front
+				if TimMenuGlobal.order[#TimMenuGlobal.order] ~= key then -- if not already at front
+					for j, v_key in ipairs(TimMenuGlobal.order) do
+						if v_key == key then
+							table.remove(TimMenuGlobal.order, j)
+							break
+						end
+					end
+					table.insert(TimMenuGlobal.order, key)
+				end
+				-- Start dragging if click was in title bar (logic inside _UpdateLogic)
+			end
+		end
+	end
+
+	-- 4. Draw Pass (iterate in new Z-order)
+	for i = 1, #TimMenuGlobal.order do
+		local key = TimMenuGlobal.order[i]
+		local win = TimMenuGlobal.windows[key]
+		if win and win.visible then
+			win:_Draw()
+		end
+	end
+end
+
+-- Register the global draw callback
+callbacks.Unregister("Draw", "TimMenu_GlobalDraw")
+callbacks.Register("Draw", "TimMenu_GlobalDraw", _TimMenu_GlobalDraw)
+
+--[[ Play sound when loaded -- consider if this is still desired with centralized model ]]
 engine.PlaySound("hl1/fvox/activated.wav")
 
 return TimMenu

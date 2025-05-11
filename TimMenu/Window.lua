@@ -5,68 +5,69 @@ local Window = {}
 Window.__index = Window
 
 local function applyDefaults(params)
-    -- Provide a fallback for each setting if not provided
-    return {
-        title   = params.title   or "Untitled",
-        id      = params.id      or params.title,
-        visible = (params.visible == nil) and true or params.visible,
-        X       = params.X or (Globals.Defaults.DEFAULT_X + math.random(0, 150)),
-        Y       = params.Y or (Globals.Defaults.DEFAULT_Y + math.random(0, 50)),
-        W       = params.W or Globals.Defaults.DEFAULT_W,
-        H       = params.H or Globals.Defaults.DEFAULT_H
-    }
+	-- Provide a fallback for each setting if not provided
+	return {
+		title = params.title or "Untitled",
+		id = params.id or params.title,
+		visible = (params.visible == nil) and true or params.visible,
+		X = params.X or (Globals.Defaults.DEFAULT_X + math.random(0, 150)),
+		Y = params.Y or (Globals.Defaults.DEFAULT_Y + math.random(0, 50)),
+		W = params.W or Globals.Defaults.DEFAULT_W,
+		H = params.H or Globals.Defaults.DEFAULT_H,
+	}
 end
 
 --- __close metamethod: cleans up window state.
 function Window:__close()
-    self.lastFrame = nil
-    self.IsDragging = false
-    self.DragPos = { X = 0, Y = 0 }
+	self.lastFrame = nil
+	self.IsDragging = false
+	self.DragPos = { X = 0, Y = 0 }
 end
 
 function Window:update()
-    self.lastFrame = globals.FrameCount()
+	-- Mark this window as touched this frame for pruning
+	self._lastFrameTouched = globals.FrameCount()
 end
 
 function Window.new(params)
-    -- Ensure parameters exist
-    if type(params) == "string" then
-        params = { title = params }
-    end
-    params = applyDefaults(params)
+	-- Ensure parameters exist
+	if type(params) == "string" then
+		params = { title = params }
+	end
+	params = applyDefaults(params)
 
-    -- Create our window object with simple composition
-    local self = setmetatable({}, Window)
-    self.title      = params.title
-    self.id         = params.id
-    self.visible    = params.visible
-    self.X          = params.X
-    self.Y          = params.Y
-    self.W          = params.W
-    self.H          = params.H
-    self.lastFrame  = nil
-    self.IsDragging = false
-    self.DragPos    = { X = 0, Y = 0 }
-    -- Initialize a table of layers
-    self.Layers     = {}
-    for i = 1, 5 do
-        self.Layers[i] = {}
-    end
-    -- Set __close metamethod so it auto-cleans when used as a to-be-closed variable.
-    local mt = getmetatable(self)
-    mt.__close = Window.__close
+	-- Create our window object with simple composition
+	local self = setmetatable({}, Window)
+	self.title = params.title
+	self.id = params.id
+	self.visible = params.visible
+	self.X = params.X
+	self.Y = params.Y
+	self.W = params.W
+	self.H = params.H
+	self._lastFrameTouched = globals.FrameCount() -- Initialize touch timestamp
+	self.IsDragging = false
+	self.DragPos = { X = 0, Y = 0 }
+	-- Initialize a table of layers
+	self.Layers = {}
+	for i = 1, 5 do
+		self.Layers[i] = {}
+	end
+	-- Set __close metamethod so it auto-cleans when used as a to-be-closed variable.
+	local mt = getmetatable(self)
+	mt.__close = Window.__close
 
-    self.cursorX = 0
-    self.cursorY = 0
-    self.lineHeight = 0
-    return self
+	self.cursorX = 0
+	self.cursorY = 0
+	self.lineHeight = 0
+	return self
 end
 
 -- Queue a drawing function under a specified layer
 function Window:QueueDrawAtLayer(layer, drawFunc, ...)
-    if self.Layers[layer] then
-        table.insert(self.Layers[layer], { fn = drawFunc, args = { ... } })
-    end
+	if self.Layers[layer] then
+		table.insert(self.Layers[layer], { fn = drawFunc, args = { ... } })
+	end
 end
 
 -- Pre-calculate static colors
@@ -75,35 +76,89 @@ local DefaultTitleColor = Globals.Colors.Title or { 55, 100, 215, 255 }
 local DefaultTextColor = Globals.Colors.Text or { 255, 255, 255, 255 }
 local DefaultBorderColor = Globals.Colors.WindowBorder or { 55, 100, 215, 255 }
 
-function Window:draw()
-    draw.SetFont(Globals.Style.Font)
-    local txtWidth, txtHeight = draw.GetTextSize(self.title)
-    local titleHeight = txtHeight + Globals.Style.ItemPadding
+--- Hit test: is a point inside this window (including title bar)?
+function Window:_HitTest(x, y)
+	-- Calculate title bar height using text height
+	draw.SetFont(Globals.Style.Font)
+	local _, txtH = draw.GetTextSize(self.title)
+	local titleHeight = txtH + Globals.Style.ItemPadding
+	return x >= self.X and x <= self.X + self.W and y >= self.Y and y <= self.Y + self.H + titleHeight
+end
 
-    -- Draw window parts in order: background, title bar, border, text
-    draw.Color(table.unpack(DefaultWindowColor))
-    draw.FilledRect(self.X, self.Y + titleHeight, self.X + self.W, self.Y + self.H)
+--- Update window logic: dragging only; mark touched only in Begin()
+function Window:_UpdateLogic(mx, my, isFocused, pressed, down, released)
+	-- Calculate title bar height using text height
+	draw.SetFont(Globals.Style.Font)
+	local _, txtH = draw.GetTextSize(self.title)
+	local titleHeight = txtH + Globals.Style.ItemPadding
 
-    draw.Color(table.unpack(DefaultTitleColor))
-    draw.FilledRect(self.X, self.Y, self.X + self.W, self.Y + titleHeight)
+	-- Start dragging if focused and pressed in title bar
+	if isFocused and pressed and my >= self.Y and my <= self.Y + titleHeight then
+		self.IsDragging = true
+		self.DragPos = { X = mx - self.X, Y = my - self.Y }
+	end
 
-    draw.Color(table.unpack(DefaultBorderColor))
-    draw.OutlinedRect(self.X, self.Y, self.X + self.W, self.Y + self.H)
+	-- Continue dragging while mouse button held
+	if self.IsDragging then
+		if down then
+			self.X = mx - self.DragPos.X
+			self.Y = my - self.DragPos.Y
+		elseif released then
+			self.IsDragging = false
+		end
+	end
+end
 
-    -- Draw title text last
-    local titleX = Common.Clamp(self.X + (self.W - txtWidth) / 2)
-    local titleY = Common.Clamp(self.Y + (titleHeight - txtHeight) / 2)
-    draw.Color(table.unpack(DefaultTextColor))
-    draw.Text(titleX, titleY, self.title)
+--- Draw the entire window: chrome and queued widget layers
+function Window:_Draw()
+	draw.SetFont(Globals.Style.Font)
+	local txtWidth, txtHeight = draw.GetTextSize(self.title)
+	local titleHeight = txtHeight + Globals.Style.ItemPadding
 
-    -- Process widget layers in order
-    for layer = 1, #self.Layers do
-        local layerEntries = self.Layers[layer]
-        for _, entry in ipairs(layerEntries) do
-            entry.fn(table.unpack(entry.args))
-        end
-        self.Layers[layer] = {} -- Clear after processing
-    end
+	-- Background
+	draw.Color(table.unpack(Globals.Colors.Window))
+	draw.FilledRect(
+		math.floor(self.X),
+		math.floor(self.Y + titleHeight),
+		math.floor(self.X + self.W),
+		math.floor(self.Y + self.H)
+	)
+
+	-- Title bar
+	draw.Color(table.unpack(Globals.Colors.Title))
+	draw.FilledRect(
+		math.floor(self.X),
+		math.floor(self.Y),
+		math.floor(self.X + self.W),
+		math.floor(self.Y + titleHeight)
+	)
+
+	-- Border
+	if Globals.Style.WindowBorder then
+		draw.Color(table.unpack(Globals.Colors.WindowBorder))
+		draw.OutlinedRect(
+			math.floor(self.X),
+			math.floor(self.Y),
+			math.floor(self.X + self.W),
+			math.floor(self.Y + self.H + titleHeight)
+		)
+	end
+
+	-- Title text
+	draw.Color(table.unpack(Globals.Colors.Text))
+	draw.Text(
+		math.floor(self.X + (self.W - txtWidth) / 2),
+		math.floor(self.Y + (titleHeight - txtHeight) / 2),
+		self.title
+	)
+
+	-- Widget layers
+	for layer = 1, #self.Layers do
+		for _, entry in ipairs(self.Layers[layer]) do
+			entry.fn(table.unpack(entry.args))
+		end
+		self.Layers[layer] = {}
+	end
 end
 
 --- Calculates widget position and updates window size if needed
@@ -111,36 +166,44 @@ end
 --- @param height number The widget height
 --- @return number, number The x, y coordinates for the widget
 function Window:AddWidget(width, height)
-    local padding = Globals.Defaults.WINDOW_CONTENT_PADDING
-    local x = self.cursorX
-    local y = self.cursorY
+	local padding = Globals.Defaults.WINDOW_CONTENT_PADDING
+	local x = self.cursorX
+	local y = self.cursorY
 
-    -- Calculate x position based on alignment
-    if Globals.Style.Alignment == "center" then
-        x = math.max(padding, math.floor((self.W - width) * 0.5))
-    end
+	-- Calculate x position based on alignment
+	if Globals.Style.Alignment == "center" then
+		x = math.max(padding, math.floor((self.W - width) * 0.5))
+	end
 
-    -- Update window dimensions if needed
-    self.W = math.max(self.W, x + width + padding)
-    self.lineHeight = math.max(self.lineHeight, height)
-    self.H = math.max(self.H, y + self.lineHeight)
+	-- Update window dimensions if needed
+	self.W = math.max(self.W, x + width + padding)
+	self.lineHeight = math.max(self.lineHeight, height)
+	self.H = math.max(self.H, y + self.lineHeight)
 
-    -- Update cursor position
-    self.cursorX = x + width
+	-- Update cursor position
+	self.cursorX = x + width
 
-    return x, y
+	return x, y
 end
 
 --- Provide a simple way to "new line" to place subsequent widgets below
 function Window:NextLine(spacing)
-    spacing = spacing or 5
-    self.cursorY = self.cursorY + self.lineHeight + spacing
-    self.cursorX = Globals.Defaults.WINDOW_CONTENT_PADDING -- reset to left padding
-    self.lineHeight = 0
-    -- Expand window if needed
-    if self.cursorY > self.H then
-        self.H = self.cursorY
-    end
+	spacing = spacing or 5
+	self.cursorY = self.cursorY + self.lineHeight + spacing
+	self.cursorX = Globals.Defaults.WINDOW_CONTENT_PADDING -- reset to left padding
+	self.lineHeight = 0
+	-- Expand window if needed
+	if self.cursorY > self.H then
+		self.H = self.cursorY
+	end
+end
+
+--- Reset the layout cursor for widgets (called on Begin)
+function Window:resetCursor()
+	local padding = Globals.Defaults.WINDOW_CONTENT_PADDING
+	self.cursorX = padding
+	self.cursorY = Globals.Defaults.TITLE_BAR_HEIGHT + padding
+	self.lineHeight = 0
 end
 
 return Window

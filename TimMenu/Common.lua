@@ -104,12 +104,10 @@ local function OnUnload() -- Called when a script using TimMenu is unloaded
 	engine.PlaySound("hl1/fvox/deactivated.wav") -- deactivated sound
 	-- Prune windows from unloaded scripts
 	Utils.PruneOrphanedWindows(TimMenuGlobal.windows, TimMenuGlobal.order)
-	-- If no more scripts are using TimMenu, fully unload
-	if next(TimMenuGlobal.loadOrder) == nil then
-		print("Unloading TimMenu")
-		-- Unload the TimMenu module so next require reinitializes it
-		package.loaded["TimMenu"] = nil
-	end
+
+	print("Unloading TimMenu")
+	-- Unload the TimMenu module so next require reinitializes it
+	package.loaded["TimMenu"] = nil
 end
 
 callbacks.Unregister("Unload", "TimMenu_Unload")
