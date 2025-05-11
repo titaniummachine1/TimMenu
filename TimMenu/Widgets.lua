@@ -236,4 +236,22 @@ function Widgets.Slider(win, label, value, min, max, step)
 	return value, changed
 end
 
+--- Draws a horizontal separator line across the current window's content area.
+--- It reserves 1px height but does not expand the window width.
+---@param win table current window object
+function Widgets.Separator(win)
+	local padding = Globals.Defaults.WINDOW_CONTENT_PADDING
+	-- Calculate full content width
+	local width = win.W - (padding * 2)
+	-- Reserve minimal vertical space (1px)
+	local x, y = win:AddWidget(width, 1)
+	local absX, absY = win.X + x, win.Y + y
+	-- Draw the separator line
+	win:QueueDrawAtLayer(1, function()
+		-- Draw separator line in window border color
+		draw.Color(table.unpack(Globals.Colors.WindowBorder))
+		Common.DrawLine(absX, absY, absX + width, absY)
+	end)
+end
+
 return Widgets

@@ -76,10 +76,12 @@ local DefaultTitleColor = Globals.Colors.Title or { 55, 100, 215, 255 }
 local DefaultTextColor = Globals.Colors.Text or { 255, 255, 255, 255 }
 local DefaultBorderColor = Globals.Colors.WindowBorder or { 55, 100, 215, 255 }
 
---- Hit test: is a point inside this window (including title bar)?
+--- Hit test: is a point inside this window (including title bar and bottom padding)?
 function Window:_HitTest(x, y)
-	-- Hit test entire window area (title and content)
-	return x >= self.X and x <= self.X + self.W and y >= self.Y and y <= self.Y + self.H
+	-- Hit test entire window area (title, content, and bottom padding)
+	local titleHeight = Globals.Defaults.TITLE_BAR_HEIGHT
+	local bottomPad = Globals.Defaults.WINDOW_CONTENT_PADDING
+	return x >= self.X and x <= self.X + self.W and y >= self.Y and y <= self.Y + titleHeight + self.H + bottomPad
 end
 
 --- Update window logic: dragging only; mark touched only in Begin()
@@ -110,10 +112,12 @@ function Window:_Draw()
 	local txtWidth, txtHeight = draw.GetTextSize(self.title)
 	-- Draw title bar at static height and center text vertically
 	local titleHeight = Globals.Defaults.TITLE_BAR_HEIGHT
+	local bottomPad = Globals.Defaults.WINDOW_CONTENT_PADDING
 
 	-- Background
 	draw.Color(table.unpack(Globals.Colors.Window))
-	Common.DrawFilledRect(self.X, self.Y + titleHeight, self.X + self.W, self.Y + self.H)
+	-- Extend background with bottom padding
+	Common.DrawFilledRect(self.X, self.Y + titleHeight, self.X + self.W, self.Y + titleHeight + self.H + bottomPad)
 
 	-- Title bar
 	draw.Color(table.unpack(Globals.Colors.Title))
@@ -122,8 +126,8 @@ function Window:_Draw()
 	-- Border
 	if Globals.Style.WindowBorder then
 		draw.Color(table.unpack(Globals.Colors.WindowBorder))
-		-- Outline only around the actual window bounds
-		Common.DrawOutlinedRect(self.X, self.Y, self.X + self.W, self.Y + self.H)
+		-- Outline around full window including title and bottom padding
+		Common.DrawOutlinedRect(self.X, self.Y, self.X + self.W, self.Y + titleHeight + self.H + bottomPad)
 	end
 
 	-- Title text
@@ -166,7 +170,7 @@ end
 
 --- Provide a simple way to "new line" to place subsequent widgets below
 function Window:NextLine(spacing)
-	spacing = spacing or 5
+	spacing = spacing or Globals.Defaults.WINDOW_CONTENT_PADDING
 	self.cursorY = self.cursorY + self.lineHeight + spacing
 	self.cursorX = Globals.Defaults.WINDOW_CONTENT_PADDING -- reset to left padding
 	self.lineHeight = 0

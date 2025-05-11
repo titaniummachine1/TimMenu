@@ -182,6 +182,14 @@ function TimMenu.Slider(label, value, min, max, step)
 	return value, false
 end
 
+--- Draws a horizontal separator in the current window.
+function TimMenu.Separator()
+	local win = TimMenu.GetCurrentWindow()
+	if win then
+		return Widgets.Separator(win)
+	end
+end
+
 -- Named function for the global draw callback
 local function _TimMenu_GlobalDraw()
 	local mouseX, mouseY = table.unpack(input.GetMousePos())
