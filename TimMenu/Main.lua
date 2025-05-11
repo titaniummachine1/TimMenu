@@ -182,11 +182,11 @@ function TimMenu.Slider(label, value, min, max, step)
 	return value, false
 end
 
---- Draws a horizontal separator in the current window.
-function TimMenu.Separator()
+--- Draws a horizontal separator in the current window; optional centered label.
+function TimMenu.Separator(label)
 	local win = TimMenu.GetCurrentWindow()
 	if win then
-		return Widgets.Separator(win)
+		return Widgets.Separator(win, label)
 	end
 end
 

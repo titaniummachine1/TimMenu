@@ -237,21 +237,44 @@ function Widgets.Slider(win, label, value, min, max, step)
 end
 
 --- Draws a horizontal separator line across the current window's content area.
---- It reserves 1px height but does not expand the window width.
+--- It reserves minimal height but does not expand the window width.
 ---@param win table current window object
-function Widgets.Separator(win)
+---@param label string optional text label in center
+function Widgets.Separator(win, label)
 	local padding = Globals.Defaults.WINDOW_CONTENT_PADDING
-	-- Calculate full content width
-	local width = win.W - (padding * 2)
-	-- Reserve minimal vertical space (1px)
-	local x, y = win:AddWidget(width, 1)
-	local absX, absY = win.X + x, win.Y + y
-	-- Draw the separator line
-	win:QueueDrawAtLayer(1, function()
-		-- Draw separator line in window border color
-		draw.Color(table.unpack(Globals.Colors.WindowBorder))
-		Common.DrawLine(absX, absY, absX + width, absY)
-	end)
+	local totalWidth = win.W - (padding * 2)
+	if type(label) == "string" then
+		-- Labeled separator: center text with lines on either side
+		draw.SetFont(Globals.Style.Font)
+		local textWidth, textHeight = draw.GetTextSize(label)
+		local x, y = win:AddWidget(totalWidth, textHeight)
+		local absX, absY = win.X + x, win.Y + y
+		local centerY = absY + math.floor(textHeight / 2)
+		win:QueueDrawAtLayer(1, function()
+			draw.Color(table.unpack(Globals.Colors.WindowBorder))
+			-- Left line
+			Common.DrawLine(absX, centerY, absX + (totalWidth - textWidth) / 2 - Globals.Style.ItemPadding, centerY)
+			-- Label
+			draw.Color(table.unpack(Globals.Colors.Text))
+			Common.DrawText(absX + (totalWidth - textWidth) / 2, absY, label)
+			-- Right line
+			draw.Color(table.unpack(Globals.Colors.WindowBorder))
+			Common.DrawLine(
+				absX + (totalWidth + textWidth) / 2 + Globals.Style.ItemPadding,
+				centerY,
+				absX + totalWidth,
+				centerY
+			)
+		end)
+	else
+		-- Simple separator
+		local x, y = win:AddWidget(totalWidth, 1)
+		local absX, absY = win.X + x, win.Y + y
+		win:QueueDrawAtLayer(1, function()
+			draw.Color(table.unpack(Globals.Colors.WindowBorder))
+			Common.DrawLine(absX, absY, absX + totalWidth, absY)
+		end)
+	end
 end
 
 return Widgets
