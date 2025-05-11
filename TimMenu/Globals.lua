@@ -39,7 +39,7 @@ Globals.Defaults = {
 	DEFAULT_H = 100, -- ImMenu default window height
 	SLIDER_WIDTH = 250, -- Default slider width from ImMenu
 	TITLE_BAR_HEIGHT = 25,
-	WINDOW_CONTENT_PADDING = 10, -- added for inner padding on all sides
+	WINDOW_CONTENT_PADDING = 12, -- added for inner padding on all sides
 }
 
 return Globals

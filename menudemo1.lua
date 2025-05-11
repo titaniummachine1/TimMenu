@@ -34,21 +34,23 @@ local function OnDraw_Menudemo1()
 		TimMenu.Separator()
 		TimMenu.NextLine()
 
-		-- Selector example (simple)
-		TimMenu.Text("Selected: " .. options1[selectedIndex1])
+		-- 2×2 grid of sectors
+		-- Row 1
+		TimMenu.BeginSector("Sector 1")
+		TimMenu.Text("Content 1")
+		TimMenu.EndSector("Sector 1")
+		TimMenu.BeginSector("Sector 2")
+		TimMenu.Text("Content 2")
+		TimMenu.EndSector("Sector 2")
 		TimMenu.NextLine()
-		if TimMenu.Button("<") then
-			selectedIndex1 = selectedIndex1 - 1
-			if selectedIndex1 < 1 then
-				selectedIndex1 = #options1
-			end
-		end
-		if TimMenu.Button(">") then
-			selectedIndex1 = selectedIndex1 + 1
-			if selectedIndex1 > #options1 then
-				selectedIndex1 = 1
-			end
-		end
+		-- Row 2
+		TimMenu.BeginSector("Sector 3")
+		TimMenu.Text("Content 3")
+		TimMenu.EndSector("Sector 3")
+		TimMenu.BeginSector("Sector 4")
+		TimMenu.Text("Content 4")
+		TimMenu.EndSector("Sector 4")
+		TimMenu.NextLine()
 
 		TimMenu.End()
 	end
