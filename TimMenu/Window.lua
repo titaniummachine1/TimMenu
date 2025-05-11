@@ -78,19 +78,14 @@ local DefaultBorderColor = Globals.Colors.WindowBorder or { 55, 100, 215, 255 }
 
 --- Hit test: is a point inside this window (including title bar)?
 function Window:_HitTest(x, y)
-	-- Calculate title bar height using text height
-	draw.SetFont(Globals.Style.Font)
-	local _, txtH = draw.GetTextSize(self.title)
-	local titleHeight = txtH + Globals.Style.ItemPadding
-	return x >= self.X and x <= self.X + self.W and y >= self.Y and y <= self.Y + self.H + titleHeight
+	-- Hit test entire window area (title and content)
+	return x >= self.X and x <= self.X + self.W and y >= self.Y and y <= self.Y + self.H
 end
 
 --- Update window logic: dragging only; mark touched only in Begin()
 function Window:_UpdateLogic(mx, my, isFocused, pressed, down, released)
-	-- Calculate title bar height using text height
-	draw.SetFont(Globals.Style.Font)
-	local _, txtH = draw.GetTextSize(self.title)
-	local titleHeight = txtH + Globals.Style.ItemPadding
+	-- Use static title bar height for dragging region
+	local titleHeight = Globals.Defaults.TITLE_BAR_HEIGHT
 
 	-- Start dragging if focused and pressed in title bar
 	if isFocused and pressed and my >= self.Y and my <= self.Y + titleHeight then
@@ -113,44 +108,27 @@ end
 function Window:_Draw()
 	draw.SetFont(Globals.Style.Font)
 	local txtWidth, txtHeight = draw.GetTextSize(self.title)
-	local titleHeight = txtHeight + Globals.Style.ItemPadding
+	-- Draw title bar at static height and center text vertically
+	local titleHeight = Globals.Defaults.TITLE_BAR_HEIGHT
 
 	-- Background
 	draw.Color(table.unpack(Globals.Colors.Window))
-	draw.FilledRect(
-		math.floor(self.X),
-		math.floor(self.Y + titleHeight),
-		math.floor(self.X + self.W),
-		math.floor(self.Y + self.H)
-	)
+	Common.DrawFilledRect(self.X, self.Y + titleHeight, self.X + self.W, self.Y + self.H)
 
 	-- Title bar
 	draw.Color(table.unpack(Globals.Colors.Title))
-	draw.FilledRect(
-		math.floor(self.X),
-		math.floor(self.Y),
-		math.floor(self.X + self.W),
-		math.floor(self.Y + titleHeight)
-	)
+	Common.DrawFilledRect(self.X, self.Y, self.X + self.W, self.Y + titleHeight)
 
 	-- Border
 	if Globals.Style.WindowBorder then
 		draw.Color(table.unpack(Globals.Colors.WindowBorder))
-		draw.OutlinedRect(
-			math.floor(self.X),
-			math.floor(self.Y),
-			math.floor(self.X + self.W),
-			math.floor(self.Y + self.H + titleHeight)
-		)
+		-- Outline only around the actual window bounds
+		Common.DrawOutlinedRect(self.X, self.Y, self.X + self.W, self.Y + self.H)
 	end
 
 	-- Title text
 	draw.Color(table.unpack(Globals.Colors.Text))
-	draw.Text(
-		math.floor(self.X + (self.W - txtWidth) / 2),
-		math.floor(self.Y + (titleHeight - txtHeight) / 2),
-		self.title
-	)
+	Common.DrawText(self.X + (self.W - txtWidth) / 2, self.Y + (titleHeight - txtHeight) / 2, self.title)
 
 	-- Widget layers
 	for layer = 1, #self.Layers do
@@ -204,6 +182,34 @@ function Window:resetCursor()
 	self.cursorX = padding
 	self.cursorY = Globals.Defaults.TITLE_BAR_HEIGHT + padding
 	self.lineHeight = 0
+end
+
+-- Ensure draw functions use integer coordinates
+do
+	local origFilled = draw.FilledRect
+	draw.FilledRect = function(x1, y1, x2, y2)
+		origFilled(math.floor(x1), math.floor(y1), math.floor(x2), math.floor(y2))
+	end
+	local origOutlined = draw.OutlinedRect
+	draw.OutlinedRect = function(x1, y1, x2, y2)
+		origOutlined(math.floor(x1), math.floor(y1), math.floor(x2), math.floor(y2))
+	end
+	local origLine = draw.Line
+	if origLine then
+		draw.Line = function(x1, y1, x2, y2)
+			origLine(math.floor(x1), math.floor(y1), math.floor(x2), math.floor(y2))
+		end
+	end
+	local origText = draw.Text
+	draw.Text = function(x, y, text)
+		origText(math.floor(x), math.floor(y), text)
+	end
+	local origTextured = draw.TexturedRect
+	if origTextured then
+		draw.TexturedRect = function(id, x1, y1, x2, y2)
+			origTextured(id, math.floor(x1), math.floor(y1), math.floor(x2), math.floor(y2))
+		end
+	end
 end
 
 return Window

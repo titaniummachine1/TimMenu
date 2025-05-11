@@ -1,5 +1,33 @@
 local TimMenu = {}
 
+-- Monkey-patch draw.* to ensure integer coordinates in all draw calls
+do
+	local origFilled = draw.FilledRect
+	draw.FilledRect = function(x1, y1, x2, y2)
+		origFilled(math.floor(x1), math.floor(y1), math.floor(x2), math.floor(y2))
+	end
+	local origOutlined = draw.OutlinedRect
+	draw.OutlinedRect = function(x1, y1, x2, y2)
+		origOutlined(math.floor(x1), math.floor(y1), math.floor(x2), math.floor(y2))
+	end
+	local origLine = draw.Line
+	if origLine then
+		draw.Line = function(x1, y1, x2, y2)
+			origLine(math.floor(x1), math.floor(y1), math.floor(x2), math.floor(y2))
+		end
+	end
+	local origText = draw.Text
+	draw.Text = function(x, y, text)
+		origText(math.floor(x), math.floor(y), text)
+	end
+	local origTextured = draw.TexturedRect
+	if origTextured then
+		draw.TexturedRect = function(id, x1, y1, x2, y2)
+			origTextured(id, math.floor(x1), math.floor(y1), math.floor(x2), math.floor(y2))
+		end
+	end
+end
+
 -- Simplified global state
 local function Setup()
 	TimMenuGlobal = {

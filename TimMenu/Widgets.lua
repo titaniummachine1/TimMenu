@@ -57,29 +57,28 @@ function Widgets.Button(win, label)
 	local hovered = canInteract(win, bounds)
 	local key = tostring(win.id) .. ":" .. label
 	local clicked = false
-	-- On press (edge-trigger), fire click immediately
 	if hovered and input.IsButtonPressed(MOUSE_LEFT) and not buttonPressState[key] then
 		clicked = true
 		buttonPressState[key] = true
 	end
-	-- Reset when mouse button is fully released
 	if buttonPressState[key] and not input.IsButtonDown(MOUSE_LEFT) then
 		buttonPressState[key] = false
 	end
 
-	-- Queue drawing
 	win:QueueDrawAtLayer(2, function()
-		-- Determine background color: pressed > hovered > normal
-		local bgColor = hovered and { 100, 100, 100, 255 } or { 80, 80, 80, 255 }
+		-- Background using ImMenu style
+		local bgColor = Globals.Colors.Item
 		if buttonPressState[key] then
-			bgColor = { 120, 120, 120, 255 }
+			bgColor = Globals.Colors.ItemActive
+		elseif hovered then
+			bgColor = Globals.Colors.ItemHover
 		end
 		draw.Color(table.unpack(bgColor))
-		-- Round button background rectangle
-		draw.FilledRect(math.floor(absX), math.floor(absY), math.floor(absX + width), math.floor(absY + height))
-		-- Draw label text in white at integer position
-		draw.Color(255, 255, 255, 255)
-		draw.Text(math.floor(absX + padding), math.floor(absY + padding), label)
+		Common.DrawFilledRect(absX, absY, absX + width, absY + height)
+		-- Label text
+		draw.Color(table.unpack(Globals.Colors.Text))
+		draw.SetFont(Globals.Style.Font)
+		Common.DrawText(absX + padding, absY + padding, label)
 	end)
 
 	return clicked
@@ -115,36 +114,35 @@ function Widgets.Checkbox(win, label, state)
 	-- Debounce: immediate toggle on press, reset on release
 	local key = tostring(win.id) .. ":" .. label
 	local clicked = false
-	-- On press, toggle immediately (edge-trigger)
 	if hovered and input.IsButtonPressed(MOUSE_LEFT) and not lastPressState[key] then
 		state = not state
 		clicked = true
 		lastPressState[key] = true
 	end
-	-- Reset once the button is fully released
 	if lastPressState[key] and not input.IsButtonDown(MOUSE_LEFT) then
 		lastPressState[key] = false
 	end
 
-	-- Queue drawing
 	win:QueueDrawAtLayer(2, function()
-		-- Draw box outline
-		draw.Color(255, 255, 255, 255)
-		-- Outline the checkbox at integer coordinates
-		draw.OutlinedRect(math.floor(absX), math.floor(absY), math.floor(absX + boxSize), math.floor(absY + boxSize))
-		-- Fill check if checked at integer coordinates
-		if state then
-			draw.Color(255, 255, 255, 255)
-			draw.FilledRect(
-				math.floor(absX + 2),
-				math.floor(absY + 2),
-				math.floor(absX + boxSize - 2),
-				math.floor(absY + boxSize - 2)
-			)
+		-- Background using ImMenu style
+		local bgColor = Globals.Colors.Item
+		local active = hovered and input.IsButtonDown(MOUSE_LEFT)
+		if active then
+			bgColor = Globals.Colors.ItemActive
+		elseif hovered then
+			bgColor = Globals.Colors.ItemHover
 		end
-		-- Draw label text at integer position
-		draw.Color(255, 255, 255, 255)
-		draw.Text(math.floor(absX + boxSize + padding), math.floor(absY + (boxSize // 2) - (txtH // 2)), label)
+		draw.Color(table.unpack(bgColor))
+		Common.DrawFilledRect(absX, absY, absX + boxSize, absY + boxSize)
+		-- Check mark fill
+		if state then
+			draw.Color(table.unpack(Globals.Colors.Highlight))
+			Common.DrawFilledRect(absX + 2, absY + 2, absX + boxSize - 2, absY + boxSize - 2)
+		end
+		-- Label text
+		draw.Color(table.unpack(Globals.Colors.Text))
+		draw.SetFont(Globals.Style.Font)
+		Common.DrawText(absX + boxSize + padding, absY + (boxSize // 2) - (txtH // 2), label)
 	end)
 
 	return state, clicked
@@ -154,43 +152,37 @@ end
 function Widgets.Slider(win, label, value, min, max, step)
 	local Common = require("TimMenu.Common")
 	local Globals = require("TimMenu.Globals")
-	-- Set font and measure label
+	-- Set font and measure label text
 	draw.SetFont(Globals.Style.Font)
-	local txtW, txtH = draw.GetTextSize(label)
+	local labelText = label .. ": " .. tostring(value)
+	local txtW, txtH = draw.GetTextSize(labelText)
 	local padding = Globals.Style.ItemPadding
 	local height = txtH + (padding * 2)
-	-- Determine slider width to fill remaining space
-	local xOffset = win.cursorX
-	local width = math.max(Globals.Defaults.DEFAULT_W, win.W) - xOffset - Globals.Defaults.WINDOW_CONTENT_PADDING
+	-- Fixed slider width from ImMenu default
+	local width = Globals.Defaults.SLIDER_WIDTH
+	-- Ensure it fits label
 	if width < txtW + (padding * 4) then
 		width = txtW + (padding * 4)
 	end
-	-- Handle spacing
-	if xOffset > Globals.Defaults.WINDOW_CONTENT_PADDING then
+	-- Horizontal spacing
+	if win.cursorX > Globals.Defaults.WINDOW_CONTENT_PADDING then
 		win.cursorX = win.cursorX + padding
 	end
+	-- Reserve layout space
 	local x, y = win:AddWidget(width, height)
 	local absX, absY = win.X + x, win.Y + y
 
-	-- Track dimensions
-	local trackX = absX + txtW + padding
-	local trackY = absY + padding + math.floor((txtH - 4) / 2)
-	local trackW = width - (txtW + (padding * 3))
-	local trackH = 4
-	-- Handle size and position
-	local handleSize = txtH
+	-- Determine normalized fill percent
 	local norm = (value - min) / (max - min)
 	if norm < 0 then
 		norm = 0
 	elseif norm > 1 then
 		norm = 1
 	end
-	local handleX = trackX + (trackW * norm) - (handleSize / 2)
-	local handleY = absY + padding
 
-	-- Interaction logic
+	-- Interaction logic: click+drag across full slider
 	local mX, mY = table.unpack(input.GetMousePos())
-	local hovered = (mX >= trackX and mX <= trackX + trackW and mY >= absY and mY <= absY + height)
+	local hovered = (mX >= absX and mX <= absX + width and mY >= absY and mY <= absY + height)
 	local pressed = input.IsButtonPressed(MOUSE_LEFT)
 	local down = input.IsButtonDown(MOUSE_LEFT)
 	local key = tostring(win.id) .. ":" .. label
@@ -203,9 +195,10 @@ function Widgets.Slider(win, label, value, min, max, step)
 	end
 	Widgets._sliderDragging[key] = dragging
 
+	-- Compute new value when dragging
 	local changed = false
 	if dragging then
-		local t = (mX - trackX) / trackW
+		local t = (mX - absX) / width
 		if t < 0 then
 			t = 0
 		elseif t > 1 then
@@ -224,37 +217,20 @@ function Widgets.Slider(win, label, value, min, max, step)
 		end
 	end
 
-	-- Queue drawing layers
+	-- Draw slider background, fill, and centered label
 	win:QueueDrawAtLayer(1, function()
-		-- Label
+		-- Background
+		local bg = Globals.Colors.Item
+		draw.Color(table.unpack(bg))
+		Common.DrawFilledRect(absX, absY, absX + width, absY + height)
+		-- Fill portion
+		local fillCol = dragging and Globals.Colors.HighlightActive or Globals.Colors.Highlight
+		draw.Color(table.unpack(fillCol))
+		Common.DrawFilledRect(absX, absY, absX + (width * norm), absY + height)
+		-- Label centered
 		draw.Color(table.unpack(Globals.Colors.Text))
 		draw.SetFont(Globals.Style.Font)
-		-- Draw label at integer position
-		draw.Text(math.floor(absX), math.floor(absY + padding), label)
-		-- Track background at integer bounds
-		draw.Color(table.unpack(Globals.Colors.Item))
-		draw.FilledRect(
-			math.floor(trackX),
-			math.floor(trackY),
-			math.floor(trackX + trackW),
-			math.floor(trackY + trackH)
-		)
-	end)
-	win:QueueDrawAtLayer(2, function()
-		local color = Globals.Colors.Item
-		if dragging then
-			color = Globals.Colors.ItemActive
-		elseif hovered then
-			color = Globals.Colors.ItemHover
-		end
-		draw.Color(table.unpack(color))
-		-- Draw handle at integer coordinates
-		draw.FilledRect(
-			math.floor(handleX),
-			math.floor(handleY),
-			math.floor(handleX + handleSize),
-			math.floor(handleY + handleSize)
-		)
+		Common.DrawText(absX + (width - txtW) * 0.5, absY + (height - txtH) * 0.5, labelText)
 	end)
 
 	return value, changed
