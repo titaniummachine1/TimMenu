@@ -213,14 +213,20 @@ function TimMenu.BeginSector(label)
 	end
 	-- initialize sector stack
 	win._sectorStack = win._sectorStack or {}
+	-- persistent storage for sector sizes
+	win._sectorSizes = win._sectorSizes or {}
 	-- capture current cursor as sector origin
+	local startX, startY = win.cursorX, win.cursorY
+	local pad = Globals.Defaults.WINDOW_CONTENT_PADDING
+	-- restore previous max extents if available
+	local stored = win._sectorSizes[label]
 	local sector = {
-		startX = win.cursorX,
-		startY = win.cursorY,
-		maxX = win.cursorX,
-		maxY = win.cursorY,
+		startX = startX,
+		startY = startY,
+		maxX = stored and (startX + stored.width - pad) or startX,
+		maxY = stored and (startY + stored.height - pad) or startY,
 		label = label,
-		padding = Globals.Defaults.WINDOW_CONTENT_PADDING,
+		padding = pad,
 		origAdd = win.AddWidget,
 	}
 	table.insert(win._sectorStack, sector)
@@ -263,6 +269,12 @@ function TimMenu.EndSector(label)
 	-- compute sector dimensions (+padding)
 	local width = (sector.maxX - sector.startX) + pad
 	local height = (sector.maxY - sector.startY) + pad
+	-- store persistent sector size to avoid shrinking below max content size
+	win._sectorSizes = win._sectorSizes or {}
+	local prev = win._sectorSizes[sector.label]
+	if not prev or width > prev.width then
+		win._sectorSizes[sector.label] = { width = width, height = height }
+	end
 	local absX = win.X + sector.startX
 	local absY = win.Y + sector.startY
 	-- draw background behind sector

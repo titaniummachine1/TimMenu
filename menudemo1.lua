@@ -1,6 +1,9 @@
 -- menudemo1.lua
 local TimMenu = require("TimMenu")
 
+-- Counter for toggling button visibility
+local frameCounter = 0
+
 -- Script state
 local cbState1 = false
 local sliderVal1 = 25
@@ -8,10 +11,16 @@ local options1 = { "Option A", "Option B", "Option C" }
 local selectedIndex1 = 1
 
 local function OnDraw_Menudemo1()
+	-- update frame counter and compute visibility toggle (66 frames per half-cycle)
+	frameCounter = frameCounter + 1
+	local showButton = (frameCounter % 132) < 66
+
 	if TimMenu.Begin("Demo Window 1") then
 		-- First row: two sectors side by side
 		TimMenu.BeginSector("sectorA")
-		if TimMenu.Button("Click Me") then
+		-- show/hide button every half second (approx. 66 frames)
+		if showButton and TimMenu.Button("Click Me") then
+			print("[Menudemo1] Button clicked!")
 		end
 		TimMenu.EndSector("sectorA")
 		TimMenu.BeginSector("sectorB")
