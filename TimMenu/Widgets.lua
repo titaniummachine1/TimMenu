@@ -497,8 +497,6 @@ function Widgets.Dropdown(win, label, selectedIndex, options)
 		win:QueueDrawAtLayer(5, function()
 			draw.Color(table.unpack(Globals.Colors.Window))
 			Common.DrawFilledRect(listX, listY, listX + width, listY + listH)
-			draw.Color(table.unpack(Globals.Colors.WindowBorder))
-			Common.DrawOutlinedRect(listX, listY, listX + width, listY + listH)
 		end)
 		-- Draw items at topmost layer
 		for i, opt in ipairs(options) do
@@ -516,6 +514,11 @@ function Widgets.Dropdown(win, label, selectedIndex, options)
 				Common.DrawText(listX + pad, optY + (itemH - optH) / 2, opt)
 			end)
 		end
+		-- Outline popup box after drawing items
+		win:QueueDrawAtLayer(5, function()
+			draw.Color(table.unpack(Globals.Colors.WindowBorder))
+			Common.DrawOutlinedRect(listX, listY, listX + width, listY + listH)
+		end)
 	end
 	return entry.selected, entry.changed
 end
@@ -936,9 +939,8 @@ function Widgets.Combo(win, label, selected, options)
 		win:QueueDrawAtLayer(5, function()
 			draw.Color(table.unpack(Globals.Colors.Window))
 			Common.DrawFilledRect(dropX, dropY, dropX + width, dropY + listH)
-			draw.Color(table.unpack(Globals.Colors.WindowBorder))
-			Common.DrawOutlinedRect(dropX, dropY, dropX + width, dropY + listH)
 		end)
+		-- Draw items at topmost layer
 		for i, opt in ipairs(options) do
 			local itemY = dropY + (i - 1) * height
 			win:QueueDrawAtLayer(5, function()
@@ -973,6 +975,11 @@ function Widgets.Combo(win, label, selected, options)
 				Common.DrawText(bx + popupBoxSize + pad, itemY + (height / 2) - (optH / 2), opt)
 			end)
 		end
+		-- Outline combo popup box after drawing items
+		win:QueueDrawAtLayer(5, function()
+			draw.Color(table.unpack(Globals.Colors.WindowBorder))
+			Common.DrawOutlinedRect(dropX, dropY, dropX + width, dropY + listH)
+		end)
 	end
 	return entry.selected, entry.changed
 end
