@@ -4,7 +4,7 @@ Titanium Immediate-Mode Menu for Lmaobox
 
 A lightweight, immediate-mode GUI library for Lmaobox scripts, allowing rapid construction of in-game menus with minimal boilerplate.
 
-Showcase: https://github.com/user-attachments/assets/311ee265-7a12-4caa-a9ad-f793e5ada073
+https://github.com/user-attachments/assets/7b0481bd-3382-4f84-833e-2cb8094ed448
 
 ## Installation
 
