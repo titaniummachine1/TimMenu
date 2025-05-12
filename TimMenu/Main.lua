@@ -174,11 +174,13 @@ function TimMenu.NextLine(spacing)
 	if not win then
 		return
 	end
-	-- advance to next line
-	win:NextLine(spacing)
+	-- default vertical gap between lines (double padding)
+	local pad = Globals.Defaults.WINDOW_CONTENT_PADDING
+	local actualSpacing = spacing or (pad * 3)
+	-- advance to next line with increased gap
+	win:NextLine(actualSpacing)
 	-- apply sector indentation
 	local depth = win._sectorStack and #win._sectorStack or 0
-	local pad = Globals.Defaults.WINDOW_CONTENT_PADDING
 	win.cursorX = pad + (depth * pad)
 end
 
@@ -206,96 +208,97 @@ function TimMenu.BeginSector(label)
 	if not win then
 		return
 	end
-	local padding = Globals.Defaults.WINDOW_CONTENT_PADDING
-	-- nesting depth determines inset
+	-- initialize sector stack
 	win._sectorStack = win._sectorStack or {}
-	local depth = #win._sectorStack + 1
-	-- compute inset and width
-	local pad = padding * depth
-	local x0 = win.X + pad
-	local width = win.W - pad * 2
-	-- absolute Y for header line
-	local y0 = win.Y + win.cursorY
-	-- pre-measure label height for spacing
-	local tw, th
-	if type(label) == "string" then
-		draw.SetFont(Globals.Style.Font)
-		tw, th = draw.GetTextSize(label)
+	-- capture current cursor as sector origin
+	local sector = {
+		startX = win.cursorX,
+		startY = win.cursorY,
+		maxX = win.cursorX,
+		maxY = win.cursorY,
+		label = label,
+		padding = Globals.Defaults.WINDOW_CONTENT_PADDING,
+		origAdd = win.AddWidget,
+	}
+	table.insert(win._sectorStack, sector)
+	-- override AddWidget & NextLine to track extents within this sector
+	sector.origNext = win.NextLine
+	win.AddWidget = function(self, w, h)
+		local x, y = sector.origAdd(self, w, h)
+		-- track widest and tallest widget positions
+		sector.maxX = math.max(sector.maxX, x + w)
+		sector.maxY = math.max(sector.maxY, y + h)
+		return x, y
 	end
-	-- draw header border with centered label at top of sector
-	win:QueueDrawAtLayer(5, function()
-		draw.Color(table.unpack(Globals.Colors.WindowBorder))
-		if type(label) == "string" then
-			draw.SetFont(Globals.Style.Font)
-			local tw, th = draw.GetTextSize(label)
-			local labelX = x0 + (width - tw) / 2
-			local lineY = y0
-			-- left segment before label
-			Common.DrawLine(x0, lineY, labelX - padding, lineY)
-			-- label text centered on the line
-			draw.Color(table.unpack(Globals.Colors.Text))
-			Common.DrawText(labelX, lineY - math.floor(th / 2), label)
-			-- right segment after label
-			draw.Color(table.unpack(Globals.Colors.WindowBorder))
-			Common.DrawLine(labelX + tw + padding, lineY, x0 + width, lineY)
-		else
-			Common.DrawLine(x0, y0, x0 + width, y0)
-		end
-	end)
-	-- record sector start position and depth
-	win._sectorStack[depth] = { startY = win.cursorY, depth = depth, label = label }
-	-- advance past header line and padding
-	local spacing = padding
-	if th then
-		spacing = spacing + th
+	win.NextLine = function(self, spacing)
+		sector.origNext(self, spacing)
+		-- track y position after line break
+		sector.maxY = math.max(sector.maxY, self.cursorY)
 	end
-	TimMenu.NextLine(spacing)
-	-- indent content inside sector with inner padding
-	win.cursorX = pad + padding
+	-- indent cursor for sector padding
+	win.cursorX = sector.startX + sector.padding
+	win.cursorY = sector.startY + sector.padding
 end
 
---- Ends the named sector, drawing its background and border.
+--- Ends the named sector, drawing its background and border and restoring layout.
 ---@param label string sector name to end
 function TimMenu.EndSector(label)
 	local win = TimMenu.GetCurrentWindow()
 	if not win or not win._sectorStack or #win._sectorStack == 0 then
 		return
 	end
-	-- verify matching sector
-	local last = win._sectorStack[#win._sectorStack]
-	if last.label ~= label then
-		error("Mismatched EndSector: expected '" .. tostring(last.label) .. "', got '" .. tostring(label) .. "'")
+	-- pop last sector
+	local sector = win._sectorStack[#win._sectorStack]
+	if sector.label ~= label then
+		error("Mismatched EndSector: expected '" .. tostring(sector.label) .. "', got '" .. tostring(label) .. "'")
 	end
-	-- Pop the matching sector
-	local sector = table.remove(win._sectorStack)
-	local padding = Globals.Defaults.WINDOW_CONTENT_PADDING
-	local depth = sector.depth
-	local pad = padding * depth
-	local x0 = win.X + pad
-	local width = win.W - pad * 2
-	-- fill from header line down to cursor + bottom pad
-	local fillTop = win.Y + sector.startY
-	local fillBottom = win.Y + win.cursorY + padding
-	-- background fill behind sector
+	table.remove(win._sectorStack)
+	-- restore AddWidget and NextLine
+	win.AddWidget = sector.origAdd
+	win.NextLine = sector.origNext
+	local pad = sector.padding
+	-- compute sector dimensions (+padding)
+	local width = (sector.maxX - sector.startX) + pad
+	local height = (sector.maxY - sector.startY) + pad
+	local absX = win.X + sector.startX
+	local absY = win.Y + sector.startY
+	-- draw background behind sector
 	do
 		local fnFill = function()
 			draw.Color(table.unpack(Globals.Colors.FrameBorder))
-			Common.DrawFilledRect(x0, fillTop, x0 + width, fillBottom)
+			Common.DrawFilledRect(absX, absY, absX + width, absY + height)
 		end
 		table.insert(win.Layers[1], 1, { fn = fnFill, args = {} })
 	end
-	-- draw borders
+	-- draw border and optional header label
 	win:QueueDrawAtLayer(5, function()
 		draw.Color(table.unpack(Globals.Colors.WindowBorder))
+		if type(sector.label) == "string" then
+			draw.SetFont(Globals.Style.Font)
+			local tw, th = draw.GetTextSize(sector.label)
+			local labelX = absX + (width - tw) / 2
+			local lineY = absY
+			-- left border segment
+			Common.DrawLine(absX, lineY, labelX - pad, lineY)
+			-- label text
+			draw.Color(table.unpack(Globals.Colors.Text))
+			Common.DrawText(labelX, lineY - math.floor(th / 2), sector.label)
+			-- right border segment
+			draw.Color(table.unpack(Globals.Colors.WindowBorder))
+			Common.DrawLine(labelX + tw + pad, lineY, absX + width, lineY)
+		else
+			Common.DrawLine(absX, absY, absX + width, absY)
+		end
 		-- bottom border
-		Common.DrawLine(x0, fillBottom, x0 + width, fillBottom)
+		Common.DrawLine(absX, absY + height, absX + width, absY + height)
 		-- left border
-		Common.DrawLine(x0, fillTop, x0, fillBottom)
+		Common.DrawLine(absX, absY, absX, absY + height)
 		-- right border
-		Common.DrawLine(x0 + width, fillTop, x0 + width, fillBottom)
+		Common.DrawLine(absX + width, absY, absX + width, absY + height)
 	end)
-	-- advance past bottom padding
-	TimMenu.NextLine(padding)
+	-- move parent cursor to right of this sector (allow horizontal stacking)
+	win.cursorX = sector.startX + width + pad
+	win.cursorY = sector.startY
 end
 
 -- Named function for the global draw callback

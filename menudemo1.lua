@@ -9,14 +9,26 @@ local selectedIndex1 = 1
 
 local function OnDraw_Menudemo1()
 	if TimMenu.Begin("Demo Window 1") then
-		-- Display header text
-		TimMenu.Text("Demo Script 1: Basic Widgets")
+		-- First row: two sectors side by side
+		TimMenu.BeginSector("sectorA")
+		if TimMenu.Button("Click Me") then
+		end
+		TimMenu.EndSector("sectorA")
+		TimMenu.BeginSector("sectorB")
+		if TimMenu.Button("Click Me") then
+		end
+		TimMenu.EndSector("sectorB")
 		TimMenu.NextLine()
 
-		-- Button example
+		-- Second row: two more sectors
+		TimMenu.BeginSector("sectorC")
 		if TimMenu.Button("Click Me") then
-			print("[Menudemo1] Button clicked!")
 		end
+		TimMenu.EndSector("sectorC")
+		TimMenu.BeginSector("sectorD")
+		if TimMenu.Button("Click Me") then
+		end
+		TimMenu.EndSector("sectorD")
 		TimMenu.NextLine()
 
 		-- Checkbox example
