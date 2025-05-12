@@ -104,29 +104,27 @@ end
 
 --- Calls the Widgets.Button API on the current window.
 function TimMenu.Button(label)
+	assert(type(label) == "string", "TimMenu.Button: 'label' must be a string, got " .. type(label))
 	local win = TimMenu.GetCurrentWindow()
-	if win then
-		return Widgets.Button(win, label)
-	end
-	return false
+	assert(win, "TimMenu.Button: no active window. Ensure TimMenu.Begin() was called before using widget functions.")
+	return Widgets.Button(win, label)
 end
 
 --- Draws a checkbox and returns its new state.
 function TimMenu.Checkbox(label, state)
+	assert(type(label) == "string", "TimMenu.Checkbox: 'label' must be a string, got " .. type(label))
+	assert(type(state) == "boolean", "TimMenu.Checkbox: 'state' must be boolean, got " .. type(state))
 	local win = TimMenu.GetCurrentWindow()
-	if win then
-		return Widgets.Checkbox(win, label, state) -- State will be managed by the window now
-	end
-	return state
+	assert(win, "TimMenu.Checkbox: no active window. Ensure TimMenu.Begin() was called before using widget functions.")
+	return Widgets.Checkbox(win, label, state)
 end
 
 --- Draws static text in the current window.
 --- @param text string The string to display.
 function TimMenu.Text(text)
+	assert(type(text) == "string", "TimMenu.Text: 'text' must be a string, got " .. type(text))
 	local win = TimMenu.GetCurrentWindow()
-	if not win then
-		return
-	end
+	assert(win, "TimMenu.Text: no active window. Ensure TimMenu.Begin() was called before drawing text.")
 	-- Measure text
 	draw.SetFont(Globals.Style.Font)
 	local w, h = draw.GetTextSize(text)
@@ -201,51 +199,74 @@ end
 
 --- Draws a slider and returns the new value and whether it changed.
 function TimMenu.Slider(label, value, min, max, step)
+	assert(type(label) == "string", "TimMenu.Slider: 'label' must be a string, got " .. type(label))
+	assert(type(value) == "number", "TimMenu.Slider: 'value' must be a number, got " .. type(value))
+	assert(type(min) == "number", "TimMenu.Slider: 'min' must be a number, got " .. type(min))
+	assert(type(max) == "number", "TimMenu.Slider: 'max' must be a number, got " .. type(max))
+	assert(type(step) == "number", "TimMenu.Slider: 'step' must be a number, got " .. type(step))
 	local win = TimMenu.GetCurrentWindow()
-	if win then
-		return Widgets.Slider(win, label, value, min, max, step)
-	end
-	return value, false
+	assert(win, "TimMenu.Slider: no active window. Ensure TimMenu.Begin() was called before using widget functions.")
+	return Widgets.Slider(win, label, value, min, max, step)
 end
 
 --- Draws a horizontal separator in the current window; optional centered label.
 function TimMenu.Separator(label)
+	assert(
+		label == nil or type(label) == "string",
+		"TimMenu.Separator: 'label' must be a string or nil, got " .. type(label)
+	)
 	local win = TimMenu.GetCurrentWindow()
-	if win then
-		return Widgets.Separator(win, label)
-	end
+	assert(win, "TimMenu.Separator: no active window. Ensure TimMenu.Begin() was called before using widget functions.")
+	return Widgets.Separator(win, label)
 end
 
 --- Single-line text input; returns new string and whether it changed.
 function TimMenu.TextInput(label, text)
+	assert(type(label) == "string", "TimMenu.TextInput: 'label' must be a string, got " .. type(label))
+	assert(type(text) == "string", "TimMenu.TextInput: 'text' must be a string, got " .. type(text))
 	local win = TimMenu.GetCurrentWindow()
-	if win then
-		return Widgets.TextInput(win, label, text)
-	end
-	return text, false
+	assert(win, "TimMenu.TextInput: no active window. Ensure TimMenu.Begin() was called before using widget functions.")
+	return Widgets.TextInput(win, label, text)
 end
 
 --- Dropdown list; returns new index and whether it changed.
 function TimMenu.Dropdown(label, selectedIndex, options)
+	assert(type(label) == "string", "TimMenu.Dropdown: 'label' must be a string, got " .. type(label))
+	assert(
+		type(selectedIndex) == "number",
+		"TimMenu.Dropdown: 'selectedIndex' must be a number, got " .. type(selectedIndex)
+	)
+	assert(type(options) == "table", "TimMenu.Dropdown: 'options' must be a table, got " .. type(options))
 	local win = TimMenu.GetCurrentWindow()
-	if win then
-		return Widgets.Dropdown(win, label, selectedIndex, options)
-	end
-	return selectedIndex, false
+	assert(win, "TimMenu.Dropdown: no active window. Ensure TimMenu.Begin() was called before using widget functions.")
+	return Widgets.Dropdown(win, label, selectedIndex, options)
 end
 
 --- Alias for Dropdown
 function TimMenu.Combo(label, selectedIndex, options)
+	assert(type(label) == "string", "TimMenu.Combo: 'label' must be a string, got " .. type(label))
+	assert(
+		type(selectedIndex) == "number",
+		"TimMenu.Combo: 'selectedIndex' must be a number, got " .. type(selectedIndex)
+	)
+	assert(type(options) == "table", "TimMenu.Combo: 'options' must be a table, got " .. type(options))
 	return TimMenu.Dropdown(label, selectedIndex, options)
 end
 
 --- Cyclic selector (< value >); returns new index and whether it changed.
 function TimMenu.Selector(label, selectedIndex, options)
+	assert(
+		label == nil or type(label) == "string",
+		"TimMenu.Selector: 'label' must be a string or nil, got " .. type(label)
+	)
+	assert(
+		type(selectedIndex) == "number",
+		"TimMenu.Selector: 'selectedIndex' must be a number, got " .. type(selectedIndex)
+	)
+	assert(type(options) == "table", "TimMenu.Selector: 'options' must be a table, got " .. type(options))
 	local win = TimMenu.GetCurrentWindow()
-	if win then
-		return Widgets.Selector(win, label, selectedIndex, options)
-	end
-	return selectedIndex, false
+	assert(win, "TimMenu.Selector: no active window. Ensure TimMenu.Begin() was called before using widget functions.")
+	return Widgets.Selector(win, label, selectedIndex, options)
 end
 
 --- Begins a visual sector grouping; widgets until EndSector are enclosed.
@@ -501,5 +522,10 @@ callbacks.Register("Draw", "TimMenu_GlobalDraw", _TimMenu_GlobalDraw)
 
 --[[ Play sound when loaded -- consider if this is still desired with centralized model ]]
 engine.PlaySound("hl1/fvox/activated.wav")
+
+-- Alias for backward compatibility: Textbox
+function TimMenu.Textbox(label, text)
+	return TimMenu.TextInput(label, text)
+end
 
 return TimMenu

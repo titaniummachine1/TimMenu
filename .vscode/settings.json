@@ -13,7 +13,6 @@
                 "isAsync": true,
                 "cmd": "${workspaceFolder}/BundleAndDeploy.bat",
                 "message": "Attempting to run default build task for ${fileBasename}...",
-                "autoShowOutputPanel": "error"
             }
         ]
     },

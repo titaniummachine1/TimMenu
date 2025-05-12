@@ -245,6 +245,9 @@ function Widgets.Slider(win, label, value, min, max, step)
 		local fillCol = dragging and Globals.Colors.HighlightActive or Globals.Colors.Highlight
 		draw.Color(table.unpack(fillCol))
 		Common.DrawFilledRect(absX, absY, absX + (width * norm), absY + height)
+		-- Add outline around slider track
+		draw.Color(table.unpack(Globals.Colors.WindowBorder))
+		Common.DrawOutlinedRect(absX, absY, absX + width, absY + height)
 		-- Label centered
 		draw.Color(table.unpack(Globals.Colors.Text))
 		draw.SetFont(Globals.Style.Font)
