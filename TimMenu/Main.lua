@@ -277,39 +277,48 @@ function TimMenu.EndSector(label)
 	end
 	local absX = win.X + sector.startX
 	local absY = win.Y + sector.startY
-	-- draw background behind sector
-	do
-		local fnFill = function()
+	-- dynamic draw background behind sector
+	table.insert(win.Layers[1], 1, {
+		fn = function()
+			local x0 = win.X + sector.startX
+			local y0 = win.Y + sector.startY
+			local w0 = (sector.maxX - sector.startX) + sector.padding
+			local h0 = (sector.maxY - sector.startY) + sector.padding
 			draw.Color(table.unpack(Globals.Colors.FrameBorder))
-			Common.DrawFilledRect(absX, absY, absX + width, absY + height)
-		end
-		table.insert(win.Layers[1], 1, { fn = fnFill, args = {} })
-	end
-	-- draw border and optional header label
+			Common.DrawFilledRect(x0, y0, x0 + w0, y0 + h0)
+		end,
+		args = {},
+	})
+	-- dynamic draw border and optional header label
 	win:QueueDrawAtLayer(5, function()
+		local x0 = win.X + sector.startX
+		local y0 = win.Y + sector.startY
+		local w0 = (sector.maxX - sector.startX) + sector.padding
+		local h0 = (sector.maxY - sector.startY) + sector.padding
+		local pad0 = sector.padding
 		draw.Color(table.unpack(Globals.Colors.WindowBorder))
 		if type(sector.label) == "string" then
 			draw.SetFont(Globals.Style.Font)
 			local tw, th = draw.GetTextSize(sector.label)
-			local labelX = absX + (width - tw) / 2
-			local lineY = absY
+			local labelX = x0 + (w0 - tw) / 2
+			local lineY = y0
 			-- left border segment
-			Common.DrawLine(absX, lineY, labelX - pad, lineY)
+			Common.DrawLine(x0, lineY, labelX - pad0, lineY)
 			-- label text
 			draw.Color(table.unpack(Globals.Colors.Text))
 			Common.DrawText(labelX, lineY - math.floor(th / 2), sector.label)
 			-- right border segment
 			draw.Color(table.unpack(Globals.Colors.WindowBorder))
-			Common.DrawLine(labelX + tw + pad, lineY, absX + width, lineY)
+			Common.DrawLine(labelX + tw + pad0, lineY, x0 + w0, lineY)
 		else
-			Common.DrawLine(absX, absY, absX + width, absY)
+			Common.DrawLine(x0, y0, x0 + w0, y0)
 		end
 		-- bottom border
-		Common.DrawLine(absX, absY + height, absX + width, absY + height)
+		Common.DrawLine(x0, y0 + h0, x0 + w0, y0 + h0)
 		-- left border
-		Common.DrawLine(absX, absY, absX, absY + height)
+		Common.DrawLine(x0, y0, x0, y0 + h0)
 		-- right border
-		Common.DrawLine(absX + width, absY, absX + width, absY + height)
+		Common.DrawLine(x0 + w0, y0, x0 + w0, y0 + h0)
 	end)
 	-- move parent cursor to right of this sector (allow horizontal stacking)
 	win.cursorX = sector.startX + width + pad

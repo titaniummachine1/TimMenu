@@ -69,6 +69,9 @@ function Widgets.Button(win, label)
 	end
 
 	win:QueueDrawAtLayer(2, function()
+		-- Calculate position inside window so it follows dragging
+		local absX = win.X + x
+		local absY = win.Y + y
 		-- Background using ImMenu style
 		local bgColor = Globals.Colors.Item
 		if buttonPressState[key] then
@@ -130,6 +133,9 @@ function Widgets.Checkbox(win, label, state)
 	end
 
 	win:QueueDrawAtLayer(2, function()
+		-- Calculate position inside window so it follows dragging
+		local absX = win.X + x
+		local absY = win.Y + y
 		-- Background using ImMenu style
 		local bgColor = Globals.Colors.Item
 		local active = hovered and input.IsButtonDown(MOUSE_LEFT)
@@ -228,6 +234,9 @@ function Widgets.Slider(win, label, value, min, max, step)
 
 	-- Draw slider background, fill, and centered label
 	win:QueueDrawAtLayer(1, function()
+		-- Calculate position inside window so it follows dragging
+		local absX = win.X + x
+		local absY = win.Y + y
 		-- Background
 		local bg = Globals.Colors.Item
 		draw.Color(table.unpack(bg))
@@ -260,6 +269,10 @@ function Widgets.Separator(win, label)
 		local absX, absY = win.X + x, win.Y + y
 		local centerY = absY + math.floor(textHeight / 2)
 		win:QueueDrawAtLayer(1, function()
+			-- Calculate position inside window so it follows dragging
+			local absX = win.X + x
+			local absY = win.Y + y
+			local centerY = absY + math.floor(textHeight / 2)
 			draw.Color(table.unpack(Globals.Colors.WindowBorder))
 			-- Left line
 			Common.DrawLine(absX, centerY, absX + (totalWidth - textWidth) / 2 - Globals.Style.ItemPadding, centerY)
@@ -280,6 +293,9 @@ function Widgets.Separator(win, label)
 		local x, y = win:AddWidget(totalWidth, 1)
 		local absX, absY = win.X + x, win.Y + y
 		win:QueueDrawAtLayer(1, function()
+			-- Calculate position inside window so it follows dragging
+			local absX = win.X + x
+			local absY = win.Y + y
 			draw.Color(table.unpack(Globals.Colors.WindowBorder))
 			Common.DrawLine(absX, absY, absX + totalWidth, absY)
 		end)
