@@ -56,12 +56,10 @@ callbacks.Register("Draw", "ExampleDraw", OnDraw)
 
 - `bool = TimMenu.Begin(title, [visible, [id]])`
 - `TimMenu.End()`
-- `TimMenu.ShowDebug()`
 
 ### Layout
 
 - `TimMenu.NextLine([spacing])`
-- `TimMenu.SameLine([spacing])`
 - `TimMenu.Spacing(amount)`
 
 ### Basic Widgets
@@ -90,7 +88,6 @@ Globals.Style.ItemPadding = 8
 
 ## Tips
 
-- Use `SameLine()` to place widgets horizontally.
 - Use `BeginSector`/`EndSector` to group widgets in bordered panels.
 - After dragging windows, widgets automatically snap to their new positions.
 
