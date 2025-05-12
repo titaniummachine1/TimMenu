@@ -14,6 +14,7 @@ Globals.Colors = {
 	FrameBorder = { 0, 0, 0, 200 },
 	SectorBackground = { 20, 20, 20, 255 },
 	Border = { 0, 0, 0, 200 },
+	TabSelectedUnderline = { 220, 60, 60, 255 }, -- Reddish color for selected tab
 }
 
 -- Style settings

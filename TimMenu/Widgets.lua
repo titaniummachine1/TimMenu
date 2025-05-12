@@ -81,6 +81,9 @@ function Widgets.Button(win, label)
 		end
 		draw.Color(table.unpack(bgColor))
 		Common.DrawFilledRect(absX, absY, absX + width, absY + height)
+		-- Add outline around button
+		draw.Color(table.unpack(Globals.Colors.WindowBorder))
+		Common.DrawOutlinedRect(absX, absY, absX + width, absY + height)
 		-- Label text
 		draw.Color(table.unpack(Globals.Colors.Text))
 		draw.SetFont(Globals.Style.Font)
@@ -103,7 +106,7 @@ function Widgets.Checkbox(win, label, state)
 	draw.SetFont(Globals.Style.Font)
 	local txtW, txtH = draw.GetTextSize(label)
 	local padding = Globals.Style.ItemPadding
-	local boxSize = txtH
+	local boxSize = txtH * 1.5
 	local width = boxSize + padding + txtW
 	local height = boxSize
 
@@ -149,7 +152,8 @@ function Widgets.Checkbox(win, label, state)
 		-- Check mark fill
 		if state then
 			draw.Color(table.unpack(Globals.Colors.Highlight))
-			Common.DrawFilledRect(absX + 2, absY + 2, absX + boxSize - 2, absY + boxSize - 2)
+			local margin = math.floor(boxSize * 0.25)
+			Common.DrawFilledRect(absX + margin, absY + margin, absX + boxSize - margin, absY + boxSize - margin)
 		end
 		-- Label text
 		draw.Color(table.unpack(Globals.Colors.Text))
@@ -616,6 +620,135 @@ function Widgets.Selector(win, label, selectedIndex, options)
 	end)
 
 	return entry.selected, entry.changed
+end
+
+--- Draws a row of tabs and handles selection.
+---@param win table The current window object.
+---@param id string A unique identifier for this tab control.
+---@param tabs table A list of strings representing the tab labels.
+---@param currentTabIndex integer The 1-based index of the currently selected tab.
+---@return integer newCurrentTabIndex The potentially updated selected tab index.
+function Widgets.TabControl(win, id, tabs, currentTabIndex)
+	assert(type(id) == "string", "Widgets.TabControl: id must be a string")
+	assert(type(tabs) == "table", "Widgets.TabControl: tabs must be a table")
+	assert(type(currentTabIndex) == "number", "Widgets.TabControl: currentTabIndex must be a number")
+
+	local newIndex = currentTabIndex
+	local selectedTabInfo = nil -- To store position/size of the selected tab button
+
+	-- Store original cursor position to reset for drawing the underline later
+	local initialCursorX = win.cursorX
+	local initialCursorY = win.cursorY
+	local startY = initialCursorY -- Remember the Y position of the tab row
+
+	-- We need to manually handle SameLine logic within the widget
+	local currentLineMaxHeight = 0
+
+	for i, tabLabel in ipairs(tabs) do
+		local isSelected = (i == currentTabIndex)
+		-- Use a unique key for each tab button within this control
+		local buttonKey = id .. ":tab:" .. tabLabel
+
+		-- Calculate button dimensions (similar to Widgets.Button)
+		draw.SetFont(Globals.Style.Font)
+		local textWidth, textHeight = draw.GetTextSize(tabLabel)
+		local padding = Globals.Style.ItemPadding
+		local btnWidth = textWidth + (padding * 2)
+		local btnHeight = textHeight + (padding * 2)
+
+		-- Add spacing before the button if it's not the first one
+		if i > 1 then
+			win.cursorX = win.cursorX + Globals.Defaults.ITEM_SPACING
+		end
+
+		-- Manually reserve space (like win:AddWidget but simpler for this context)
+		local currentButtonX = win.cursorX
+		local currentButtonY = startY
+		win.cursorX = win.cursorX + btnWidth
+		currentLineMaxHeight = math.max(currentLineMaxHeight, btnHeight)
+
+		local absX, absY = win.X + currentButtonX, win.Y + currentButtonY
+		local bounds = { x = absX, y = absY, w = btnWidth, h = btnHeight }
+
+		-- Interaction (similar to Widgets.Button but without unique index)
+		local hovered = canInteract(win, bounds)
+		buttonPressState = buttonPressState or {}
+		local buttonKeyInternal = tostring(win.id) .. ":" .. buttonKey -- Match button's internal key format
+		local clicked = false
+		if hovered and input.IsButtonPressed(MOUSE_LEFT) and not buttonPressState[buttonKeyInternal] then
+			clicked = true
+			buttonPressState[buttonKeyInternal] = true
+			newIndex = i -- Update selection on click
+		end
+		if buttonPressState[buttonKeyInternal] and not input.IsButtonDown(MOUSE_LEFT) then
+			buttonPressState[buttonKeyInternal] = false
+		end
+
+		-- Store info for the selected tab to draw underline later
+		if isSelected then
+			selectedTabInfo = { x = currentButtonX, y = currentButtonY, w = btnWidth, h = btnHeight }
+		end
+
+		-- Queue drawing for the button (slightly modified from Widgets.Button)
+		win:QueueDrawAtLayer(2, function(cx, cy, cw, ch, clabel, ckey, cIsSelected, cHovered)
+			local currentAbsX, currentAbsY = win.X + cx, win.Y + cy
+			-- Background (no special hover/active color for tabs, maybe adjust later?)
+			-- Let's make selected tab text slightly brighter?
+			local textColor = Globals.Colors.Text
+			if cIsSelected then
+				-- Maybe slightly brighter or different color? For now, same.
+				textColor = Globals.Colors.Text -- Ensure selected is full white
+			else
+				-- Dimmer color for non-selected tabs
+				textColor = { 180, 180, 180, 255 }
+			end
+
+			-- NO background fill for tabs like the image
+			--[[ draw.Color(table.unpack(bgColor))
+			Common.DrawFilledRect(currentAbsX, currentAbsY, currentAbsX + cw, currentAbsY + ch) ]]
+
+			-- NO outline for tabs like the image
+			--[[ draw.Color(table.unpack(Globals.Colors.WindowBorder))
+			Common.DrawOutlinedRect(currentAbsX, currentAbsY, currentAbsX + cw, currentAbsY + ch) ]]
+
+			-- Label text (centered)
+			draw.Color(table.unpack(textColor))
+			draw.SetFont(Globals.Style.Font)
+			local actualTxtW, actualTxtH = draw.GetTextSize(clabel)
+			Common.DrawText(currentAbsX + (cw - actualTxtW) / 2, currentAbsY + (ch - actualTxtH) / 2, clabel)
+		end, currentButtonX, currentButtonY, btnWidth, btnHeight, tabLabel, buttonKeyInternal, isSelected, hovered)
+	end
+
+	-- After drawing all buttons, draw the underline if a tab is selected
+	if selectedTabInfo then
+		win:QueueDrawAtLayer(3, function(sInfo)
+			local underlineY = win.Y + sInfo.y + sInfo.h -- Position below the button
+			local underlineStartX = win.X + sInfo.x
+			local underlineEndX = underlineStartX + sInfo.w
+			local underlineHeight = 2 -- Thickness of the underline
+			-- Use WindowBorder color for the underline
+			draw.Color(table.unpack(Globals.Colors.WindowBorder))
+			Common.DrawFilledRect(underlineStartX, underlineY, underlineEndX, underlineY + underlineHeight)
+		end, selectedTabInfo)
+	end
+
+	-- Add a separator line below the tabs/underline
+	win:QueueDrawAtLayer(1, function()
+		local sepY = win.Y + startY + currentLineMaxHeight + (selectedTabInfo and 2 or 0) + 2 -- Position below tabs/underline + padding
+		local sepStartX = win.X + Globals.Defaults.WINDOW_CONTENT_PADDING
+		local sepEndX = win.X + win.W - Globals.Defaults.WINDOW_CONTENT_PADDING
+		draw.Color(table.unpack(Globals.Colors.WindowBorder))
+		Common.DrawLine(sepStartX, sepY, sepEndX, sepY)
+	end)
+
+	-- Update the window's cursor Y position based on the tallest element in the row + underline space
+	-- Add space for underline (2px) + separator (1px) + some padding (e.g., 3px)
+	win.cursorY = startY + currentLineMaxHeight + (selectedTabInfo and 2 or 0) + 1 + 3
+	-- Reset cursorX for the next line (standard behavior after a row)
+	win.cursorX = Globals.Defaults.WINDOW_CONTENT_PADDING
+	win.lineHeight = 0 -- Reset line height as this widget manually managed it
+
+	return newIndex
 end
 
 return Widgets

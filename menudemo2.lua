@@ -12,20 +12,22 @@ local currentTab = tabs[1]
 
 local function OnDraw_Menudemo2()
 	if TimMenu.Begin("Demo Window 2 - Advanced") then
-		-- Tab bar
-		for i, tab in ipairs(tabs) do
-			if TimMenu.Button(tab) then
-				currentTab = tab
-			end
-			if i < #tabs then
-				TimMenu.SameLine()
+		-- Find current tab index
+		local currentTabIndex = 1
+		for i, tabName in ipairs(tabs) do
+			if tabName == currentTab then
+				currentTabIndex = i
+				break
 			end
 		end
-		TimMenu.NextLine()
 
-		-- Separator under tabs
-		TimMenu.Separator("separator1")
-		TimMenu.NextLine()
+		-- Use the new TabControl widget
+		local newTabIndex = TimMenu.TabControl("DemoTabs", tabs, currentTabIndex)
+
+		-- Update state if selection changed
+		if newTabIndex ~= currentTabIndex then
+			currentTab = tabs[newTabIndex]
+		end
 
 		if currentTab == "Main" then
 			TimMenu.Text("Welcome to the Main Tab")

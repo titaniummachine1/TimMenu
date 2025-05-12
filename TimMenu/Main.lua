@@ -269,6 +269,26 @@ function TimMenu.Selector(label, selectedIndex, options)
 	return Widgets.Selector(win, label, selectedIndex, options)
 end
 
+--- Draws a tab control row and returns the newly selected tab index.
+---@param id string A unique identifier for this specific tab control instance.
+---@param tabs table A list of strings for the tab labels.
+---@param currentTabIndex integer The 1-based index of the currently active tab.
+---@return integer newTabIndex The index of the tab that is now selected (might be the same as currentTabIndex).
+function TimMenu.TabControl(id, tabs, currentTabIndex)
+	assert(type(id) == "string", "TimMenu.TabControl: 'id' must be a string, got " .. type(id))
+	assert(type(tabs) == "table", "TimMenu.TabControl: 'tabs' must be a table, got " .. type(tabs))
+	assert(
+		type(currentTabIndex) == "number",
+		"TimMenu.TabControl: 'currentTabIndex' must be a number, got " .. type(currentTabIndex)
+	)
+	local win = TimMenu.GetCurrentWindow()
+	assert(
+		win,
+		"TimMenu.TabControl: no active window. Ensure TimMenu.Begin() was called before using widget functions."
+	)
+	return Widgets.TabControl(win, id, tabs, currentTabIndex)
+end
+
 --- Begins a visual sector grouping; widgets until EndSector are enclosed.
 ---@param label string optional title for the sector
 function TimMenu.BeginSector(label)
