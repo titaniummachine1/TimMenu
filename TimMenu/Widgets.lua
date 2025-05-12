@@ -29,6 +29,9 @@ local function canInteract(win, bounds)
 end
 
 function Widgets.Button(win, label)
+	-- assign a per-window unique index to avoid collisions
+	win._widgetCounter = (win._widgetCounter or 0) + 1
+	local widgetIndex = win._widgetCounter
 	-- Calculate dimensions
 	draw.SetFont(Globals.Style.Font)
 	local textWidth, textHeight = draw.GetTextSize(label)
@@ -55,7 +58,7 @@ function Widgets.Button(win, label)
 
 	-- Handle interaction
 	local hovered = canInteract(win, bounds)
-	local key = tostring(win.id) .. ":" .. label
+	local key = tostring(win.id) .. ":" .. label .. ":" .. widgetIndex
 	local clicked = false
 	if hovered and input.IsButtonPressed(MOUSE_LEFT) and not buttonPressState[key] then
 		clicked = true
@@ -90,6 +93,9 @@ end
 --- @param state boolean current checkbox state
 --- @return boolean new state after click
 function Widgets.Checkbox(win, label, state)
+	-- assign a per-window unique index to avoid collisions
+	win._widgetCounter = (win._widgetCounter or 0) + 1
+	local widgetIndex = win._widgetCounter
 	-- Font and sizing
 	draw.SetFont(Globals.Style.Font)
 	local txtW, txtH = draw.GetTextSize(label)
@@ -112,7 +118,7 @@ function Widgets.Checkbox(win, label, state)
 	local hovered = canInteract(win, bounds)
 
 	-- Debounce: immediate toggle on press, reset on release
-	local key = tostring(win.id) .. ":" .. label
+	local key = tostring(win.id) .. ":" .. label .. ":" .. widgetIndex
 	local clicked = false
 	if hovered and input.IsButtonPressed(MOUSE_LEFT) and not lastPressState[key] then
 		state = not state
@@ -150,6 +156,9 @@ end
 
 --- Draws a slider widget, returning the new value and whether it changed.
 function Widgets.Slider(win, label, value, min, max, step)
+	-- assign a per-window unique index to avoid collisions
+	win._widgetCounter = (win._widgetCounter or 0) + 1
+	local widgetIndex = win._widgetCounter
 	local Common = require("TimMenu.Common")
 	local Globals = require("TimMenu.Globals")
 	-- Set font and measure label text
@@ -185,7 +194,7 @@ function Widgets.Slider(win, label, value, min, max, step)
 	local hovered = (mX >= absX and mX <= absX + width and mY >= absY and mY <= absY + height)
 	local pressed = input.IsButtonPressed(MOUSE_LEFT)
 	local down = input.IsButtonDown(MOUSE_LEFT)
-	local key = tostring(win.id) .. ":" .. label
+	local key = tostring(win.id) .. ":" .. label .. ":" .. widgetIndex
 	Widgets._sliderDragging = Widgets._sliderDragging or {}
 	local dragging = Widgets._sliderDragging[key] or false
 	if hovered and pressed then

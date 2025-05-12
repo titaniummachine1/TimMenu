@@ -80,6 +80,9 @@ function TimMenu.Begin(title, visible, id)
 	-- Reset window's internal layout cursor for this frame's widgets
 	win:resetCursor()
 
+	-- Clear per-frame widget counter for unique widget IDs
+	win._widgetCounter = 0
+
 	-- Clear any previously recorded sectors for this window each frame
 	win._sectorStack = {}
 
