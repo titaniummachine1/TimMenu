@@ -84,7 +84,7 @@ function Widgets.Button(win, label)
 		-- Add outline around button
 		draw.Color(table.unpack(Globals.Colors.WindowBorder))
 		Common.DrawOutlinedRect(absX, absY, absX + width, absY + height)
-		-- Label text
+		-- Ensure text color is white
 		draw.Color(table.unpack(Globals.Colors.Text))
 		draw.SetFont(Globals.Style.Font)
 		Common.DrawText(absX + padding, absY + padding, label)
@@ -155,7 +155,7 @@ function Widgets.Checkbox(win, label, state)
 			local margin = math.floor(boxSize * 0.25)
 			Common.DrawFilledRect(absX + margin, absY + margin, absX + boxSize - margin, absY + boxSize - margin)
 		end
-		-- Label text
+		-- Ensure text color is white
 		draw.Color(table.unpack(Globals.Colors.Text))
 		draw.SetFont(Globals.Style.Font)
 		Common.DrawText(absX + boxSize + padding, absY + (boxSize // 2) - (txtH // 2), label)
@@ -252,7 +252,7 @@ function Widgets.Slider(win, label, value, min, max, step)
 		-- Add outline around slider track
 		draw.Color(table.unpack(Globals.Colors.WindowBorder))
 		Common.DrawOutlinedRect(absX, absY, absX + width, absY + height)
-		-- Label centered
+		-- Ensure text color is white
 		draw.Color(table.unpack(Globals.Colors.Text))
 		draw.SetFont(Globals.Style.Font)
 		Common.DrawText(absX + (width - txtW) * 0.5, absY + (height - txtH) * 0.5, labelText)
@@ -465,8 +465,10 @@ function Widgets.Dropdown(win, label, selectedIndex, options)
 		Common.DrawFilledRect(absX, absY, absX + width, absY + height)
 		draw.Color(table.unpack(Globals.Colors.WindowBorder))
 		Common.DrawOutlinedRect(absX, absY, absX + width, absY + height)
+		-- Ensure text color is white
+		draw.Color(table.unpack(Globals.Colors.Text))
 		-- Display selected option text
-		local displayText = options[entry.selected] or ""
+		local displayText = label
 		local _, txtH = draw.GetTextSize(displayText) -- Measure text height inside closure
 		Common.DrawText(absX + pad, absY + (height - txtH) / 2, displayText) -- Center vertically
 		-- Dynamic dropdown arrow
@@ -899,19 +901,10 @@ function Widgets.Combo(win, label, selected, options)
 		Common.DrawFilledRect(absX, absY, absX + width, absY + height)
 		draw.Color(table.unpack(Globals.Colors.WindowBorder))
 		Common.DrawOutlinedRect(absX, absY, absX + width, absY + height)
-		-- Text summary of selections
+		-- Ensure text color is white
 		draw.Color(table.unpack(Globals.Colors.Text))
-		draw.SetFont(Globals.Style.Font)
-		local selectedLabels = {}
-		for idx, flag in ipairs(entry.selected) do
-			if flag then
-				table.insert(selectedLabels, options[idx])
-			end
-		end
+		-- Text summary of selections
 		local displayText = label
-		if #selectedLabels > 0 then
-			displayText = label .. ": " .. table.concat(selectedLabels, ", ")
-		end
 		Common.DrawText(absX + pad, absY + (height - txtH) / 2, displayText)
 		-- Dynamic arrow indicator
 		local arrowChar = entry.open and "▲" or "▼"
