@@ -435,7 +435,7 @@ function Widgets.Dropdown(win, label, selectedIndex, options)
 			-- Open dropdown on click press when cursor is over control
 			entry.open = true
 		elseif entry.open then
-			-- Select option if click press is on an item
+			-- Toggle selection if clicking on an item
 			if isInBounds(mX2, mY2, { x = listX, y = listY, w = width, h = listH }) then
 				local idx = math.floor((mY2 - listY) / itemH) + 1
 				if idx >= 1 and idx <= #options then
@@ -443,7 +443,7 @@ function Widgets.Dropdown(win, label, selectedIndex, options)
 					entry.changed = true
 				end
 			end
-			-- Close dropdown on any click press when open
+			-- Close popup on any click press when open
 			entry.open = false
 		end
 		buttonPressState[pressKey] = true
@@ -880,15 +880,16 @@ function Widgets.Combo(win, label, selected, options)
 		if not entry.open and hovered then
 			entry.open = true
 		elseif entry.open then
+			-- Toggle selection if clicking on an item
 			if isInBounds(mX, mY, { x = dropX, y = dropY, w = width, h = listH }) then
 				local idx = math.floor((mY - dropY) / height) + 1
 				if idx >= 1 and idx <= #options then
 					entry.selected[idx] = not entry.selected[idx]
 					entry.changed = true
 				end
-			elseif not hovered then
-				entry.open = false
 			end
+			-- Close popup on any click press when open
+			entry.open = false
 		end
 		buttonPressState[pressKey] = true
 	end
