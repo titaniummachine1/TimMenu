@@ -242,15 +242,17 @@ function TimMenu.Dropdown(label, selectedIndex, options)
 	return Widgets.Dropdown(win, label, selectedIndex, options)
 end
 
---- Alias for Dropdown
-function TimMenu.Combo(label, selectedIndex, options)
+--- Draws a multi-selection combo box; returns a table of booleans and whether changed.
+function TimMenu.Combo(label, selectedTable, options)
 	assert(type(label) == "string", "TimMenu.Combo: 'label' must be a string, got " .. type(label))
 	assert(
-		type(selectedIndex) == "number",
-		"TimMenu.Combo: 'selectedIndex' must be a number, got " .. type(selectedIndex)
+		type(selectedTable) == "table",
+		"TimMenu.Combo: 'selectedTable' must be a table, got " .. type(selectedTable)
 	)
 	assert(type(options) == "table", "TimMenu.Combo: 'options' must be a table, got " .. type(options))
-	return TimMenu.Dropdown(label, selectedIndex, options)
+	local win = TimMenu.GetCurrentWindow()
+	assert(win, "TimMenu.Combo: no active window. Ensure TimMenu.Begin() was called before using widget functions.")
+	return Widgets.Combo(win, label, selectedTable, options)
 end
 
 --- Cyclic selector (< value >); returns new index and whether it changed.

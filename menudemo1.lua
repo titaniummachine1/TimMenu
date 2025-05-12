@@ -7,7 +7,7 @@ local sliderVal1 = 25
 local options1 = { "Option A", "Option B", "Option C" }
 local selectedIndex1 = 1
 local dropdownIndex1 = 1
-local comboIndex1 = 1
+local comboState1 = { false, false, false }
 
 local function OnDraw_Menudemo1()
 	if TimMenu.Begin("Demo Window 1") then
@@ -71,10 +71,15 @@ local function OnDraw_Menudemo1()
 		end
 		TimMenu.NextLine()
 
-		-- Combo example using alias for Dropdown
-		comboIndex1, changed1 = TimMenu.Combo("Combo in Demo1", comboIndex1, options1)
+		-- Multi-selection Combo example
+		comboState1, changed1 = TimMenu.Combo("Combo in Demo1", comboState1, options1)
 		if changed1 then
-			print("[Menudemo1] Combo selected: " .. options1[comboIndex1])
+			print("[Menudemo1] Combo selections:")
+			for i, sel in ipairs(comboState1) do
+				if sel then
+					print(" - " .. options1[i])
+				end
+			end
 		end
 		TimMenu.NextLine()
 

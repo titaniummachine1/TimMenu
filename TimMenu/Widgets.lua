@@ -411,7 +411,7 @@ function Widgets.Dropdown(win, label, selectedIndex, options)
 	local text = options[entry.selected] or ""
 	local txtW, txtH = draw.GetTextSize(text)
 	local pad = Globals.Style.ItemPadding
-	local arrowW, _ = draw.GetTextSize("v")
+	local arrowW, arrowH = draw.GetTextSize("v")
 	local width = txtW + arrowW + pad * 3
 	local height = txtH + pad * 2
 	if win.cursorX > Globals.Defaults.WINDOW_CONTENT_PADDING then
@@ -424,18 +424,33 @@ function Widgets.Dropdown(win, label, selectedIndex, options)
 	local mX2, mY2 = table.unpack(input.GetMousePos())
 	local hovered = isInBounds(mX2, mY2, dropBounds)
 		and not Utils.IsPointBlocked(TimMenuGlobal.order, TimMenuGlobal.windows, mX2, mY2, win.id)
-	-- Toggle open/close when clicking the dropdown button
-	if hovered and input.IsButtonPressed(MOUSE_LEFT) then
-		entry.open = not entry.open
-	end
-	-- Close if clicking outside both the button and the popup list
-	if entry.open and input.IsButtonPressed(MOUSE_LEFT) then
-		local listX, listY = absX, absY + height
-		local listH = #options * height
-		local inPopup = (mX2 >= listX and mX2 <= listX + width and mY2 >= listY and mY2 <= listY + listH)
-		if not hovered and not inPopup then
+	-- Interaction: press to open/select, debounce until release
+	local listX, listY = absX + width, absY
+	local itemH = height
+	local listH = #options * itemH
+	local pressKey = key .. ":press"
+	local pressed = input.IsButtonPressed(MOUSE_LEFT)
+	if pressed and not buttonPressState[pressKey] then
+		if not entry.open and hovered then
+			-- Open dropdown on click press when cursor is over control
+			entry.open = true
+		elseif entry.open then
+			-- Select option if click press is on an item
+			if isInBounds(mX2, mY2, { x = listX, y = listY, w = width, h = listH }) then
+				local idx = math.floor((mY2 - listY) / itemH) + 1
+				if idx >= 1 and idx <= #options then
+					entry.selected = idx
+					entry.changed = true
+				end
+			end
+			-- Close dropdown on any click press when open
 			entry.open = false
 		end
+		buttonPressState[pressKey] = true
+	end
+	-- Reset debounce on release
+	if buttonPressState[pressKey] and not input.IsButtonDown(MOUSE_LEFT) then
+		buttonPressState[pressKey] = false
 	end
 	-- Draw field
 	win:QueueDrawAtLayer(2, function()
@@ -447,35 +462,35 @@ function Widgets.Dropdown(win, label, selectedIndex, options)
 		end
 		draw.Color(table.unpack(bg))
 		Common.DrawFilledRect(absX, absY, absX + width, absY + height)
+		-- Outline
+		draw.Color(table.unpack(Globals.Colors.WindowBorder))
+		Common.DrawOutlinedRect(absX, absY, absX + width, absY + height)
 		draw.Color(table.unpack(Globals.Colors.Text))
 		Common.DrawText(absX + pad, absY + pad, text)
-		Common.DrawText(absX + width - pad - arrowW, absY + pad, "v")
+		-- Dropdown arrow
+		Common.DrawText(absX + width - pad - arrowW, absY + (height - arrowH) / 2, "v")
 	end)
 	-- Popup list
 	if entry.open then
-		local listX, listY = absX, absY + height
+		-- Position popup to the right, aligned to control
+		local listX, listY = absX + width, absY
 		local itemH = height
 		local listH = #options * itemH
-		-- Background
-		win:QueueDrawAtLayer(1, function()
+		-- Draw popup background at topmost layer
+		win:QueueDrawAtLayer(5, function()
 			draw.Color(table.unpack(Globals.Colors.Window))
 			Common.DrawFilledRect(listX, listY, listX + width, listY + listH)
 			draw.Color(table.unpack(Globals.Colors.WindowBorder))
 			Common.DrawOutlinedRect(listX, listY, listX + width, listY + listH)
 		end)
-		-- Items
+		-- Draw items at topmost layer
 		for i, opt in ipairs(options) do
 			local optY = listY + (i - 1) * itemH
 			local hoverOpt = input.GetMousePos()[1] >= listX
 				and input.GetMousePos()[1] <= listX + width
 				and input.GetMousePos()[2] >= optY
 				and input.GetMousePos()[2] <= optY + itemH
-			if hoverOpt and input.IsButtonPressed(MOUSE_LEFT) then
-				entry.selected = i
-				entry.open = false
-				entry.changed = true
-			end
-			win:QueueDrawAtLayer(2, function()
+			win:QueueDrawAtLayer(5, function()
 				draw.Color(table.unpack(hoverOpt and Globals.Colors.ItemHover or Globals.Colors.Item))
 				Common.DrawFilledRect(listX, optY, listX + width, optY + itemH)
 				draw.Color(table.unpack(Globals.Colors.Text))
@@ -801,6 +816,131 @@ function Widgets.TabControl(win, id, tabs, currentTabIndex)
 	win.lineHeight = 0 -- Reset line height as this widget manually managed it
 
 	return newIndex
+end
+
+--- Draws a multi-selection combo box; returns a table of booleans and whether changed.
+function Widgets.Combo(win, label, selected, options)
+	-- Setup
+	win._widgetCounter = (win._widgetCounter or 0) + 1
+	win._combos = win._combos or {}
+	local key = tostring(win.id) .. ":combo:" .. label
+	local entry = win._combos[key]
+	if not entry then
+		entry = { selected = {}, open = false, changed = false }
+		for i = 1, #options do
+			entry.selected[i] = selected[i] == true
+		end
+		win._combos[key] = entry
+	else
+		entry.changed = false
+	end
+	-- Measure sizes
+	draw.SetFont(Globals.Style.Font)
+	local _, txtH = draw.GetTextSize(label)
+	local pad = Globals.Style.ItemPadding
+	local boxSize = txtH * 1.5
+	local maxOptW = 0
+	for _, opt in ipairs(options) do
+		local w, _ = draw.GetTextSize(opt)
+		if w > maxOptW then
+			maxOptW = w
+		end
+	end
+	local width = pad + boxSize + pad + maxOptW + pad
+	local height = boxSize + pad * 2
+	-- Layout and positioning
+	if win.cursorX > Globals.Defaults.WINDOW_CONTENT_PADDING then
+		win.cursorX = win.cursorX + pad
+	end
+	local x, y = win:AddWidget(width, height)
+	local absX, absY = win.X + x, win.Y + y
+	local dropX, dropY = absX + width, absY
+	-- Input handling with debounce
+	local mX, mY = table.unpack(input.GetMousePos())
+	local hovered = isInBounds(mX, mY, { x = absX, y = absY, w = width, h = height })
+		and not Utils.IsPointBlocked(TimMenuGlobal.order, TimMenuGlobal.windows, mX, mY, win.id)
+	local listH = #options * height
+	local pressKey = key .. ":press"
+	if input.IsButtonPressed(MOUSE_LEFT) and not buttonPressState[pressKey] then
+		if not entry.open and hovered then
+			entry.open = true
+		elseif entry.open then
+			if isInBounds(mX, mY, { x = dropX, y = dropY, w = width, h = listH }) then
+				local idx = math.floor((mY - dropY) / height) + 1
+				if idx >= 1 and idx <= #options then
+					entry.selected[idx] = not entry.selected[idx]
+					entry.changed = true
+				end
+			elseif not hovered then
+				entry.open = false
+			end
+		end
+		buttonPressState[pressKey] = true
+	end
+	if buttonPressState[pressKey] and not input.IsButtonDown(MOUSE_LEFT) then
+		buttonPressState[pressKey] = false
+	end
+	-- Draw the combo button
+	win:QueueDrawAtLayer(2, function()
+		local bg = Globals.Colors.Item
+		if entry.open then
+			bg = Globals.Colors.ItemActive
+		elseif hovered then
+			bg = Globals.Colors.ItemHover
+		end
+		draw.Color(table.unpack(bg))
+		Common.DrawFilledRect(absX, absY, absX + width, absY + height)
+		-- Outline
+		draw.Color(table.unpack(Globals.Colors.WindowBorder))
+		Common.DrawOutlinedRect(absX, absY, absX + width, absY + height)
+		-- Label
+		draw.Color(table.unpack(Globals.Colors.Text))
+		draw.SetFont(Globals.Style.Font)
+		Common.DrawText(absX + pad, absY + (height - txtH) / 2, label)
+		-- Arrow indicator
+		local arrowW, arrowH = draw.GetTextSize(">")
+		Common.DrawText(absX + width - pad - arrowW, absY + (height - arrowH) / 2, ">")
+	end)
+	-- Draw popup items when open
+	if entry.open then
+		win:QueueDrawAtLayer(5, function()
+			draw.Color(table.unpack(Globals.Colors.Window))
+			Common.DrawFilledRect(dropX, dropY, dropX + width, dropY + listH)
+			draw.Color(table.unpack(Globals.Colors.WindowBorder))
+			Common.DrawOutlinedRect(dropX, dropY, dropX + width, dropY + listH)
+		end)
+		for i, opt in ipairs(options) do
+			local itemY = dropY + (i - 1) * height
+			win:QueueDrawAtLayer(5, function()
+				local hoverItem = isInBounds(
+					input.GetMousePos()[1],
+					input.GetMousePos()[2],
+					{ x = dropX, y = itemY, w = width, h = height }
+				) and not Utils.IsPointBlocked(
+					TimMenuGlobal.order,
+					TimMenuGlobal.windows,
+					input.GetMousePos()[1],
+					input.GetMousePos()[2],
+					win.id
+				)
+				draw.Color(table.unpack(hoverItem and Globals.Colors.ItemHover or Globals.Colors.Item))
+				Common.DrawFilledRect(dropX, itemY, dropX + width, itemY + height)
+				-- Checkbox
+				local bx, by = dropX + pad, itemY + pad
+				draw.Color(table.unpack(Globals.Colors.WindowBorder))
+				Common.DrawOutlinedRect(bx, by, bx + boxSize, by + boxSize)
+				if entry.selected[i] then
+					draw.Color(table.unpack(Globals.Colors.Highlight))
+					local m = math.floor(boxSize * 0.25)
+					Common.DrawFilledRect(bx + m, by + m, bx + boxSize - m, by + boxSize - m)
+				end
+				-- Text
+				draw.Color(table.unpack(Globals.Colors.Text))
+				Common.DrawText(bx + boxSize + pad, by, opt)
+			end)
+		end
+	end
+	return entry.selected, entry.changed
 end
 
 return Widgets
