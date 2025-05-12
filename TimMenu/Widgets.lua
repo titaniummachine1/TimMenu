@@ -70,8 +70,8 @@ function Widgets.Button(win, label)
 
 	win:QueueDrawAtLayer(2, function()
 		-- Calculate position inside window so it follows dragging
-		local absX = win.X + x
-		local absY = win.Y + y
+		absX = win.X + x
+		absY = win.Y + y
 		-- Background using ImMenu style
 		local bgColor = Globals.Colors.Item
 		if buttonPressState[key] then
@@ -134,8 +134,8 @@ function Widgets.Checkbox(win, label, state)
 
 	win:QueueDrawAtLayer(2, function()
 		-- Calculate position inside window so it follows dragging
-		local absX = win.X + x
-		local absY = win.Y + y
+		absX = win.X + x
+		absY = win.Y + y
 		-- Background using ImMenu style
 		local bgColor = Globals.Colors.Item
 		local active = hovered and input.IsButtonDown(MOUSE_LEFT)
@@ -162,11 +162,9 @@ end
 
 --- Draws a slider widget, returning the new value and whether it changed.
 function Widgets.Slider(win, label, value, min, max, step)
-	-- assign a per-window unique index to avoid collisions
+	-- assign a per-window unique index to avoid collisions in layout (but not for dragging)
 	win._widgetCounter = (win._widgetCounter or 0) + 1
 	local widgetIndex = win._widgetCounter
-	local Common = require("TimMenu.Common")
-	local Globals = require("TimMenu.Globals")
 	-- Set font and measure label text
 	draw.SetFont(Globals.Style.Font)
 	local labelText = label .. ": " .. tostring(value)
@@ -200,7 +198,7 @@ function Widgets.Slider(win, label, value, min, max, step)
 	local hovered = (mX >= absX and mX <= absX + width and mY >= absY and mY <= absY + height)
 	local pressed = input.IsButtonPressed(MOUSE_LEFT)
 	local down = input.IsButtonDown(MOUSE_LEFT)
-	local key = tostring(win.id) .. ":" .. label .. ":" .. widgetIndex
+	local key = tostring(win.id) .. ":slider:" .. label
 	Widgets._sliderDragging = Widgets._sliderDragging or {}
 	local dragging = Widgets._sliderDragging[key] or false
 	if hovered and pressed then
@@ -270,9 +268,9 @@ function Widgets.Separator(win, label)
 		local centerY = absY + math.floor(textHeight / 2)
 		win:QueueDrawAtLayer(1, function()
 			-- Calculate position inside window so it follows dragging
-			local absX = win.X + x
-			local absY = win.Y + y
-			local centerY = absY + math.floor(textHeight / 2)
+			absX = win.X + x
+			absY = win.Y + y
+			centerY = absY + math.floor(textHeight / 2)
 			draw.Color(table.unpack(Globals.Colors.WindowBorder))
 			-- Left line
 			Common.DrawLine(absX, centerY, absX + (totalWidth - textWidth) / 2 - Globals.Style.ItemPadding, centerY)
@@ -294,8 +292,8 @@ function Widgets.Separator(win, label)
 		local absX, absY = win.X + x, win.Y + y
 		win:QueueDrawAtLayer(1, function()
 			-- Calculate position inside window so it follows dragging
-			local absX = win.X + x
-			local absY = win.Y + y
+			absX = win.X + x
+			absY = win.Y + y
 			draw.Color(table.unpack(Globals.Colors.WindowBorder))
 			Common.DrawLine(absX, absY, absX + totalWidth, absY)
 		end)
