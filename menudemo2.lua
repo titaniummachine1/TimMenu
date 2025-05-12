@@ -9,6 +9,8 @@ local selectedOption2 = 1
 local options2 = { "Option A", "Option B", "Option C", "Option D" }
 local tabs = { "Main", "Audio", "Options", "Debug" }
 local currentTab = tabs[1]
+local dropdownIndex2 = 1
+local comboIndex2 = 1
 
 local function OnDraw_Menudemo2()
 	if TimMenu.Begin("Demo Window 2 - Advanced") then
@@ -51,10 +53,24 @@ local function OnDraw_Menudemo2()
 			TimMenu.Text("Select Option:")
 			TimMenu.NextLine()
 
-			-- Use the dedicated Selector widget
+			-- Selector example using the dedicated widget
 			selectedOption2, changedOption = TimMenu.Selector(nil, selectedOption2, options2)
 			if changedOption then
-				print("[Menudemo2] Option selected: " .. options2[selectedOption2])
+				print("[Menudemo2] Selector selected: " .. options2[selectedOption2])
+			end
+			TimMenu.NextLine()
+
+			-- Dropdown example using the dedicated widget
+			dropdownIndex2, changedOption = TimMenu.Dropdown("Dropdown in Demo2", dropdownIndex2, options2)
+			if changedOption then
+				print("[Menudemo2] Dropdown selected: " .. options2[dropdownIndex2])
+			end
+			TimMenu.NextLine()
+
+			-- Combo example using alias for Dropdown
+			comboIndex2, changedOption = TimMenu.Combo("Combo in Demo2", comboIndex2, options2)
+			if changedOption then
+				print("[Menudemo2] Combo selected: " .. options2[comboIndex2])
 			end
 			TimMenu.NextLine()
 		elseif currentTab == "Debug" then

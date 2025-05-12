@@ -120,8 +120,8 @@ function Widgets.Checkbox(win, label, state)
 	local absX, absY = win.X + x, win.Y + y
 
 	-- Interaction bounds
-	local bounds = { x = absX, y = absY, w = width, h = height }
-	local hovered = canInteract(win, bounds)
+	local checkBounds = { x = absX, y = absY, w = width, h = height }
+	local hovered = canInteract(win, checkBounds)
 
 	-- Debounce: immediate toggle on press, reset on release
 	local key = tostring(win.id) .. ":" .. label .. ":" .. widgetIndex
@@ -337,8 +337,10 @@ function Widgets.TextInput(win, label, text)
 	end
 	local x, y = win:AddWidget(width, height)
 	local absX, absY = win.X + x, win.Y + y
-	local bounds = { x = absX, y = absY, w = width, h = height }
-	local hovered = isInBounds(input.GetMousePos(), bounds)
+	local textInputBounds = { x = absX, y = absY, w = width, h = height }
+	-- Properly unpack mouse coordinates for hit test
+	local mX, mY = table.unpack(input.GetMousePos())
+	local hovered = isInBounds(mX, mY, textInputBounds)
 	-- Activate on click
 	if hovered and input.IsButtonPressed(MOUSE_LEFT) then
 		entry.active = true
@@ -417,16 +419,23 @@ function Widgets.Dropdown(win, label, selectedIndex, options)
 	end
 	local x, y = win:AddWidget(width, height)
 	local absX, absY = win.X + x, win.Y + y
-	local bounds = { x = absX, y = absY, w = width, h = height }
-	local hovered = isInBounds(input.GetMousePos(), bounds)
-		and not Utils.IsPointBlocked(TimMenuGlobal.order, TimMenuGlobal.windows, unpack(input.GetMousePos()), win.id)
-	-- Toggle open
+	local dropBounds = { x = absX, y = absY, w = width, h = height }
+	-- Unpack mouse position for hit test
+	local mX2, mY2 = table.unpack(input.GetMousePos())
+	local hovered = isInBounds(mX2, mY2, dropBounds)
+		and not Utils.IsPointBlocked(TimMenuGlobal.order, TimMenuGlobal.windows, mX2, mY2, win.id)
+	-- Toggle open/close when clicking the dropdown button
 	if hovered and input.IsButtonPressed(MOUSE_LEFT) then
 		entry.open = not entry.open
 	end
-	-- Close if clicked outside
-	if entry.open and input.IsButtonPressed(MOUSE_LEFT) and not hovered then
-		entry.open = false
+	-- Close if clicking outside both the button and the popup list
+	if entry.open and input.IsButtonPressed(MOUSE_LEFT) then
+		local listX, listY = absX, absY + height
+		local listH = #options * height
+		local inPopup = (mX2 >= listX and mX2 <= listX + width and mY2 >= listY and mY2 <= listY + listH)
+		if not hovered and not inPopup then
+			entry.open = false
+		end
 	end
 	-- Draw field
 	win:QueueDrawAtLayer(2, function()
