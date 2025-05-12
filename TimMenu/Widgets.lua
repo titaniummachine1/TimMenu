@@ -406,14 +406,14 @@ function Widgets.Dropdown(win, label, selectedIndex, options)
 			entry.selected = selectedIndex
 		end
 	end
-	-- Measure
+	-- Measure based on label and arrow size
 	draw.SetFont(Globals.Style.Font)
-	local text = options[entry.selected] or ""
-	local txtW, txtH = draw.GetTextSize(text)
+	local txtW, txtH = draw.GetTextSize(label)
 	local pad = Globals.Style.ItemPadding
-	local arrowW, arrowH = draw.GetTextSize("v")
+	local arrowChar = "▼"
+	local arrowW, arrowH = draw.GetTextSize(arrowChar)
 	local width = txtW + arrowW + pad * 3
-	local height = txtH + pad * 2
+	local height = math.max(txtH, arrowH) + pad * 2
 	if win.cursorX > Globals.Defaults.WINDOW_CONTENT_PADDING then
 		win.cursorX = win.cursorX + pad
 	end
@@ -471,10 +471,20 @@ function Widgets.Dropdown(win, label, selectedIndex, options)
 		local displayText = label
 		local _, txtH = draw.GetTextSize(displayText) -- Measure text height inside closure
 		Common.DrawText(absX + pad, absY + (height - txtH) / 2, displayText) -- Center vertically
-		-- Dynamic dropdown arrow
-		local arrowChar = entry.open and "▲" or "▼"
-		local aw, ah = draw.GetTextSize(arrowChar) -- Measure arrow inside closure
-		Common.DrawText(absX + width - pad - aw, absY + (height - ah) / 2, arrowChar) -- Use measured size
+		-- Draw dropdown arrow as triangle
+		local triW, triH = arrowW, arrowH
+		local triX, triY = absX + width - pad - triW, absY + (height - triH) / 2
+		if entry.open then
+			-- Up triangle
+			Common.DrawLine(triX + triW / 2, triY, triX, triY + triH)
+			Common.DrawLine(triX, triY + triH, triX + triW, triY + triH)
+			Common.DrawLine(triX + triW, triY + triH, triX + triW / 2, triY)
+		else
+			-- Down triangle
+			Common.DrawLine(triX, triY, triX + triW, triY)
+			Common.DrawLine(triX + triW, triY, triX + triW / 2, triY + triH)
+			Common.DrawLine(triX + triW / 2, triY + triH, triX, triY)
+		end
 	end)
 	-- Popup list
 	if entry.open then
@@ -842,20 +852,17 @@ function Widgets.Combo(win, label, selected, options)
 	else
 		entry.changed = false
 	end
-	-- Measure sizes
+	-- Measure based on label and arrow size
 	draw.SetFont(Globals.Style.Font)
-	local _, txtH = draw.GetTextSize(label)
+	local txtW, txtH = draw.GetTextSize(label)
 	local pad = Globals.Style.ItemPadding
+	-- checkbox size for popup
 	local boxSize = txtH * 1.5
-	local maxOptW = 0
-	for _, opt in ipairs(options) do
-		local w, _ = draw.GetTextSize(opt)
-		if w > maxOptW then
-			maxOptW = w
-		end
-	end
-	local width = pad + boxSize + pad + maxOptW + pad
-	local height = boxSize + pad * 2
+	-- arrow triangle size
+	local arrowChar = "▼"
+	local arrowW, arrowH = draw.GetTextSize(arrowChar)
+	local width = txtW + arrowW + pad * 3
+	local height = math.max(txtH, arrowH) + pad * 2
 	-- Layout and positioning
 	if win.cursorX > Globals.Defaults.WINDOW_CONTENT_PADDING then
 		win.cursorX = win.cursorX + pad
@@ -906,10 +913,20 @@ function Widgets.Combo(win, label, selected, options)
 		-- Text summary of selections
 		local displayText = label
 		Common.DrawText(absX + pad, absY + (height - txtH) / 2, displayText)
-		-- Dynamic arrow indicator
-		local arrowChar = entry.open and "▲" or "▼"
-		local aw, ah = draw.GetTextSize(arrowChar)
-		Common.DrawText(absX + width - pad - aw, absY + (height - ah) / 2, arrowChar)
+		-- Draw combo arrow as triangle
+		local triW, triH = arrowW, arrowH
+		local triX, triY = absX + width - pad - triW, absY + (height - triH) / 2
+		if entry.open then
+			-- Up triangle
+			Common.DrawLine(triX + triW / 2, triY, triX, triY + triH)
+			Common.DrawLine(triX, triY + triH, triX + triW, triY + triH)
+			Common.DrawLine(triX + triW, triY + triH, triX + triW / 2, triY)
+		else
+			-- Down triangle
+			Common.DrawLine(triX, triY, triX + triW, triY)
+			Common.DrawLine(triX + triW, triY, triX + triW / 2, triY + triH)
+			Common.DrawLine(triX + triW / 2, triY + triH, triX, triY)
+		end
 	end)
 	-- Draw popup items when open
 	if entry.open then
