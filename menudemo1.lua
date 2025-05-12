@@ -56,25 +56,20 @@ local function OnDraw_Menudemo1()
 		TimMenu.Separator()
 		TimMenu.NextLine()
 
-		-- Selector example (simple)
-		TimMenu.Text("Selected: " .. options1[selectedIndex1])
+		-- Selector example using the dedicated widget
+		selectedIndex1, changed1 = TimMenu.Selector(nil, selectedIndex1, options1)
+		if changed1 then
+			print("[Menudemo1] Selector changed to index: ", selectedIndex1)
+		end
+
 		TimMenu.NextLine()
-		if TimMenu.Button("<") then
-			selectedIndex1 = selectedIndex1 - 1
-			if selectedIndex1 < 1 then
-				selectedIndex1 = #options1
-			end
-		end
-		if TimMenu.Button(">") then
-			selectedIndex1 = selectedIndex1 + 1
-			if selectedIndex1 > #options1 then
-				selectedIndex1 = 1
-			end
-		end
+		TimMenu.Spacing(20) -- Add extra vertical space (custom amount)
+		TimMenu.Text("Another line after custom spacing.")
 
 		TimMenu.End()
 	end
 end
 
+-- Correct callback registration for menudemo1
 callbacks.Unregister("Draw", "Menudemo1_Draw")
 callbacks.Register("Draw", "Menudemo1_Draw", OnDraw_Menudemo1)

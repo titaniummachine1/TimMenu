@@ -737,38 +737,53 @@ function ImMenu.TextInput(label, text)
 	return text
 end
 
----@param selected integer
----@param options any[]
----@return integer selected
-function ImMenu.Option(selected, options)
-	local txtWidth, txtHeight = draw.GetTextSize("#")
-	local btnSize = txtHeight + 2 * Style.ItemPadding
-	local width, height = ImMenu.GetSize(250, txtHeight)
+---@param label string A descriptive label for the selector
+---@param selectedIndex integer The current selected index
+---@param options table List of option strings
+---@return integer newSelectedIndex
+function ImMenu.Selector(label, selectedIndex, options)
+	selectedIndex = selectedIndex or 1
+	-- Determine sizes
+	local displayText = label .. ": " .. tostring(options[selectedIndex])
+	local txtW, txtH = draw.GetTextSize(displayText)
+	local pad = Style.ItemPadding
+	local btnSize = txtH + (pad * 2)
+	local totalWidth, totalHeight = ImMenu.GetSize(txtW + (btnSize * 2) + (Style.ItemMargin * 2), btnSize)
 
+	-- Horizontal frame
 	ImMenu.PushStyle("ItemSize", { btnSize, btnSize })
 	ImMenu.PushStyle("FramePadding", 0)
 	ImMenu.BeginFrame(1)
 
-	-- Last Item button
-	if ImMenu.Button("<###" .. tostring(options)) then
-		selected = ((selected - 2) % #options) + 1
+	-- Previous button
+	if ImMenu.Button("<###" .. label .. "_prev") then
+		selectedIndex = selectedIndex - 1
+		if selectedIndex < 1 then
+			selectedIndex = #options
+		end
 	end
 
-	-- Current Item
-	ImMenu.PushStyle("ItemSize", { width - (2 * btnSize) - (2 * Style.ItemMargin), btnSize })
-	ImMenu.Text(tostring(options[selected]))
+	-- Display current option
+	ImMenu.PushStyle("ItemSize", { totalWidth - (btnSize * 2) - (Style.ItemMargin * 2), btnSize })
+	ImMenu.Text(options[selectedIndex])
 	ImMenu.PopStyle()
 
-	-- Next Item button
-	if ImMenu.Button(">###" .. tostring(options)) then
-		selected = (selected % #options) + 1
+	-- Next button
+	if ImMenu.Button(">###" .. label .. "_next") then
+		selectedIndex = selectedIndex + 1
+		if selectedIndex > #options then
+			selectedIndex = 1
+		end
 	end
 
 	ImMenu.EndFrame()
 	ImMenu.PopStyle(2)
 
-	return selected
+	return selectedIndex
 end
+
+-- Alias old Option to new Selector
+ImMenu.Option = ImMenu.Selector
 
 ---@param text string
 ---@param items string[]

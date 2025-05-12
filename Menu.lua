@@ -7,7 +7,8 @@ local MenuManager = {
     Menus = {},
     Font = draw.CreateFont("Verdana", 14, 510),
     Version = 1.52,
-    DebugInfo = false
+    DebugInfo = false,
+    _CurrentMenu = nil -- track current menu for wrappers
 }
 
 MenuFlags = {
@@ -1099,6 +1100,8 @@ function MenuManager.Draw()
             goto continue
         end
 
+        MenuManager._CurrentMenu = vMenu
+
         if engine.GetServerIP() ~= "" and engine.IsGameUIVisible() == false and (vMenu.Flags & MenuFlags.ShowAlways == 0) then
             goto continue
         end
@@ -1160,6 +1163,7 @@ function MenuManager.Draw()
 
         -- Reset Cursor
         vMenu.Cursor = { X = 0, Y = 0 }
+        MenuManager._CurrentMenu = nil
         ::continue::
     end
 end
@@ -1193,5 +1197,58 @@ callbacks.Unregister("Draw", "Draw_MenuManager")
 callbacks.Register("Draw", "Draw_MenuManager", MenuManager.Draw)
 
 print("[MenuLib] Menu Library loaded! Version: " .. MenuManager.Version)
+
+--- Immediate-mode text input: adds a textbox component and returns updated text
+function MenuManager.TextInput(label, text)
+    local menu = MenuManager._CurrentMenu
+    if not menu then
+        print("[MenuManager] TextInput must be called inside Draw()")
+        return text
+    end
+    local tb = Textbox.New(label, text or "")
+    menu:AddComponent(tb)
+    return tb:GetValue()
+end
+
+--- Immediate-mode dropdown: adds a combobox and returns updated index
+function MenuManager.Dropdown(label, options, selectedIndex)
+    local menu = MenuManager._CurrentMenu
+    if not menu then
+        print("[MenuManager] Dropdown must be called inside Draw()")
+        return selectedIndex
+    end
+    selectedIndex = selectedIndex or 1
+    local cb = Combobox.New(label, options)
+    cb.SelectedIndex = selectedIndex
+    cb.Selected = options[selectedIndex]
+    menu:AddComponent(cb)
+    return cb:GetSelectedIndex()
+end
+
+--- Immediate-mode selector: adds prev/label/next components and returns updated index
+function MenuManager.Selector(label, options, selectedIndex)
+    local menu = MenuManager._CurrentMenu
+    if not menu then
+        print("[MenuManager] Selector must be called inside Draw()")
+        return selectedIndex
+    end
+    selectedIndex = selectedIndex or 1
+    -- Previous button
+    local btnPrev = Button.New("<", function()
+        selectedIndex = selectedIndex - 1
+        if selectedIndex < 1 then selectedIndex = #options end
+    end)
+    menu:AddComponent(btnPrev)
+    -- Current label
+    local lbl = Label.New(label .. ": " .. tostring(options[selectedIndex]))
+    menu:AddComponent(lbl)
+    -- Next button
+    local btnNext = Button.New(">", function()
+        selectedIndex = selectedIndex + 1
+        if selectedIndex > #options then selectedIndex = 1 end
+    end)
+    menu:AddComponent(btnNext)
+    return selectedIndex
+end
 
 return MenuManager

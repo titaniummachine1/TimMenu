@@ -174,27 +174,29 @@ end
 --- Moves the cursor to the next line in the current window, respecting sectors.
 function TimMenu.NextLine(spacing)
 	local win = TimMenu.GetCurrentWindow()
-	if not win then
-		return
+	if win then
+		win:NextLine(spacing) -- Pass optional spacing to window method
+		-- Apply sector indentation after moving to the new line
+		local depth = win._sectorStack and #win._sectorStack or 0
+		local pad = Globals.Defaults.WINDOW_CONTENT_PADDING
+		win.cursorX = pad + (depth * pad)
 	end
-	local pad = Globals.Defaults.WINDOW_CONTENT_PADDING
-	local actualSpacing
-	if spacing ~= nil then
-		actualSpacing = spacing
-	else
-		if win._lastWidgetType == "slider" then
-			actualSpacing = pad -- smaller gap after sliders
-		else
-			actualSpacing = pad * 3 -- default larger gap for other items
-		end
+end
+
+--- Advances the cursor horizontally to place the next widget on the same line.
+function TimMenu.SameLine(spacing)
+	local win = TimMenu.GetCurrentWindow()
+	if win then
+		win:SameLine(spacing)
 	end
-	-- reset widget flag
-	win._lastWidgetType = nil
-	-- advance to next line
-	win:NextLine(actualSpacing)
-	-- apply sector indentation
-	local depth = win._sectorStack and #win._sectorStack or 0
-	win.cursorX = pad + (depth * pad)
+end
+
+--- Adds vertical spacing without resetting the horizontal cursor position.
+function TimMenu.Spacing(verticalSpacing)
+	local win = TimMenu.GetCurrentWindow()
+	if win then
+		win:Spacing(verticalSpacing)
+	end
 end
 
 --- Draws a slider and returns the new value and whether it changed.
@@ -212,6 +214,38 @@ function TimMenu.Separator(label)
 	if win then
 		return Widgets.Separator(win, label)
 	end
+end
+
+--- Single-line text input; returns new string and whether it changed.
+function TimMenu.TextInput(label, text)
+	local win = TimMenu.GetCurrentWindow()
+	if win then
+		return Widgets.TextInput(win, label, text)
+	end
+	return text, false
+end
+
+--- Dropdown list; returns new index and whether it changed.
+function TimMenu.Dropdown(label, selectedIndex, options)
+	local win = TimMenu.GetCurrentWindow()
+	if win then
+		return Widgets.Dropdown(win, label, selectedIndex, options)
+	end
+	return selectedIndex, false
+end
+
+--- Alias for Dropdown
+function TimMenu.Combo(label, selectedIndex, options)
+	return TimMenu.Dropdown(label, selectedIndex, options)
+end
+
+--- Cyclic selector (< value >); returns new index and whether it changed.
+function TimMenu.Selector(label, selectedIndex, options)
+	local win = TimMenu.GetCurrentWindow()
+	if win then
+		return Widgets.Selector(win, label, selectedIndex, options)
+	end
+	return selectedIndex, false
 end
 
 --- Begins a visual sector grouping; widgets until EndSector are enclosed.
@@ -342,6 +376,12 @@ function TimMenu.EndSector(label)
 	-- move parent cursor to right of this sector (allow horizontal stacking)
 	win.cursorX = sector.startX + width + pad
 	win.cursorY = sector.startY
+
+	-- Update window's layout state based on the ended sector
+	win.cursorX = sector.startX + width + pad -- Move cursor right for potential next element on same line
+	-- Update the line height to accommodate the sector's vertical extent
+	win.lineHeight = math.max(win.lineHeight or 0, height)
+	-- Do NOT reset cursorY here; let the next NextLine handle vertical advancement based on updated lineHeight.
 end
 
 -- Named function for the global draw callback

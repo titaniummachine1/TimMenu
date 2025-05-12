@@ -12,15 +12,19 @@ local currentTab = tabs[1]
 
 local function OnDraw_Menudemo2()
 	if TimMenu.Begin("Demo Window 2 - Advanced") then
-		-- Tab control at top
-		for _, tab in ipairs(tabs) do
+		-- Tab bar
+		for i, tab in ipairs(tabs) do
 			if TimMenu.Button(tab) then
 				currentTab = tab
 			end
+			if i < #tabs then
+				TimMenu.SameLine()
+			end
 		end
 		TimMenu.NextLine()
+
 		-- Separator under tabs
-		TimMenu.Separator()
+		TimMenu.Separator("separator1")
 		TimMenu.NextLine()
 
 		if currentTab == "Main" then
@@ -44,25 +48,13 @@ local function OnDraw_Menudemo2()
 		elseif currentTab == "Options" then
 			TimMenu.Text("Select Option:")
 			TimMenu.NextLine()
-			TimMenu.BeginSector("Prev")
-			if TimMenu.Button("<") then
-				selectedOption2 = selectedOption2 - 1
-				if selectedOption2 < 1 then
-					selectedOption2 = #options2
-				end
+
+			-- Use the dedicated Selector widget
+			selectedOption2, changedOption = TimMenu.Selector(nil, selectedOption2, options2)
+			if changedOption then
+				print("[Menudemo2] Option selected: " .. options2[selectedOption2])
 			end
-			TimMenu.EndSector("Prev")
-			TimMenu.BeginSector("Choice")
-			TimMenu.Text(options2[selectedOption2])
-			TimMenu.EndSector("Choice")
-			TimMenu.BeginSector("Next")
-			if TimMenu.Button(">") then
-				selectedOption2 = selectedOption2 + 1
-				if selectedOption2 > #options2 then
-					selectedOption2 = 1
-				end
-			end
-			TimMenu.EndSector("Next")
+			TimMenu.NextLine()
 		elseif currentTab == "Debug" then
 			TimMenu.ShowDebug()
 		end
@@ -71,5 +63,6 @@ local function OnDraw_Menudemo2()
 	end
 end
 
-callbacks.Unregister("Draw", "Menudemo2_Draw")
-callbacks.Register("Draw", "Menudemo2_Draw", OnDraw_Menudemo2)
+-- Register draw callback
+callbacks.Unregister("Draw", "Menudemo22_Draw")
+callbacks.Register("Draw", "Menudemo22_Draw", OnDraw_Menudemo2)

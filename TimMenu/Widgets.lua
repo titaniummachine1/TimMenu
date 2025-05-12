@@ -305,4 +305,233 @@ function Widgets.Separator(win, label)
 	win:NextLine(vpad)
 end
 
+--- Draws a single-line text input; returns new text and whether it changed.
+function Widgets.TextInput(win, label, text)
+	win._widgetCounter = (win._widgetCounter or 0) + 1
+	win._textInputs = win._textInputs or {}
+	local key = tostring(win.id) .. ":textinput:" .. label
+	local entry = win._textInputs[key]
+	if not entry then
+		entry = { text = text or "", active = false }
+		win._textInputs[key] = entry
+	elseif text and text ~= entry.text then
+		entry.text = text
+	end
+	-- Calculate size
+	local display = entry.text == "" and label or entry.text
+	draw.SetFont(Globals.Style.Font)
+	local txtW, txtH = draw.GetTextSize(display)
+	local pad = Globals.Style.ItemPadding
+	local width = txtW + pad * 2
+	local height = txtH + pad * 2
+	-- Layout
+	if win.cursorX > Globals.Defaults.WINDOW_CONTENT_PADDING then
+		win.cursorX = win.cursorX + pad
+	end
+	local x, y = win:AddWidget(width, height)
+	local absX, absY = win.X + x, win.Y + y
+	local bounds = { x = absX, y = absY, w = width, h = height }
+	local hovered = isInBounds(input.GetMousePos(), bounds)
+	-- Activate on click
+	if hovered and input.IsButtonPressed(MOUSE_LEFT) then
+		entry.active = true
+	elseif entry.active and input.IsButtonPressed(MOUSE_LEFT) and not hovered then
+		entry.active = false
+	end
+	local changed = false
+	-- Handle key input when active
+	if entry.active then
+		-- Backspace
+		if input.IsButtonPressed(KEY_BACKSPACE) then
+			entry.text = entry.text:sub(1, -2)
+			changed = true
+		end
+		-- Space
+		if input.IsButtonPressed(KEY_SPACE) then
+			entry.text = entry.text .. " "
+			changed = true
+		end
+		-- Letters A-Z
+		for code = 65, 90 do
+			if input.IsButtonPressed(code) then
+				entry.text = entry.text .. string.char(code)
+				changed = true
+			end
+		end
+		-- Digits 0-9
+		for code = 48, 57 do
+			if input.IsButtonPressed(code) then
+				entry.text = entry.text .. string.char(code)
+				changed = true
+			end
+		end
+	end
+	-- Draw box and text
+	win:QueueDrawAtLayer(2, function()
+		local bg = Globals.Colors.Item
+		if entry.active then
+			bg = Globals.Colors.ItemActive
+		elseif hovered then
+			bg = Globals.Colors.ItemHover
+		end
+		draw.Color(table.unpack(bg))
+		Common.DrawFilledRect(absX, absY, absX + width, absY + height)
+		draw.Color(table.unpack(Globals.Colors.Text))
+		Common.DrawText(absX + pad, absY + pad, entry.text)
+	end)
+	return entry.text, changed
+end
+
+--- Draws a dropdown list; returns selected index and whether changed.
+function Widgets.Dropdown(win, label, selectedIndex, options)
+	win._widgetCounter = (win._widgetCounter or 0) + 1
+	win._dropdowns = win._dropdowns or {}
+	local key = tostring(win.id) .. ":dropdown:" .. label
+	local entry = win._dropdowns[key]
+	if not entry then
+		entry = { selected = selectedIndex or 1, open = false, changed = false }
+		win._dropdowns[key] = entry
+	else
+		entry.changed = false
+		if selectedIndex and selectedIndex ~= entry.selected then
+			entry.selected = selectedIndex
+		end
+	end
+	-- Measure
+	draw.SetFont(Globals.Style.Font)
+	local text = options[entry.selected] or ""
+	local txtW, txtH = draw.GetTextSize(text)
+	local pad = Globals.Style.ItemPadding
+	local arrowW, _ = draw.GetTextSize("v")
+	local width = txtW + arrowW + pad * 3
+	local height = txtH + pad * 2
+	if win.cursorX > Globals.Defaults.WINDOW_CONTENT_PADDING then
+		win.cursorX = win.cursorX + pad
+	end
+	local x, y = win:AddWidget(width, height)
+	local absX, absY = win.X + x, win.Y + y
+	local bounds = { x = absX, y = absY, w = width, h = height }
+	local hovered = isInBounds(input.GetMousePos(), bounds)
+		and not Utils.IsPointBlocked(TimMenuGlobal.order, TimMenuGlobal.windows, unpack(input.GetMousePos()), win.id)
+	-- Toggle open
+	if hovered and input.IsButtonPressed(MOUSE_LEFT) then
+		entry.open = not entry.open
+	end
+	-- Close if clicked outside
+	if entry.open and input.IsButtonPressed(MOUSE_LEFT) and not hovered then
+		entry.open = false
+	end
+	-- Draw field
+	win:QueueDrawAtLayer(2, function()
+		local bg = Globals.Colors.Item
+		if entry.open then
+			bg = Globals.Colors.ItemActive
+		elseif hovered then
+			bg = Globals.Colors.ItemHover
+		end
+		draw.Color(table.unpack(bg))
+		Common.DrawFilledRect(absX, absY, absX + width, absY + height)
+		draw.Color(table.unpack(Globals.Colors.Text))
+		Common.DrawText(absX + pad, absY + pad, text)
+		Common.DrawText(absX + width - pad - arrowW, absY + pad, "v")
+	end)
+	-- Popup list
+	if entry.open then
+		local listX, listY = absX, absY + height
+		local itemH = height
+		local listH = #options * itemH
+		-- Background
+		win:QueueDrawAtLayer(1, function()
+			draw.Color(table.unpack(Globals.Colors.Window))
+			Common.DrawFilledRect(listX, listY, listX + width, listY + listH)
+			draw.Color(table.unpack(Globals.Colors.WindowBorder))
+			Common.DrawOutlinedRect(listX, listY, listX + width, listY + listH)
+		end)
+		-- Items
+		for i, opt in ipairs(options) do
+			local optY = listY + (i - 1) * itemH
+			local hoverOpt = input.GetMousePos()[1] >= listX
+				and input.GetMousePos()[1] <= listX + width
+				and input.GetMousePos()[2] >= optY
+				and input.GetMousePos()[2] <= optY + itemH
+			if hoverOpt and input.IsButtonPressed(MOUSE_LEFT) then
+				entry.selected = i
+				entry.open = false
+				entry.changed = true
+			end
+			win:QueueDrawAtLayer(2, function()
+				draw.Color(table.unpack(hoverOpt and Globals.Colors.ItemHover or Globals.Colors.Item))
+				Common.DrawFilledRect(listX, optY, listX + width, optY + itemH)
+				draw.Color(table.unpack(Globals.Colors.Text))
+				Common.DrawText(listX + pad, optY + pad, opt)
+			end)
+		end
+	end
+	return entry.selected, entry.changed
+end
+
+--- Draws a cyclic selector (< [value] >); returns new index and whether changed.
+function Widgets.Selector(win, label, selectedIndex, options)
+	win._widgetCounter = (win._widgetCounter or 0) + 1
+	win._selectors = win._selectors or {}
+	-- Handle nil label when creating the key
+	local safeLabel = label or "<nil_selector_label>" -- Use a placeholder if label is nil
+	local key = tostring(win.id) .. ":selector:" .. safeLabel
+	local entry = win._selectors[key]
+	if not entry then
+		entry = { selected = selectedIndex or 1, changed = false }
+		win._selectors[key] = entry
+	else
+		entry.changed = false
+		if selectedIndex and selectedIndex ~= entry.selected then
+			entry.selected = selectedIndex
+		end
+	end
+	-- Prev button
+	local prevClicked = Widgets.Button(win, "<")
+	if prevClicked then
+		entry.selected = entry.selected - 1
+		if entry.selected < 1 then
+			entry.selected = #options
+		end
+		entry.changed = true
+	end
+	-- Display
+	win:SameLine(Globals.Style.ItemPadding)
+	local displayText = tostring(options[entry.selected])
+	draw.SetFont(Globals.Style.Font)
+	local textWidth, textHeight = draw.GetTextSize(displayText)
+	local pad = Globals.Style.ItemPadding
+	local textDisplayWidth = textWidth + (pad * 2)
+	local textDisplayHeight = textHeight + (pad * 2)
+	-- Reserve space for the text
+	local x, y = win:AddWidget(textDisplayWidth, textDisplayHeight)
+	-- Queue text drawing
+	win:QueueDrawAtLayer(2, function()
+		local absX = win.X + x
+		local absY = win.Y + y
+		-- Optional: Draw a subtle background for the text area?
+		-- draw.Color(table.unpack(Globals.Colors.Item))
+		-- Common.DrawFilledRect(absX, absY, absX + textDisplayWidth, absY + textDisplayHeight)
+
+		draw.Color(table.unpack(Globals.Colors.Text))
+		draw.SetFont(Globals.Style.Font)
+		-- Center text vertically within its reserved height
+		Common.DrawText(absX + pad, absY + pad, displayText)
+	end)
+	-- Use SameLine to place the next button after the text
+	win:SameLine(Globals.Style.ItemPadding)
+
+	-- Next button
+	local nextClicked = Widgets.Button(win, ">")
+	if nextClicked then
+		entry.selected = entry.selected + 1
+		if entry.selected > #options then
+			entry.selected = 1
+		end
+		entry.changed = true
+	end
+	return entry.selected, entry.changed
+end
+
 return Widgets

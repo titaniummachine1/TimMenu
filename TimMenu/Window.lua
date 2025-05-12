@@ -162,13 +162,14 @@ function Window:AddWidget(width, height)
 	self.lineHeight = math.max(self.lineHeight, height)
 	self.H = math.max(self.H, y + self.lineHeight)
 
-	-- Update cursor position
-	self.cursorX = x + width
+	-- Update cursor position for the *next* widget on this line
+	self.cursorX = self.cursorX + width + Globals.Defaults.ITEM_SPACING
 
 	return x, y
 end
 
 --- Provide a simple way to "new line" to place subsequent widgets below
+--- Resets horizontal position and advances vertically.
 function Window:NextLine(spacing)
 	spacing = spacing or Globals.Defaults.WINDOW_CONTENT_PADDING
 	self.cursorY = self.cursorY + self.lineHeight + spacing
@@ -178,6 +179,29 @@ function Window:NextLine(spacing)
 	if self.cursorY > self.H then
 		self.H = self.cursorY
 	end
+end
+
+--- Advances the cursor horizontally to place the next widget on the same line.
+function Window:SameLine(spacing)
+	-- Default spacing is Globals.Defaults.ITEM_SPACING
+	spacing = spacing or Globals.Defaults.ITEM_SPACING
+	self.cursorX = self.cursorX + spacing -- Add specified spacing
+	-- Note: We don't add widget width here, AddWidget already does that
+	-- and advances cursorX *after* returning the position.
+end
+
+--- Adds vertical spacing without resetting the horizontal cursor position.
+function Window:Spacing(verticalSpacing)
+	-- Default spacing is half the content padding
+	verticalSpacing = verticalSpacing or (Globals.Defaults.WINDOW_CONTENT_PADDING / 2)
+	-- Use current line height + spacing to advance Y
+	self.cursorY = self.cursorY + self.lineHeight + verticalSpacing
+	self.lineHeight = 0 -- Reset line height for the *next* line that might start here
+	-- Expand window if needed
+	if self.cursorY > self.H then
+		self.H = self.cursorY
+	end
+	-- Important: Do NOT reset cursorX here.
 end
 
 --- Reset the layout cursor for widgets (called on Begin)

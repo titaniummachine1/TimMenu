@@ -3,6 +3,8 @@
         "sumneko.lua",
         "rc.lmaobox-lua-api-snippets",
         "gccfeli.vscode-lua",
-        "notnoobmaster.lua-beautifier"
+        "notnoobmaster.lua-beautifier",
+        "emeraldwalk.runonsave",
+        "formulahendry.code-runner"
     ]
 }

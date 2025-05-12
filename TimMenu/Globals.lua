@@ -33,13 +33,14 @@ Globals.Style = {
 }
 
 Globals.Defaults = {
-	DEFAULT_X = 50,
-	DEFAULT_Y = 150,
-	DEFAULT_W = 250, -- ImMenu default window width
-	DEFAULT_H = 100, -- ImMenu default window height
+	DEFAULT_X = 100,
+	DEFAULT_Y = 100,
+	DEFAULT_W = 300,
+	DEFAULT_H = 200,
 	SLIDER_WIDTH = 250, -- Default slider width from ImMenu
-	TITLE_BAR_HEIGHT = 25,
-	WINDOW_CONTENT_PADDING = 12, -- added for inner padding on all sides
+	TITLE_BAR_HEIGHT = 30,
+	WINDOW_CONTENT_PADDING = 10,
+	ITEM_SPACING = 5, -- Spacing between items on the same line
 }
 
 return Globals
