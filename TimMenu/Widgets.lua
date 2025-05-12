@@ -281,6 +281,13 @@ function Widgets.Checkbox(win, label, state)
 		end
 		draw.Color(table.unpack(bgColor))
 		Common.DrawFilledRect(absX, absY, absX + boxSize, absY + boxSize)
+
+		-- Add semi-transparent outline
+		local outlineColor = { table.unpack(Globals.Colors.WindowBorder) }
+		outlineColor[4] = 128 -- Set alpha to semi-transparent
+		draw.Color(table.unpack(outlineColor))
+		Common.DrawOutlinedRect(absX, absY, absX + boxSize, absY + boxSize)
+
 		-- Check mark fill
 		if state then
 			draw.Color(table.unpack(Globals.Colors.Highlight))
