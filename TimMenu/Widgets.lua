@@ -474,8 +474,7 @@ end
 function Widgets.Selector(win, label, selectedIndex, options)
 	win._widgetCounter = (win._widgetCounter or 0) + 1
 	win._selectors = win._selectors or {}
-	-- Handle nil label when creating the key
-	local safeLabel = label or "<nil_selector_label>" -- Use a placeholder if label is nil
+	local safeLabel = label or "<nil_selector_label>"
 	local key = tostring(win.id) .. ":selector:" .. safeLabel
 	local entry = win._selectors[key]
 	if not entry then
@@ -487,50 +486,132 @@ function Widgets.Selector(win, label, selectedIndex, options)
 			entry.selected = selectedIndex
 		end
 	end
-	-- Prev button
-	local prevClicked = Widgets.Button(win, "<")
-	if prevClicked then
+
+	-- --- Styling & Calculation ---
+	draw.SetFont(Globals.Style.Font)
+	local pad = Globals.Style.ItemPadding
+	local _, btnSymH = draw.GetTextSize("<") -- Use symbol height for consistency
+	local btnW = btnSymH + (pad * 2) -- Make buttons square-ish based on text height
+	local btnH = btnSymH + (pad * 2)
+
+	-- Estimate max text width or use a fixed width? Let's try fixed for now.
+	local fixedTextW = 100 -- Adjust as needed
+	local _, fixedTextH = draw.GetTextSize("Placeholder")
+	local textDisplayH = fixedTextH + (pad * 2)
+
+	local sepW = 1 -- Separator line width
+	local totalWidth = btnW + sepW + fixedTextW + sepW + btnW
+	local totalHeight = math.max(btnH, textDisplayH) -- Use max height
+
+	-- Reserve space for the whole widget
+	local x, y = win:AddWidget(totalWidth, totalHeight)
+	local absX, absY = win.X + x, win.Y + y
+
+	-- --- Interaction --- (Needs internal state like Button)
+	local prevBtnKey = key .. ":prev"
+	local nextBtnKey = key .. ":next"
+	buttonPressState = buttonPressState or {}
+
+	local mX, mY = input.GetMousePos()
+
+	-- Define interaction bounds for internal buttons
+	local prevBounds = { x = absX, y = absY, w = btnW, h = totalHeight }
+	local textBounds = { x = absX + btnW + sepW, y = absY, w = fixedTextW, h = totalHeight }
+	local nextBounds = { x = absX + btnW + sepW + fixedTextW + sepW, y = absY, w = btnW, h = totalHeight }
+
+	local prevHovered = canInteract(win, prevBounds)
+	local nextHovered = canInteract(win, nextBounds)
+
+	-- Handle Prev Button Click
+	if prevHovered and input.IsButtonPressed(MOUSE_LEFT) and not buttonPressState[prevBtnKey] then
+		buttonPressState[prevBtnKey] = true
 		entry.selected = entry.selected - 1
 		if entry.selected < 1 then
 			entry.selected = #options
 		end
 		entry.changed = true
 	end
-	-- Display
-	win:SameLine(Globals.Style.ItemPadding)
-	local displayText = tostring(options[entry.selected])
-	draw.SetFont(Globals.Style.Font)
-	local textWidth, textHeight = draw.GetTextSize(displayText)
-	local pad = Globals.Style.ItemPadding
-	local textDisplayWidth = textWidth + (pad * 2)
-	local textDisplayHeight = textHeight + (pad * 2)
-	-- Reserve space for the text
-	local x, y = win:AddWidget(textDisplayWidth, textDisplayHeight)
-	-- Queue text drawing
-	win:QueueDrawAtLayer(2, function()
-		local absX = win.X + x
-		local absY = win.Y + y
-		-- Optional: Draw a subtle background for the text area?
-		-- draw.Color(table.unpack(Globals.Colors.Item))
-		-- Common.DrawFilledRect(absX, absY, absX + textDisplayWidth, absY + textDisplayHeight)
+	if buttonPressState[prevBtnKey] and not input.IsButtonDown(MOUSE_LEFT) then
+		buttonPressState[prevBtnKey] = false
+	end
 
-		draw.Color(table.unpack(Globals.Colors.Text))
-		draw.SetFont(Globals.Style.Font)
-		-- Center text vertically within its reserved height
-		Common.DrawText(absX + pad, absY + pad, displayText)
-	end)
-	-- Use SameLine to place the next button after the text
-	win:SameLine(Globals.Style.ItemPadding)
-
-	-- Next button
-	local nextClicked = Widgets.Button(win, ">")
-	if nextClicked then
+	-- Handle Next Button Click
+	if nextHovered and input.IsButtonPressed(MOUSE_LEFT) and not buttonPressState[nextBtnKey] then
+		buttonPressState[nextBtnKey] = true
 		entry.selected = entry.selected + 1
 		if entry.selected > #options then
 			entry.selected = 1
 		end
 		entry.changed = true
 	end
+	if buttonPressState[nextBtnKey] and not input.IsButtonDown(MOUSE_LEFT) then
+		buttonPressState[nextBtnKey] = false
+	end
+
+	-- --- Drawing --- (Draw all parts manually)
+	win:QueueDrawAtLayer(2, function()
+		local currentAbsX, currentAbsY = win.X + x, win.Y + y -- Recalculate in case window moved
+
+		-- Overall background (optional, could just rely on item backgrounds)
+		-- draw.Color(table.unpack(Globals.Colors.Item))
+		-- Common.DrawFilledRect(currentAbsX, currentAbsY, currentAbsX + totalWidth, currentAbsY + totalHeight)
+
+		-- Prev Button Drawing
+		local prevBgColor = Globals.Colors.Item
+		if buttonPressState[prevBtnKey] then
+			prevBgColor = Globals.Colors.ItemActive
+		elseif prevHovered then
+			prevBgColor = Globals.Colors.ItemHover
+		end
+		draw.Color(table.unpack(prevBgColor))
+		Common.DrawFilledRect(prevBounds.x, prevBounds.y, prevBounds.x + prevBounds.w, prevBounds.y + prevBounds.h)
+		draw.Color(table.unpack(Globals.Colors.Text))
+		draw.SetFont(Globals.Style.Font)
+		local prevTxtW, prevTxtH = draw.GetTextSize("<")
+		Common.DrawText(prevBounds.x + (prevBounds.w - prevTxtW) / 2, prevBounds.y + (prevBounds.h - prevTxtH) / 2, "<")
+
+		-- Text Area Drawing
+		local displayText = tostring(options[entry.selected])
+		local textBgColor = Globals.Colors.Item -- Use standard item background
+		draw.Color(table.unpack(textBgColor))
+		Common.DrawFilledRect(textBounds.x, textBounds.y, textBounds.x + textBounds.w, textBounds.y + textBounds.h)
+		draw.Color(table.unpack(Globals.Colors.Text))
+		local dispTxtW, dispTxtH = draw.GetTextSize(displayText)
+		-- Center text horizontally and vertically in its area
+		Common.DrawText(
+			textBounds.x + (textBounds.w - dispTxtW) / 2,
+			textBounds.y + (textBounds.h - dispTxtH) / 2,
+			displayText
+		)
+
+		-- Next Button Drawing
+		local nextBgColor = Globals.Colors.Item
+		if buttonPressState[nextBtnKey] then
+			nextBgColor = Globals.Colors.ItemActive
+		elseif nextHovered then
+			nextBgColor = Globals.Colors.ItemHover
+		end
+		draw.Color(table.unpack(nextBgColor))
+		Common.DrawFilledRect(nextBounds.x, nextBounds.y, nextBounds.x + nextBounds.w, nextBounds.y + nextBounds.h)
+		draw.Color(table.unpack(Globals.Colors.Text))
+		local nextTxtW, nextTxtH = draw.GetTextSize(">")
+		Common.DrawText(nextBounds.x + (nextBounds.w - nextTxtW) / 2, nextBounds.y + (nextBounds.h - nextTxtH) / 2, ">")
+
+		-- Separator Lines & Outline
+		draw.Color(table.unpack(Globals.Colors.WindowBorder))
+		-- Left Separator
+		Common.DrawLine(currentAbsX + btnW, currentAbsY, currentAbsX + btnW, currentAbsY + totalHeight)
+		-- Right Separator
+		Common.DrawLine(
+			currentAbsX + btnW + sepW + fixedTextW,
+			currentAbsY,
+			currentAbsX + btnW + sepW + fixedTextW,
+			currentAbsY + totalHeight
+		)
+		-- Outer Outline
+		Common.DrawOutlinedRect(currentAbsX, currentAbsY, currentAbsX + totalWidth, currentAbsY + totalHeight)
+	end)
+
 	return entry.selected, entry.changed
 end
 
