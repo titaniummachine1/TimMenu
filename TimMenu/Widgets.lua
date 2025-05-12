@@ -639,9 +639,11 @@ function Widgets.Dropdown(win, label, selectedIndex, options)
 			-- Open dropdown on click press when cursor is over control
 			entry.open = true
 		elseif entry.open then
+			-- Calculate popup bounds (below the field)
+			local popupAbsX, popupAbsY = absX, absY + height
 			-- Toggle selection if clicking on an item
-			if isInBounds(mX2, mY2, { x = listX, y = listY, w = width, h = listH }) then
-				local idx = math.floor((mY2 - listY) / itemH) + 1
+			if isInBounds(mX2, mY2, { x = popupAbsX, y = popupAbsY, w = width, h = listH }) then
+				local idx = math.floor((mY2 - popupAbsY) / itemH) + 1
 				if idx >= 1 and idx <= #options then
 					entry.selected = idx
 					entry.changed = true
@@ -652,7 +654,6 @@ function Widgets.Dropdown(win, label, selectedIndex, options)
 		end
 		buttonPressState[pressKey] = true
 	end
-	-- Reset debounce on release
 	if buttonPressState[pressKey] and not input.IsButtonDown(MOUSE_LEFT) then
 		buttonPressState[pressKey] = false
 	end
@@ -674,25 +675,34 @@ function Widgets.Dropdown(win, label, selectedIndex, options)
 	)
 	-- Popup list
 	if entry.open then
-		-- Position popup to the right, aligned to control
-		local listX, listY = absX + width, absY
-		local itemH = height
+		-- Position popup list below the main field
+		local popupX, popupY = x, y + height -- Use relative coords for QueueDraw
+		local itemH = height -- Recalculate itemH based on field height
 		local listH = #options * itemH
 		-- Draw popup background at topmost layer
-		win:QueueDrawAtLayer(5, DrawDropdownPopupBackground, win, x + width, y, width, listH)
+		win:QueueDrawAtLayer(5, DrawDropdownPopupBackground, win, popupX, popupY, width, listH)
 		-- Draw items at topmost layer
 		for i, opt in ipairs(options) do
-			local optY = listY + (i - 1) * itemH
-			local hoverOpt = input.GetMousePos()[1] >= listX
-				and input.GetMousePos()[1] <= listX + width
-				and input.GetMousePos()[2] >= optY
-				and input.GetMousePos()[2] <= optY + itemH
+			-- Calculate absolute position of item for hover check
+			local itemAbsX = absX
+			local itemAbsY = absY + height + (i - 1) * itemH
+			local hoverOpt = isInBounds(
+				input.GetMousePos()[1],
+				input.GetMousePos()[2],
+				{ x = itemAbsX, y = itemAbsY, w = width, h = itemH }
+			) and not Utils.IsPointBlocked(
+				TimMenuGlobal.order,
+				TimMenuGlobal.windows,
+				input.GetMousePos()[1],
+				input.GetMousePos()[2],
+				win.id
+			)
 			win:QueueDrawAtLayer(
 				5,
 				DrawDropdownPopupItem,
 				win,
-				x + width,
-				y + (i - 1) * itemH,
+				popupX, -- Use relative X
+				popupY + (i - 1) * itemH, -- Use relative Y + offset
 				width,
 				itemH,
 				pad,
@@ -701,7 +711,7 @@ function Widgets.Dropdown(win, label, selectedIndex, options)
 			)
 		end
 		-- Outline popup box after drawing items
-		win:QueueDrawAtLayer(5, DrawDropdownPopupOutline, win, x + width, y, width, listH)
+		win:QueueDrawAtLayer(5, DrawDropdownPopupOutline, win, popupX, popupY, width, listH)
 	end
 	return entry.selected, entry.changed
 end
@@ -1081,11 +1091,11 @@ function Widgets.Combo(win, label, selected, options)
 		if not entry.open and hovered then
 			entry.open = true
 		elseif entry.open then
-			-- Toggle selection if clicking on an item in the popup
-			-- Calculate popup bounds relative to the field, assuming it appears below and aligned left
-			local popupX, popupY = absX, absY + height
-			if isInBounds(mX, mY, { x = popupX, y = popupY, w = width, h = listH }) then
-				local idx = math.floor((mY - popupY) / height) + 1
+			-- Calculate popup bounds (below the field)
+			local popupAbsX, popupAbsY = absX, absY + height
+			-- Toggle selection if clicking on an item
+			if isInBounds(mX, mY, { x = popupAbsX, y = popupAbsY, w = width, h = listH }) then
+				local idx = math.floor((mY - popupAbsY) / height) + 1
 				if idx >= 1 and idx <= #options then
 					entry.selected[idx] = not entry.selected[idx]
 					entry.changed = true
@@ -1105,16 +1115,19 @@ function Widgets.Combo(win, label, selected, options)
 	if entry.open then
 		-- Position popup list below the main field
 		local popupX, popupY = x, y + height -- Use relative coords for QueueDraw
+		local itemH = height -- Recalculate itemH based on field height
+		local listH = #options * itemH
+		-- Draw popup background at topmost layer
 		win:QueueDrawAtLayer(5, DrawComboPopupBackground, win, popupX, popupY, width, listH)
 		-- Draw items at topmost layer
 		for i, opt in ipairs(options) do
 			-- Calculate absolute position of item for hover check
 			local itemAbsX = absX
-			local itemAbsY = absY + height + (i - 1) * height
-			local hoverItem = isInBounds(
+			local itemAbsY = absY + height + (i - 1) * itemH
+			local hoverOpt = isInBounds(
 				input.GetMousePos()[1],
 				input.GetMousePos()[2],
-				{ x = itemAbsX, y = itemAbsY, w = width, h = height }
+				{ x = itemAbsX, y = itemAbsY, w = width, h = itemH }
 			) and not Utils.IsPointBlocked(
 				TimMenuGlobal.order,
 				TimMenuGlobal.windows,
@@ -1128,12 +1141,12 @@ function Widgets.Combo(win, label, selected, options)
 				DrawComboPopupItem,
 				win,
 				popupX, -- Use relative X
-				popupY + (i - 1) * height, -- Use relative Y + offset
+				popupY + (i - 1) * itemH, -- Use relative Y + offset
 				width,
-				height,
+				itemH,
 				pad,
 				opt,
-				hoverItem,
+				hoverOpt,
 				boxSize,
 				isSelectedFlag
 			)
