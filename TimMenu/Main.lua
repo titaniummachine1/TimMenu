@@ -278,15 +278,18 @@ function TimMenu.BeginSector(label)
 	sector.origNext = win.NextLine
 	win.AddWidget = function(self, w, h)
 		local x, y = sector.origAdd(self, w, h)
-		-- track widest and tallest widget positions
+		-- track widest and tallest widget positions relative to window origin
 		sector.maxX = math.max(sector.maxX, x + w)
 		sector.maxY = math.max(sector.maxY, y + h)
 		return x, y
 	end
 	win.NextLine = function(self, spacing)
+		-- Call original to handle vertical advance and line height
 		sector.origNext(self, spacing)
-		-- track y position after line break
-		sector.maxY = math.max(sector.maxY, self.cursorY)
+		-- Crucially, reset cursorX to the sector's indented start position
+		self.cursorX = sector.startX + sector.padding
+		-- track y position after line break relative to window origin
+		sector.maxY = math.max(sector.maxY, self.cursorY + self.lineHeight)
 	end
 	-- indent cursor for sector padding
 	win.cursorX = sector.startX + sector.padding
@@ -300,12 +303,13 @@ function TimMenu.EndSector(label)
 	if not win or not win._sectorStack or #win._sectorStack == 0 then
 		return
 	end
+	-- Compute depth before popping
+	local depth = #win._sectorStack
+	-- Capture the sector table before removing it
+	local sector = win._sectorStack[depth]
 	-- pop last sector
-	local sector = win._sectorStack[#win._sectorStack]
-	if sector.label ~= label then
-		error("Mismatched EndSector: expected '" .. tostring(sector.label) .. "', got '" .. tostring(label) .. "'")
-	end
 	table.remove(win._sectorStack)
+
 	-- restore AddWidget and NextLine
 	win.AddWidget = sector.origAdd
 	win.NextLine = sector.origNext
@@ -313,6 +317,7 @@ function TimMenu.EndSector(label)
 	-- compute sector dimensions (+padding)
 	local width = (sector.maxX - sector.startX) + pad
 	local height = (sector.maxY - sector.startY) + pad
+
 	-- ensure minimum width to fit header label plus padding
 	if type(sector.label) == "string" then
 		draw.SetFont(Globals.Style.Font)
@@ -325,20 +330,40 @@ function TimMenu.EndSector(label)
 	-- store persistent sector size to avoid shrinking below max content size
 	win._sectorSizes = win._sectorSizes or {}
 	local prev = win._sectorSizes[sector.label]
-	if not prev or width > prev.width then
+	if not prev or width > prev.width or height > prev.height then -- Update if wider or taller
 		win._sectorSizes[sector.label] = { width = width, height = height }
 	end
+
+	-- *** Explicitly update window bounds to contain this sector ***
+	local requiredW = sector.startX + width + sector.padding -- Sector start + width + right padding
+	local requiredH = sector.startY + height + sector.padding -- Sector start + height + bottom padding
+	win.W = math.max(win.W, requiredW)
+	win.H = math.max(win.H, requiredH)
+
 	local absX = win.X + sector.startX
 	local absY = win.Y + sector.startY
-	-- dynamic draw background behind sector
+	-- Prepare for background draw: capture variables local to this scope
+	local captureStartX = sector.startX
+	local captureStartY = sector.startY
+	local captureW = prev and prev.width or ((sector.maxX - sector.startX) + sector.padding)
+	local captureH = prev and prev.height or ((sector.maxY - sector.startY) + sector.padding)
+
+	-- dynamic draw background behind sector, adjusting for nesting depth
+	-- Add to the FRONT of Layer 1 queue to ensure correct draw order (outermost first)
 	table.insert(win.Layers[1], 1, {
 		fn = function()
-			local x0 = win.X + sector.startX
-			local y0 = win.Y + sector.startY
-			local w0 = (sector.maxX - sector.startX) + sector.padding
-			local h0 = (sector.maxY - sector.startY) + sector.padding
-			draw.Color(table.unpack(Globals.Colors.FrameBorder))
-			Common.DrawFilledRect(x0, y0, x0 + w0, y0 + h0)
+			local windowBgColor = Globals.Colors.Window
+			-- Use captured depth (1-based, so depth 1 means first-level sector)
+			local totalLighten = math.min(40, depth * 10)
+			local finalR = math.min(255, windowBgColor[1] + totalLighten)
+			local finalG = math.min(255, windowBgColor[2] + totalLighten)
+			local finalB = math.min(255, windowBgColor[3] + totalLighten)
+			local finalColor = { finalR, finalG, finalB, windowBgColor[4] }
+
+			local x0 = win.X + captureStartX
+			local y0 = win.Y + captureStartY
+			draw.Color(table.unpack(finalColor))
+			Common.DrawFilledRect(x0, y0, x0 + captureW, y0 + captureH)
 		end,
 		args = {},
 	})
@@ -381,6 +406,16 @@ function TimMenu.EndSector(label)
 	win.cursorX = sector.startX + width + pad -- Move cursor right for potential next element on same line
 	-- Update the line height to accommodate the sector's vertical extent
 	win.lineHeight = math.max(win.lineHeight or 0, height)
+
+	-- Update parent sector's bounds if nested
+	if #win._sectorStack > 0 then
+		local parentSector = win._sectorStack[#win._sectorStack]
+		-- Update parent's max X based on this sector's right edge
+		parentSector.maxX = math.max(parentSector.maxX, sector.startX + width)
+		-- Update parent's max Y based on this sector's bottom edge (cursorY already advanced)
+		parentSector.maxY = math.max(parentSector.maxY, win.cursorY + win.lineHeight)
+	end
+
 	-- Do NOT reset cursorY here; let the next NextLine handle vertical advancement based on updated lineHeight.
 end
 

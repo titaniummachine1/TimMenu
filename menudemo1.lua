@@ -1,9 +1,6 @@
 -- menudemo1.lua
 local TimMenu = require("TimMenu")
 
--- Counter for toggling button visibility
-local frameCounter = 0
-
 -- Script state
 local cbState1 = false
 local sliderVal1 = 25
@@ -11,52 +8,54 @@ local options1 = { "Option A", "Option B", "Option C" }
 local selectedIndex1 = 1
 
 local function OnDraw_Menudemo1()
-	-- update frame counter and compute visibility toggle (66 frames per half-cycle)
-	frameCounter = frameCounter + 1
-	local showButton = (frameCounter % 132) < 66
-
 	if TimMenu.Begin("Demo Window 1") then
-		-- First row: two sectors side by side
-		TimMenu.BeginSector("sectorA")
-		-- show/hide button every half second (approx. 66 frames)
-		if showButton and TimMenu.Button("Click Me") then
-			print("[Menudemo1] Button clicked!")
-		end
-		TimMenu.EndSector("sectorA")
-		TimMenu.BeginSector("sectorB")
-		if TimMenu.Button("Click Me") then
-			print("[Menudemo1] Button clicked!XD")
-		end
-		TimMenu.EndSector("sectorB")
+		-- First row: Demonstrate multiple widgets and alignment
+		TimMenu.BeginSector("Multi-Widget Area")
+		TimMenu.Text("Content in A")
 		TimMenu.NextLine()
-
-		-- Second row: two more sectors
-		TimMenu.BeginSector("sectorC")
-		if TimMenu.Button("Click Me") then
-		end
-		TimMenu.EndSector("sectorC")
-		TimMenu.BeginSector("sectorD")
-		if TimMenu.Button("Click Me") then
-		end
-		TimMenu.EndSector("sectorD")
+		cbState1 = TimMenu.Checkbox("Checkbox in A", cbState1)
 		TimMenu.NextLine()
+		TimMenu.Text("More text...")
+		TimMenu.EndSector("Multi-Widget Area")
 
-		-- Checkbox example
-		cbState1 = TimMenu.Checkbox("Enable Feature", cbState1)
+		TimMenu.BeginSector("Single Button")
+		if TimMenu.Button("Button in B") then
+			print("[Menudemo1] Button B clicked!XD")
+		end
+		TimMenu.EndSector("Single Button")
+		TimMenu.NextLine() -- End of the first row of sectors
+
+		-- Nested Sector Example
+		TimMenu.BeginSector("Nesting Container")
+		TimMenu.Text("Inside Outer Container")
 		TimMenu.NextLine()
-
-		-- Slider example
-		sliderVal1, changed1 = TimMenu.Slider("Adjust Value", sliderVal1, 0, 100, 5)
+		TimMenu.BeginSector("Nested Slider Area")
+		sliderVal1, changed1 = TimMenu.Slider("Slider in Nested Area", sliderVal1, 0, 100, 5)
 		if changed1 then
 			print("[Menudemo1] Slider value -> " .. sliderVal1)
 		end
+		if TimMenu.Button("Button in B") then
+			print("[Menudemo1] Button B clicked!XD")
+		end
+		if TimMenu.Button("Button in B") then
+			print("[Menudemo1] Button B clicked!XD")
+		end
 		TimMenu.NextLine()
+		if TimMenu.Button("Button in B") then
+			print("[Menudemo1] Button B clicked!XD")
+		end
 
-		-- Separator line
+		TimMenu.EndSector("Nested Slider Area")
+		TimMenu.NextLine()
+		TimMenu.Text("Also inside Container")
+		TimMenu.EndSector("Nesting Container")
+		TimMenu.NextLine() -- End of Nesting Container block
+
+		-- Separator line (outside sectors)
 		TimMenu.Separator()
 		TimMenu.NextLine()
 
-		-- Selector example using the dedicated widget
+		-- Selector example using the dedicated widget (outside sectors)
 		selectedIndex1, changed1 = TimMenu.Selector(nil, selectedIndex1, options1)
 		if changed1 then
 			print("[Menudemo1] Selector changed to index: ", selectedIndex1)

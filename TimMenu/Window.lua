@@ -174,11 +174,10 @@ function Window:NextLine(spacing)
 	spacing = spacing or Globals.Defaults.WINDOW_CONTENT_PADDING
 	self.cursorY = self.cursorY + self.lineHeight + spacing
 	self.cursorX = Globals.Defaults.WINDOW_CONTENT_PADDING -- reset to left padding
+	local endOfLineY = self.cursorY -- Y position *before* resetting lineHeight
 	self.lineHeight = 0
-	-- Expand window if needed
-	if self.cursorY > self.H then
-		self.H = self.cursorY
-	end
+	-- Expand window if needed, considering the end of the previous line
+	self.H = math.max(self.H, endOfLineY)
 end
 
 --- Advances the cursor horizontally to place the next widget on the same line.

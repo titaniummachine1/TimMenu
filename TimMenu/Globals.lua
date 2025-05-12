@@ -12,6 +12,7 @@ Globals.Colors = {
 	HighlightActive = { 240, 240, 240, 140 },
 	WindowBorder = { 55, 100, 215, 255 },
 	FrameBorder = { 0, 0, 0, 200 },
+	SectorBackground = { 20, 20, 20, 255 },
 	Border = { 0, 0, 0, 200 },
 }
 

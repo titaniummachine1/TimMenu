@@ -233,7 +233,7 @@ function Widgets.Slider(win, label, value, min, max, step)
 	end
 
 	-- Draw slider background, fill, and centered label
-	win:QueueDrawAtLayer(1, function()
+	win:QueueDrawAtLayer(2, function()
 		-- Calculate position inside window so it follows dragging
 		local absX = win.X + x
 		local absY = win.Y + y
