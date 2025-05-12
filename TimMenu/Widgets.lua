@@ -472,6 +472,7 @@ function Widgets.Dropdown(win, label, selectedIndex, options)
 		local _, txtH = draw.GetTextSize(displayText) -- Measure text height inside closure
 		Common.DrawText(absX + pad, absY + (height - txtH) / 2, displayText) -- Center vertically
 		-- Draw dropdown arrow as triangle
+		draw.Color(table.unpack(Globals.Colors.Text)) -- Explicitly set color for arrow lines
 		local triW, triH = arrowW, arrowH
 		local triX, triY = absX + width - pad - triW, absY + (height - triH) / 2
 		if entry.open then
@@ -915,6 +916,7 @@ function Widgets.Combo(win, label, selected, options)
 		local displayText = label
 		Common.DrawText(absX + pad, absY + (height - txtH) / 2, displayText)
 		-- Draw combo arrow as triangle
+		draw.Color(table.unpack(Globals.Colors.Text)) -- Explicitly set color for arrow lines
 		local triW, triH = arrowW, arrowH
 		local triX, triY = absX + width - pad - triW, absY + (height - triH) / 2
 		if entry.open then
@@ -953,18 +955,22 @@ function Widgets.Combo(win, label, selected, options)
 				)
 				draw.Color(table.unpack(hoverItem and Globals.Colors.ItemHover or Globals.Colors.Item))
 				Common.DrawFilledRect(dropX, itemY, dropX + width, itemY + height)
-				-- Checkbox
-				local bx, by = dropX + pad, itemY + pad
+				-- Calculate scaled and centered checkbox for popup item
+				local popupBoxSize = height * 0.6 -- Scale box to item height
+				local bx = dropX + pad
+				local by = itemY + (height / 2) - (popupBoxSize / 2) -- Center box vertically in the row
 				draw.Color(table.unpack(Globals.Colors.WindowBorder))
-				Common.DrawOutlinedRect(bx, by, bx + boxSize, by + boxSize)
+				Common.DrawOutlinedRect(bx, by, bx + popupBoxSize, by + popupBoxSize)
 				if entry.selected[i] then
 					draw.Color(table.unpack(Globals.Colors.Highlight))
-					local m = math.floor(boxSize * 0.25)
-					Common.DrawFilledRect(bx + m, by + m, bx + boxSize - m, by + boxSize - m)
+					local m = math.floor(popupBoxSize * 0.25)
+					Common.DrawFilledRect(bx + m, by + m, bx + popupBoxSize - m, by + popupBoxSize - m)
 				end
 				-- Text
 				draw.Color(table.unpack(Globals.Colors.Text))
-				Common.DrawText(bx + boxSize + pad, by, opt)
+				local _, optH = draw.GetTextSize(opt)
+				-- Center text vertically within the item row height
+				Common.DrawText(bx + popupBoxSize + pad, itemY + (height / 2) - (optH / 2), opt)
 			end)
 		end
 	end
