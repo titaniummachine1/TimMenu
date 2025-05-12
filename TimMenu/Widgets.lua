@@ -162,6 +162,8 @@ end
 
 --- Draws a slider widget, returning the new value and whether it changed.
 function Widgets.Slider(win, label, value, min, max, step)
+	-- mark last widget type for specialized spacing
+	win._lastWidgetType = "slider"
 	-- assign a per-window unique index to avoid collisions in layout (but not for dragging)
 	win._widgetCounter = (win._widgetCounter or 0) + 1
 	local widgetIndex = win._widgetCounter
@@ -258,19 +260,22 @@ end
 ---@param label string optional text label in center
 function Widgets.Separator(win, label)
 	local padding = Globals.Defaults.WINDOW_CONTENT_PADDING
+	local vpad = Globals.Style.ItemPadding
+	-- ensure separator starts on its own line and add top padding
+	if win.cursorX > padding then
+		win:NextLine(0)
+	end
+	win:NextLine(vpad)
 	local totalWidth = win.W - (padding * 2)
 	if type(label) == "string" then
 		-- Labeled separator: center text with lines on either side
 		draw.SetFont(Globals.Style.Font)
 		local textWidth, textHeight = draw.GetTextSize(label)
 		local x, y = win:AddWidget(totalWidth, textHeight)
-		local absX, absY = win.X + x, win.Y + y
-		local centerY = absY + math.floor(textHeight / 2)
 		win:QueueDrawAtLayer(1, function()
-			-- Calculate position inside window so it follows dragging
-			absX = win.X + x
-			absY = win.Y + y
-			centerY = absY + math.floor(textHeight / 2)
+			local absX = win.X + x
+			local absY = win.Y + y
+			local centerY = absY + math.floor(textHeight / 2)
 			draw.Color(table.unpack(Globals.Colors.WindowBorder))
 			-- Left line
 			Common.DrawLine(absX, centerY, absX + (totalWidth - textWidth) / 2 - Globals.Style.ItemPadding, centerY)
@@ -289,15 +294,15 @@ function Widgets.Separator(win, label)
 	else
 		-- Simple separator
 		local x, y = win:AddWidget(totalWidth, 1)
-		local absX, absY = win.X + x, win.Y + y
 		win:QueueDrawAtLayer(1, function()
-			-- Calculate position inside window so it follows dragging
-			absX = win.X + x
-			absY = win.Y + y
+			local absX = win.X + x
+			local absY = win.Y + y
 			draw.Color(table.unpack(Globals.Colors.WindowBorder))
 			Common.DrawLine(absX, absY, absX + totalWidth, absY)
 		end)
 	end
+	-- add bottom padding
+	win:NextLine(vpad)
 end
 
 return Widgets

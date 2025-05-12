@@ -177,10 +177,20 @@ function TimMenu.NextLine(spacing)
 	if not win then
 		return
 	end
-	-- default vertical gap between lines (double padding)
 	local pad = Globals.Defaults.WINDOW_CONTENT_PADDING
-	local actualSpacing = spacing or (pad * 3)
-	-- advance to next line with increased gap
+	local actualSpacing
+	if spacing ~= nil then
+		actualSpacing = spacing
+	else
+		if win._lastWidgetType == "slider" then
+			actualSpacing = pad -- smaller gap after sliders
+		else
+			actualSpacing = pad * 3 -- default larger gap for other items
+		end
+	end
+	-- reset widget flag
+	win._lastWidgetType = nil
+	-- advance to next line
 	win:NextLine(actualSpacing)
 	-- apply sector indentation
 	local depth = win._sectorStack and #win._sectorStack or 0
