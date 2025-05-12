@@ -29,7 +29,10 @@ local function canInteract(win, bounds)
 end
 
 -- Add named draw helpers for Dropdown and Combo widgets
-local function DrawDropdownField(absX, absY, width, height, pad, label, entryOpen, hovered, arrowW, arrowH)
+local function DrawDropdownField(win, relX, relY, width, height, pad, label, entryOpen, hovered, arrowW, arrowH)
+	-- Compute absolute position
+	local absX = win.X + relX
+	local absY = win.Y + relY
 	-- Background and outline
 	local bgColor = Globals.Colors.Item
 	if entryOpen then
@@ -59,25 +62,37 @@ local function DrawDropdownField(absX, absY, width, height, pad, label, entryOpe
 	end
 end
 
-local function DrawDropdownPopupBackground(listX, listY, width, listH)
+local function DrawDropdownPopupBackground(win, relX, relY, width, listH)
+	-- Compute absolute position
+	local absX = win.X + relX
+	local absY = win.Y + relY
 	draw.Color(table.unpack(Globals.Colors.Window))
-	Common.DrawFilledRect(listX, listY, listX + width, listY + listH)
+	Common.DrawFilledRect(absX, absY, absX + width, absY + listH)
 end
 
-local function DrawDropdownPopupItem(listX, itemY, width, itemH, pad, opt, isHovered)
+local function DrawDropdownPopupItem(win, relX, relY, width, itemH, pad, opt, isHovered)
+	-- Compute absolute position
+	local absX = win.X + relX
+	local absY = win.Y + relY
 	draw.Color(table.unpack(isHovered and Globals.Colors.ItemHover or Globals.Colors.Item))
-	Common.DrawFilledRect(listX, itemY, listX + width, itemY + itemH)
+	Common.DrawFilledRect(absX, absY, absX + width, absY + itemH)
 	draw.Color(table.unpack(Globals.Colors.Text))
 	local _, optH = draw.GetTextSize(opt)
-	Common.DrawText(listX + pad, itemY + (itemH - optH) / 2, opt)
+	Common.DrawText(absX + pad, absY + (itemH - optH) / 2, opt)
 end
 
-local function DrawDropdownPopupOutline(listX, listY, width, listH)
+local function DrawDropdownPopupOutline(win, relX, relY, width, listH)
+	-- Compute absolute position
+	local absX = win.X + relX
+	local absY = win.Y + relY
 	draw.Color(table.unpack(Globals.Colors.WindowBorder))
-	Common.DrawOutlinedRect(listX, listY, listX + width, listY + listH)
+	Common.DrawOutlinedRect(absX, absY, absX + width, absY + listH)
 end
 
-local function DrawComboField(absX, absY, width, height, pad, label, entryOpen, hovered, arrowW, arrowH)
+local function DrawComboField(win, relX, relY, width, height, pad, label, entryOpen, hovered, arrowW, arrowH)
+	-- Compute absolute position
+	local absX = win.X + relX
+	local absY = win.Y + relY
 	local bgColor = Globals.Colors.Item
 	if entryOpen then
 		bgColor = Globals.Colors.ItemActive
@@ -104,16 +119,22 @@ local function DrawComboField(absX, absY, width, height, pad, label, entryOpen, 
 	end
 end
 
-local function DrawComboPopupBackground(dropX, dropY, width, listH)
+local function DrawComboPopupBackground(win, relX, relY, width, listH)
+	-- Compute absolute position
+	local absX = win.X + relX
+	local absY = win.Y + relY
 	draw.Color(table.unpack(Globals.Colors.Window))
-	Common.DrawFilledRect(dropX, dropY, dropX + width, dropY + listH)
+	Common.DrawFilledRect(absX, absY, absX + width, absY + listH)
 end
 
-local function DrawComboPopupItem(dropX, itemY, width, height, pad, opt, isHovered, popupBoxSize, isSelected)
+local function DrawComboPopupItem(win, relX, relY, width, height, pad, opt, isHovered, popupBoxSize, isSelected)
+	-- Compute absolute position
+	local absX = win.X + relX
+	local absY = win.Y + relY
 	draw.Color(table.unpack(isHovered and Globals.Colors.ItemHover or Globals.Colors.Item))
-	Common.DrawFilledRect(dropX, itemY, dropX + width, itemY + height)
-	local bx = dropX + pad
-	local by = itemY + (height / 2) - (popupBoxSize / 2)
+	Common.DrawFilledRect(absX, absY, absX + width, absY + height)
+	local bx = absX + pad
+	local by = absY + (height / 2) - (popupBoxSize / 2)
 	draw.Color(table.unpack(Globals.Colors.WindowBorder))
 	Common.DrawOutlinedRect(bx, by, bx + popupBoxSize, by + popupBoxSize)
 	if isSelected then
@@ -123,12 +144,15 @@ local function DrawComboPopupItem(dropX, itemY, width, height, pad, opt, isHover
 	end
 	draw.Color(table.unpack(Globals.Colors.Text))
 	local _, optH = draw.GetTextSize(opt)
-	Common.DrawText(bx + popupBoxSize + pad, itemY + (height / 2) - (optH / 2), opt)
+	Common.DrawText(bx + popupBoxSize + pad, absY + (height / 2) - (optH / 2), opt)
 end
 
-local function DrawComboPopupOutline(dropX, dropY, width, listH)
+local function DrawComboPopupOutline(win, relX, relY, width, listH)
+	-- Compute absolute position
+	local absX = win.X + relX
+	local absY = win.Y + relY
 	draw.Color(table.unpack(Globals.Colors.WindowBorder))
-	Common.DrawOutlinedRect(dropX, dropY, dropX + width, dropY + listH)
+	Common.DrawOutlinedRect(absX, absY, absX + width, absY + listH)
 end
 
 function Widgets.Button(win, label)
@@ -582,8 +606,9 @@ function Widgets.Dropdown(win, label, selectedIndex, options)
 	win:QueueDrawAtLayer(
 		2,
 		DrawDropdownField,
-		absX,
-		absY,
+		win,
+		x,
+		y,
 		width,
 		height,
 		pad,
@@ -600,7 +625,7 @@ function Widgets.Dropdown(win, label, selectedIndex, options)
 		local itemH = height
 		local listH = #options * itemH
 		-- Draw popup background at topmost layer
-		win:QueueDrawAtLayer(5, DrawDropdownPopupBackground, listX, listY, width, listH)
+		win:QueueDrawAtLayer(5, DrawDropdownPopupBackground, win, x + width, y, width, listH)
 		-- Draw items at topmost layer
 		for i, opt in ipairs(options) do
 			local optY = listY + (i - 1) * itemH
@@ -608,10 +633,21 @@ function Widgets.Dropdown(win, label, selectedIndex, options)
 				and input.GetMousePos()[1] <= listX + width
 				and input.GetMousePos()[2] >= optY
 				and input.GetMousePos()[2] <= optY + itemH
-			win:QueueDrawAtLayer(5, DrawDropdownPopupItem, listX, optY, width, itemH, pad, opt, hoverOpt)
+			win:QueueDrawAtLayer(
+				5,
+				DrawDropdownPopupItem,
+				win,
+				x + width,
+				y + (i - 1) * itemH,
+				width,
+				itemH,
+				pad,
+				opt,
+				hoverOpt
+			)
 		end
 		-- Outline popup box after drawing items
-		win:QueueDrawAtLayer(5, DrawDropdownPopupOutline, listX, listY, width, listH)
+		win:QueueDrawAtLayer(5, DrawDropdownPopupOutline, win, x + width, y, width, listH)
 	end
 	return entry.selected, entry.changed
 end
@@ -1003,10 +1039,10 @@ function Widgets.Combo(win, label, selected, options)
 		buttonPressState[pressKey] = false
 	end
 	-- Draw the combo button
-	win:QueueDrawAtLayer(2, DrawComboField, absX, absY, width, height, pad, label, entry.open, hovered, arrowW, arrowH)
+	win:QueueDrawAtLayer(2, DrawComboField, win, x, y, width, height, pad, label, entry.open, hovered, arrowW, arrowH)
 	-- Draw popup items when open
 	if entry.open then
-		win:QueueDrawAtLayer(5, DrawComboPopupBackground, dropX, dropY, width, listH)
+		win:QueueDrawAtLayer(5, DrawComboPopupBackground, win, x + width, y, width, listH)
 		-- Draw items at topmost layer
 		for i, opt in ipairs(options) do
 			local itemY = dropY + (i - 1) * height
@@ -1025,8 +1061,9 @@ function Widgets.Combo(win, label, selected, options)
 			win:QueueDrawAtLayer(
 				5,
 				DrawComboPopupItem,
-				dropX,
-				itemY,
+				win,
+				x + width,
+				y + (i - 1) * height, -- Pass RELATIVE Y, not absolute itemY
 				width,
 				height,
 				pad,
@@ -1037,7 +1074,7 @@ function Widgets.Combo(win, label, selected, options)
 			)
 		end
 		-- Outline combo popup box after drawing items
-		win:QueueDrawAtLayer(5, DrawComboPopupOutline, dropX, dropY, width, listH)
+		win:QueueDrawAtLayer(5, DrawComboPopupOutline, win, x + width, y, width, listH)
 	end
 	return entry.selected, entry.changed
 end
