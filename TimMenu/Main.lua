@@ -269,6 +269,15 @@ function TimMenu.EndSector(label)
 	-- compute sector dimensions (+padding)
 	local width = (sector.maxX - sector.startX) + pad
 	local height = (sector.maxY - sector.startY) + pad
+	-- ensure minimum width to fit header label plus padding
+	if type(sector.label) == "string" then
+		draw.SetFont(Globals.Style.Font)
+		local lw, lh = draw.GetTextSize(sector.label)
+		local minW = lw + (pad * 2)
+		if width < minW then
+			width = minW
+		end
+	end
 	-- store persistent sector size to avoid shrinking below max content size
 	win._sectorSizes = win._sectorSizes or {}
 	local prev = win._sectorSizes[sector.label]

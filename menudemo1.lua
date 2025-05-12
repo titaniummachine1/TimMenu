@@ -25,6 +25,7 @@ local function OnDraw_Menudemo1()
 		TimMenu.EndSector("sectorA")
 		TimMenu.BeginSector("sectorB")
 		if TimMenu.Button("Click Me") then
+			print("[Menudemo1] Button clicked!XD")
 		end
 		TimMenu.EndSector("sectorB")
 		TimMenu.NextLine()
