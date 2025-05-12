@@ -1,6 +1,5 @@
 # TimMenu
 Titanium Immediate-Mode Menu for Lmaobox
 
-Uploading timmenu showcase.mp4…
-
+https://github.com/user-attachments/assets/e195254f-5330-4e4e-9fad-60356d30367f
 
