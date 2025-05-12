@@ -33,7 +33,13 @@ local function DrawDropdownField(win, relX, relY, width, height, pad, label, ent
 	-- Compute absolute position
 	local absX = win.X + relX
 	local absY = win.Y + relY
-	-- Background and outline
+
+	-- Define arrow box dimensions (square, using widget height)
+	local arrowBoxW = height
+	local arrowBoxX = absX + width - arrowBoxW
+
+	-- Background for the main part (excluding arrow box)
+	local mainBgWidth = width - arrowBoxW
 	local bgColor = Globals.Colors.Item
 	if entryOpen then
 		bgColor = Globals.Colors.ItemActive
@@ -41,32 +47,48 @@ local function DrawDropdownField(win, relX, relY, width, height, pad, label, ent
 		bgColor = Globals.Colors.ItemHover
 	end
 	draw.Color(table.unpack(bgColor))
-	Common.DrawFilledRect(absX, absY, absX + width, absY + height)
+	Common.DrawFilledRect(absX, absY, absX + mainBgWidth, absY + height)
+
+	-- Background for the arrow box
+	draw.Color(table.unpack(Globals.Colors.ArrowBoxBg))
+	Common.DrawFilledRect(arrowBoxX, absY, arrowBoxX + arrowBoxW, absY + height)
+
+	-- Outline for the entire widget
 	draw.Color(table.unpack(Globals.Colors.WindowBorder))
 	Common.DrawOutlinedRect(absX, absY, absX + width, absY + height)
+
 	-- Label text
 	draw.Color(table.unpack(Globals.Colors.Text))
 	local _, txtH = draw.GetTextSize(label)
 	Common.DrawText(absX + pad, absY + (height - txtH) / 2, label)
-	-- Arrow triangle
+
+	-- Arrow (chevron) - Corrected scaling to 0.5
+	local actualArrowW = arrowW * 0.5 -- Make arrow smaller
+	local actualArrowH = arrowH * 0.5 -- Make arrow smaller
 	draw.Color(table.unpack(Globals.Colors.Text))
-	local triX, triY = absX + width - pad - arrowW, absY + (height - arrowH) / 2
+	-- Center the smaller arrow within the arrowBox
+	local triX = arrowBoxX + (arrowBoxW - actualArrowW) / 2
+	local triY = absY + (height - actualArrowH) / 2
+
 	if entryOpen then
-		Common.DrawLine(triX + arrowW / 2, triY, triX, triY + arrowH)
-		Common.DrawLine(triX, triY + arrowH, triX + arrowW, triY + arrowH)
-		Common.DrawLine(triX + arrowW, triY + arrowH, triX + arrowW / 2, triY)
+		-- Pointing up (e.g., ^)
+		Common.DrawLine(triX, triY + actualArrowH, triX + actualArrowW / 2, triY)
+		Common.DrawLine(triX + actualArrowW / 2, triY, triX + actualArrowW, triY + actualArrowH)
 	else
-		Common.DrawLine(triX, triY, triX + arrowW, triY)
-		Common.DrawLine(triX + arrowW, triY, triX + arrowW / 2, triY + arrowH)
-		Common.DrawLine(triX + arrowW / 2, triY + arrowH, triX, triY)
+		-- Pointing down (e.g., v)
+		Common.DrawLine(triX, triY, triX + actualArrowW / 2, triY + actualArrowH)
+		Common.DrawLine(triX + actualArrowW / 2, triY + actualArrowH, triX + actualArrowW, triY)
 	end
 end
 
+-- Corrected DrawDropdownPopupBackground
 local function DrawDropdownPopupBackground(win, relX, relY, width, listH)
 	-- Compute absolute position
 	local absX = win.X + relX
 	local absY = win.Y + relY
-	draw.Color(table.unpack(Globals.Colors.Window))
+
+	-- Draw the popup background
+	draw.Color(table.unpack(Globals.Colors.Window)) -- Use the standard window/popup background color
 	Common.DrawFilledRect(absX, absY, absX + width, absY + listH)
 end
 
@@ -93,6 +115,13 @@ local function DrawComboField(win, relX, relY, width, height, pad, label, entryO
 	-- Compute absolute position
 	local absX = win.X + relX
 	local absY = win.Y + relY
+
+	-- Define arrow box dimensions (square, using widget height)
+	local arrowBoxW = height
+	local arrowBoxX = absX + width - arrowBoxW
+
+	-- Background for the main part (excluding arrow box)
+	local mainBgWidth = width - arrowBoxW
 	local bgColor = Globals.Colors.Item
 	if entryOpen then
 		bgColor = Globals.Colors.ItemActive
@@ -100,22 +129,37 @@ local function DrawComboField(win, relX, relY, width, height, pad, label, entryO
 		bgColor = Globals.Colors.ItemHover
 	end
 	draw.Color(table.unpack(bgColor))
-	Common.DrawFilledRect(absX, absY, absX + width, absY + height)
+	Common.DrawFilledRect(absX, absY, absX + mainBgWidth, absY + height)
+
+	-- Background for the arrow box
+	draw.Color(table.unpack(Globals.Colors.ArrowBoxBg))
+	Common.DrawFilledRect(arrowBoxX, absY, arrowBoxX + arrowBoxW, absY + height)
+
+	-- Outline for the entire widget
 	draw.Color(table.unpack(Globals.Colors.WindowBorder))
 	Common.DrawOutlinedRect(absX, absY, absX + width, absY + height)
+
+	-- Label text
 	draw.Color(table.unpack(Globals.Colors.Text))
 	local _, txtH = draw.GetTextSize(label)
 	Common.DrawText(absX + pad, absY + (height - txtH) / 2, label)
+
+	-- Arrow (chevron) - smaller and centered
+	local actualArrowW = arrowW * 0.5 -- Make arrow smaller
+	local actualArrowH = arrowH * 0.5 -- Make arrow smaller
 	draw.Color(table.unpack(Globals.Colors.Text))
-	local triX, triY = absX + width - pad - arrowW, absY + (height - arrowH) / 2
+	-- Center the smaller arrow within the arrowBox
+	local triX = arrowBoxX + (arrowBoxW - actualArrowW) / 2
+	local triY = absY + (height - actualArrowH) / 2
+
 	if entryOpen then
-		Common.DrawLine(triX + arrowW / 2, triY, triX, triY + arrowH)
-		Common.DrawLine(triX, triY + arrowH, triX + arrowW, triY + arrowH)
-		Common.DrawLine(triX + arrowW, triY + arrowH, triX + arrowW / 2, triY)
+		-- Pointing up (e.g., ^)
+		Common.DrawLine(triX, triY + actualArrowH, triX + actualArrowW / 2, triY)
+		Common.DrawLine(triX + actualArrowW / 2, triY, triX + actualArrowW, triY + actualArrowH)
 	else
-		Common.DrawLine(triX, triY, triX + arrowW, triY)
-		Common.DrawLine(triX + arrowW, triY, triX + arrowW / 2, triY + arrowH)
-		Common.DrawLine(triX + arrowW / 2, triY + arrowH, triX, triY)
+		-- Pointing down (e.g., v)
+		Common.DrawLine(triX, triY, triX + actualArrowW / 2, triY + actualArrowH)
+		Common.DrawLine(triX + actualArrowW / 2, triY + actualArrowH, triX + actualArrowW, triY)
 	end
 end
 
@@ -282,10 +326,8 @@ function Widgets.Checkbox(win, label, state)
 		draw.Color(table.unpack(bgColor))
 		Common.DrawFilledRect(absX, absY, absX + boxSize, absY + boxSize)
 
-		-- Add semi-transparent outline
-		local outlineColor = { table.unpack(Globals.Colors.WindowBorder) }
-		outlineColor[4] = 128 -- Set alpha to semi-transparent
-		draw.Color(table.unpack(outlineColor))
+		-- Add semi-transparent outline using the dedicated color
+		draw.Color(table.unpack(Globals.Colors.WidgetOutline))
 		Common.DrawOutlinedRect(absX, absY, absX + boxSize, absY + boxSize)
 
 		-- Check mark fill
@@ -569,8 +611,13 @@ function Widgets.Dropdown(win, label, selectedIndex, options)
 	local pad = Globals.Style.ItemPadding
 	local arrowChar = "▼"
 	local arrowW, arrowH = draw.GetTextSize(arrowChar)
-	local width = txtW + arrowW + pad * 3
+	-- Calculate height first
 	local height = math.max(txtH, arrowH) + pad * 2
+	-- Calculate width including text, padding, and square arrow box
+	local arrowBoxW = height -- Arrow box is square
+	local width = txtW + pad * 2 + arrowBoxW -- Text + Padding + ArrowBox
+
+	-- Layout and positioning
 	if win.cursorX > Globals.Defaults.WINDOW_CONTENT_PADDING then
 		win.cursorX = win.cursorX + pad
 	end
@@ -825,6 +872,7 @@ function Widgets.Selector(win, label, selectedIndex, options)
 		-- Left Separator
 		Common.DrawLine(currentAbsX + btnW, currentAbsY, currentAbsX + btnW, currentAbsY + totalHeight)
 		-- Right Separator
+		draw.Color(table.unpack(Globals.Colors.WindowBorder))
 		Common.DrawLine(
 			currentAbsX + btnW + sepW + fixedTextW,
 			prevBounds.y, -- Use calculated bounds Y for consistency
@@ -1007,18 +1055,22 @@ function Widgets.Combo(win, label, selected, options)
 	local pad = Globals.Style.ItemPadding
 	-- checkbox size for popup
 	local boxSize = txtH * 1.5
-	-- arrow triangle size
+	-- arrow triangle size (used for height calculation)
 	local arrowChar = "▼"
 	local arrowW, arrowH = draw.GetTextSize(arrowChar)
-	local width = txtW + arrowW + pad * 3
+	-- Calculate height first
 	local height = math.max(txtH, arrowH) + pad * 2
+	-- Calculate width including text, padding, and square arrow box
+	local arrowBoxW = height -- Arrow box is square
+	local width = txtW + pad * 2 + arrowBoxW -- Text + Padding + ArrowBox
+
 	-- Layout and positioning
 	if win.cursorX > Globals.Defaults.WINDOW_CONTENT_PADDING then
 		win.cursorX = win.cursorX + pad
 	end
 	local x, y = win:AddWidget(width, height)
 	local absX, absY = win.X + x, win.Y + y
-	local dropX, dropY = absX + width, absY
+	local dropX, dropY = absX + width, absY -- Note: dropX/Y are for popup list position, not used for field drawing
 	-- Input handling with debounce
 	local mX, mY = table.unpack(input.GetMousePos())
 	local hovered = isInBounds(mX, mY, { x = absX, y = absY, w = width, h = height })
@@ -1029,9 +1081,11 @@ function Widgets.Combo(win, label, selected, options)
 		if not entry.open and hovered then
 			entry.open = true
 		elseif entry.open then
-			-- Toggle selection if clicking on an item
-			if isInBounds(mX, mY, { x = dropX, y = dropY, w = width, h = listH }) then
-				local idx = math.floor((mY - dropY) / height) + 1
+			-- Toggle selection if clicking on an item in the popup
+			-- Calculate popup bounds relative to the field, assuming it appears below and aligned left
+			local popupX, popupY = absX, absY + height
+			if isInBounds(mX, mY, { x = popupX, y = popupY, w = width, h = listH }) then
+				local idx = math.floor((mY - popupY) / height) + 1
 				if idx >= 1 and idx <= #options then
 					entry.selected[idx] = not entry.selected[idx]
 					entry.changed = true
@@ -1049,14 +1103,18 @@ function Widgets.Combo(win, label, selected, options)
 	win:QueueDrawAtLayer(2, DrawComboField, win, x, y, width, height, pad, label, entry.open, hovered, arrowW, arrowH)
 	-- Draw popup items when open
 	if entry.open then
-		win:QueueDrawAtLayer(5, DrawComboPopupBackground, win, x + width, y, width, listH)
+		-- Position popup list below the main field
+		local popupX, popupY = x, y + height -- Use relative coords for QueueDraw
+		win:QueueDrawAtLayer(5, DrawComboPopupBackground, win, popupX, popupY, width, listH)
 		-- Draw items at topmost layer
 		for i, opt in ipairs(options) do
-			local itemY = dropY + (i - 1) * height
+			-- Calculate absolute position of item for hover check
+			local itemAbsX = absX
+			local itemAbsY = absY + height + (i - 1) * height
 			local hoverItem = isInBounds(
 				input.GetMousePos()[1],
 				input.GetMousePos()[2],
-				{ x = dropX, y = itemY, w = width, h = height }
+				{ x = itemAbsX, y = itemAbsY, w = width, h = height }
 			) and not Utils.IsPointBlocked(
 				TimMenuGlobal.order,
 				TimMenuGlobal.windows,
@@ -1069,8 +1127,8 @@ function Widgets.Combo(win, label, selected, options)
 				5,
 				DrawComboPopupItem,
 				win,
-				x + width,
-				y + (i - 1) * height, -- Pass RELATIVE Y, not absolute itemY
+				popupX, -- Use relative X
+				popupY + (i - 1) * height, -- Use relative Y + offset
 				width,
 				height,
 				pad,
@@ -1081,7 +1139,7 @@ function Widgets.Combo(win, label, selected, options)
 			)
 		end
 		-- Outline combo popup box after drawing items
-		win:QueueDrawAtLayer(5, DrawComboPopupOutline, win, x + width, y, width, listH)
+		win:QueueDrawAtLayer(5, DrawComboPopupOutline, win, popupX, popupY, width, listH)
 	end
 	return entry.selected, entry.changed
 end
