@@ -132,6 +132,8 @@ local function DrawComboPopupOutline(dropX, dropY, width, listH)
 end
 
 function Widgets.Button(win, label)
+	assert(type(win) == "table", "Widgets.Button: win must be a table")
+	assert(type(label) == "string", "Widgets.Button: label must be a string")
 	-- assign a per-window unique index to avoid collisions
 	win._widgetCounter = (win._widgetCounter or 0) + 1
 	local widgetIndex = win._widgetCounter
@@ -202,6 +204,9 @@ end
 --- @param state boolean current checkbox state
 --- @return boolean new state after click
 function Widgets.Checkbox(win, label, state)
+	assert(type(win) == "table", "Widgets.Checkbox: win must be a table")
+	assert(type(label) == "string", "Widgets.Checkbox: label must be a string")
+	assert(type(state) == "boolean", "Widgets.Checkbox: state must be a boolean")
 	-- assign a per-window unique index to avoid collisions
 	win._widgetCounter = (win._widgetCounter or 0) + 1
 	local widgetIndex = win._widgetCounter
@@ -269,6 +274,12 @@ end
 
 --- Draws a slider widget, returning the new value and whether it changed.
 function Widgets.Slider(win, label, value, min, max, step)
+	assert(type(win) == "table", "Widgets.Slider: win must be a table")
+	assert(type(label) == "string", "Widgets.Slider: label must be a string")
+	assert(type(value) == "number", "Widgets.Slider: value must be a number")
+	assert(type(min) == "number", "Widgets.Slider: min must be a number")
+	assert(type(max) == "number", "Widgets.Slider: max must be a number")
+	assert(type(step) == "number", "Widgets.Slider: step must be a number")
 	-- mark last widget type for specialized spacing
 	win._lastWidgetType = "slider"
 	-- assign a per-window unique index to avoid collisions in layout (but not for dragging)
@@ -369,6 +380,8 @@ end
 ---@param win table current window object
 ---@param label string optional text label in center
 function Widgets.Separator(win, label)
+	assert(type(win) == "table", "Widgets.Separator: win must be a table")
+	assert(label == nil or type(label) == "string", "Widgets.Separator: label must be a string or nil")
 	local padding = Globals.Defaults.WINDOW_CONTENT_PADDING
 	local vpad = Globals.Style.ItemPadding
 	-- ensure separator starts on its own line and add top padding
@@ -417,6 +430,9 @@ end
 
 --- Draws a single-line text input; returns new text and whether it changed.
 function Widgets.TextInput(win, label, text)
+	assert(type(win) == "table", "Widgets.TextInput: win must be a table")
+	assert(type(label) == "string", "Widgets.TextInput: label must be a string")
+	assert(text == nil or type(text) == "string", "Widgets.TextInput: text must be a string or nil")
 	win._widgetCounter = (win._widgetCounter or 0) + 1
 	win._textInputs = win._textInputs or {}
 	local key = tostring(win.id) .. ":textinput:" .. label
@@ -496,6 +512,13 @@ end
 
 --- Draws a dropdown list; returns selected index and whether changed.
 function Widgets.Dropdown(win, label, selectedIndex, options)
+	assert(type(win) == "table", "Widgets.Dropdown: win must be a table")
+	assert(type(label) == "string", "Widgets.Dropdown: label must be a string")
+	assert(
+		selectedIndex == nil or type(selectedIndex) == "number",
+		"Widgets.Dropdown: selectedIndex must be a number or nil"
+	)
+	assert(type(options) == "table", "Widgets.Dropdown: options must be a table")
 	win._widgetCounter = (win._widgetCounter or 0) + 1
 	win._dropdowns = win._dropdowns or {}
 	local key = tostring(win.id) .. ":dropdown:" .. label
@@ -595,6 +618,10 @@ end
 
 --- Draws a cyclic selector (< [value] >); returns new index and whether changed.
 function Widgets.Selector(win, label, selectedIndex, options)
+	assert(type(win) == "table", "Widgets.Selector: win must be a table")
+	assert(label == nil or type(label) == "string", "Widgets.Selector: label must be a string or nil")
+	assert(type(selectedIndex) == "number", "Widgets.Selector: selectedIndex must be a number")
+	assert(type(options) == "table", "Widgets.Selector: options must be a table")
 	win._widgetCounter = (win._widgetCounter or 0) + 1
 	win._selectors = win._selectors or {}
 	local safeLabel = label or "<nil_selector_label>"
@@ -775,8 +802,9 @@ end
 ---@param currentTabIndex integer The 1-based index of the currently selected tab.
 ---@return integer newCurrentTabIndex The potentially updated selected tab index.
 function Widgets.TabControl(win, id, tabs, currentTabIndex)
+	assert(type(win) == "table", "Widgets.TabControl: win must be a table")
 	assert(type(id) == "string", "Widgets.TabControl: id must be a string")
-	assert(type(tabs) == "table", "Widgets.TabControl: tabs must be a table")
+	assert(type(tabs) == "table", "Widgets.TabControl: tabs must be a table of strings")
 	assert(type(currentTabIndex) == "number", "Widgets.TabControl: currentTabIndex must be a number")
 
 	local newIndex = currentTabIndex
@@ -912,6 +940,10 @@ end
 
 --- Draws a multi-selection combo box; returns a table of booleans and whether changed.
 function Widgets.Combo(win, label, selected, options)
+	assert(type(win) == "table", "Widgets.Combo: win must be a table")
+	assert(type(label) == "string", "Widgets.Combo: label must be a string")
+	assert(type(selected) == "table", "Widgets.Combo: selected must be a table of booleans")
+	assert(type(options) == "table", "Widgets.Combo: options must be a table")
 	-- Setup
 	win._widgetCounter = (win._widgetCounter or 0) + 1
 	win._combos = win._combos or {}
