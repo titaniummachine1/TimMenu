@@ -231,6 +231,7 @@ end
 
 --- Dropdown list; returns new index and whether it changed.
 function TimMenu.Dropdown(label, selectedIndex, options)
+	-- Assert argument types
 	assert(type(label) == "string", "TimMenu.Dropdown: 'label' must be a string, got " .. type(label))
 	assert(
 		type(selectedIndex) == "number",
@@ -238,6 +239,7 @@ function TimMenu.Dropdown(label, selectedIndex, options)
 	)
 	assert(type(options) == "table", "TimMenu.Dropdown: 'options' must be a table, got " .. type(options))
 	local win = TimMenu.GetCurrentWindow()
+	-- Assert active window context
 	assert(win, "TimMenu.Dropdown: no active window. Ensure TimMenu.Begin() was called before using widget functions.")
 	return Widgets.Dropdown(win, label, selectedIndex, options)
 end

@@ -72,6 +72,7 @@ local function OnDraw_Menudemo1()
 		TimMenu.NextLine()
 
 		-- Multi-selection Combo example
+		print("[Menudemo1] Before Combo call - comboState1 type:", type(comboState1), comboState1)
 		comboState1, changed1 = TimMenu.Combo("Combo in Demo1", comboState1, options1)
 		if changed1 then
 			print("[Menudemo1] Combo selections:")

@@ -454,6 +454,7 @@ function Widgets.Dropdown(win, label, selectedIndex, options)
 	end
 	-- Draw field
 	win:QueueDrawAtLayer(2, function()
+		-- Background and outline
 		local bg = Globals.Colors.Item
 		if entry.open then
 			bg = Globals.Colors.ItemActive
@@ -462,13 +463,16 @@ function Widgets.Dropdown(win, label, selectedIndex, options)
 		end
 		draw.Color(table.unpack(bg))
 		Common.DrawFilledRect(absX, absY, absX + width, absY + height)
-		-- Outline
 		draw.Color(table.unpack(Globals.Colors.WindowBorder))
 		Common.DrawOutlinedRect(absX, absY, absX + width, absY + height)
-		draw.Color(table.unpack(Globals.Colors.Text))
-		Common.DrawText(absX + pad, absY + pad, text)
-		-- Dropdown arrow
-		Common.DrawText(absX + width - pad - arrowW, absY + (height - arrowH) / 2, "v")
+		-- Display selected option text
+		local displayText = options[entry.selected] or ""
+		local _, txtH = draw.GetTextSize(displayText) -- Measure text height inside closure
+		Common.DrawText(absX + pad, absY + (height - txtH) / 2, displayText) -- Center vertically
+		-- Dynamic dropdown arrow
+		local arrowChar = entry.open and "▲" or "▼"
+		local aw, ah = draw.GetTextSize(arrowChar) -- Measure arrow inside closure
+		Common.DrawText(absX + width - pad - aw, absY + (height - ah) / 2, arrowChar) -- Use measured size
 	end)
 	-- Popup list
 	if entry.open then
@@ -494,7 +498,9 @@ function Widgets.Dropdown(win, label, selectedIndex, options)
 				draw.Color(table.unpack(hoverOpt and Globals.Colors.ItemHover or Globals.Colors.Item))
 				Common.DrawFilledRect(listX, optY, listX + width, optY + itemH)
 				draw.Color(table.unpack(Globals.Colors.Text))
-				Common.DrawText(listX + pad, optY + pad, opt)
+				-- Center popup item text vertically
+				local _, optH = draw.GetTextSize(opt)
+				Common.DrawText(listX + pad, optY + (itemH - optH) / 2, opt)
 			end)
 		end
 	end
@@ -882,6 +888,7 @@ function Widgets.Combo(win, label, selected, options)
 	end
 	-- Draw the combo button
 	win:QueueDrawAtLayer(2, function()
+		-- Background and outline
 		local bg = Globals.Colors.Item
 		if entry.open then
 			bg = Globals.Colors.ItemActive
@@ -890,16 +897,26 @@ function Widgets.Combo(win, label, selected, options)
 		end
 		draw.Color(table.unpack(bg))
 		Common.DrawFilledRect(absX, absY, absX + width, absY + height)
-		-- Outline
 		draw.Color(table.unpack(Globals.Colors.WindowBorder))
 		Common.DrawOutlinedRect(absX, absY, absX + width, absY + height)
-		-- Label
+		-- Text summary of selections
 		draw.Color(table.unpack(Globals.Colors.Text))
 		draw.SetFont(Globals.Style.Font)
-		Common.DrawText(absX + pad, absY + (height - txtH) / 2, label)
-		-- Arrow indicator
-		local arrowW, arrowH = draw.GetTextSize(">")
-		Common.DrawText(absX + width - pad - arrowW, absY + (height - arrowH) / 2, ">")
+		local selectedLabels = {}
+		for idx, flag in ipairs(entry.selected) do
+			if flag then
+				table.insert(selectedLabels, options[idx])
+			end
+		end
+		local displayText = label
+		if #selectedLabels > 0 then
+			displayText = label .. ": " .. table.concat(selectedLabels, ", ")
+		end
+		Common.DrawText(absX + pad, absY + (height - txtH) / 2, displayText)
+		-- Dynamic arrow indicator
+		local arrowChar = entry.open and "▲" or "▼"
+		local aw, ah = draw.GetTextSize(arrowChar)
+		Common.DrawText(absX + width - pad - aw, absY + (height - ah) / 2, arrowChar)
 	end)
 	-- Draw popup items when open
 	if entry.open then
