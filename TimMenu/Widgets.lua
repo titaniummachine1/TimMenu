@@ -521,13 +521,23 @@ function Widgets.Selector(win, label, selectedIndex, options)
 
 	local mX, mY = input.GetMousePos()
 
-	-- Define interaction bounds for internal buttons
-	local prevBounds = { x = absX, y = absY, w = btnW, h = totalHeight }
-	local textBounds = { x = absX + btnW + sepW, y = absY, w = fixedTextW, h = totalHeight }
-	local nextBounds = { x = absX + btnW + sepW + fixedTextW + sepW, y = absY, w = btnW, h = totalHeight }
+	-- Use relative coords for hit testing, absolute will be calculated in draw closure
+	local relativePrevBounds = { x = 0, y = 0, w = btnW, h = totalHeight }
+	local relativeTextBounds = { x = btnW + sepW, y = 0, w = fixedTextW, h = totalHeight }
+	local relativeNextBounds = { x = btnW + sepW + fixedTextW + sepW, y = 0, w = btnW, h = totalHeight }
 
-	local prevHovered = canInteract(win, prevBounds)
-	local nextHovered = canInteract(win, nextBounds)
+	local prevHovered = canInteract(win, {
+		x = absX + relativePrevBounds.x,
+		y = absY + relativePrevBounds.y,
+		w = relativePrevBounds.w,
+		h = relativePrevBounds.h,
+	})
+	local nextHovered = canInteract(win, {
+		x = absX + relativeNextBounds.x,
+		y = absY + relativeNextBounds.y,
+		w = relativeNextBounds.w,
+		h = relativeNextBounds.h,
+	})
 
 	-- Handle Prev Button Click
 	if prevHovered and input.IsButtonPressed(MOUSE_LEFT) and not buttonPressState[prevBtnKey] then
@@ -558,6 +568,26 @@ function Widgets.Selector(win, label, selectedIndex, options)
 	-- --- Drawing --- (Draw all parts manually)
 	win:QueueDrawAtLayer(2, function()
 		local currentAbsX, currentAbsY = win.X + x, win.Y + y -- Recalculate in case window moved
+
+		-- Calculate absolute bounds *inside* the drawing closure
+		local prevBounds = {
+			x = currentAbsX + relativePrevBounds.x,
+			y = currentAbsY + relativePrevBounds.y,
+			w = relativePrevBounds.w,
+			h = relativePrevBounds.h,
+		}
+		local textBounds = {
+			x = currentAbsX + relativeTextBounds.x,
+			y = currentAbsY + relativeTextBounds.y,
+			w = relativeTextBounds.w,
+			h = relativeTextBounds.h,
+		}
+		local nextBounds = {
+			x = currentAbsX + relativeNextBounds.x,
+			y = currentAbsY + relativeNextBounds.y,
+			w = relativeNextBounds.w,
+			h = relativeNextBounds.h,
+		}
 
 		-- Overall background (optional, could just rely on item backgrounds)
 		-- draw.Color(table.unpack(Globals.Colors.Item))
@@ -611,9 +641,9 @@ function Widgets.Selector(win, label, selectedIndex, options)
 		-- Right Separator
 		Common.DrawLine(
 			currentAbsX + btnW + sepW + fixedTextW,
-			currentAbsY,
+			prevBounds.y, -- Use calculated bounds Y for consistency
 			currentAbsX + btnW + sepW + fixedTextW,
-			currentAbsY + totalHeight
+			prevBounds.y + totalHeight
 		)
 		-- Outer Outline
 		Common.DrawOutlinedRect(currentAbsX, currentAbsY, currentAbsX + totalWidth, currentAbsY + totalHeight)
@@ -636,13 +666,32 @@ function Widgets.TabControl(win, id, tabs, currentTabIndex)
 	local newIndex = currentTabIndex
 	local selectedTabInfo = nil -- To store position/size of the selected tab button
 
+	-- Calculate total width required for tabs to center them
+	local totalTabsWidth = 0
+	local padding = Globals.Style.ItemPadding
+	draw.SetFont(Globals.Style.Font) -- Set font once for measurement
+	for i, tabLabel in ipairs(tabs) do
+		local textWidth, _ = draw.GetTextSize(tabLabel)
+		local btnWidth = textWidth + (padding * 2)
+		totalTabsWidth = totalTabsWidth + btnWidth
+		if i < #tabs then
+			totalTabsWidth = totalTabsWidth + Globals.Defaults.ITEM_SPACING
+		end
+	end
+
+	-- Calculate starting X position for centering
+	local windowContentPadding = Globals.Defaults.WINDOW_CONTENT_PADDING
+	local contentWidth = win.W - (windowContentPadding * 2)
+	local startXOffset = math.max(0, (contentWidth - totalTabsWidth) / 2) -- Don't go negative if tabs wider than window
+	local initialCursorX = windowContentPadding + startXOffset
+
 	-- Store original cursor position to reset for drawing the underline later
-	local initialCursorX = win.cursorX
 	local initialCursorY = win.cursorY
 	local startY = initialCursorY -- Remember the Y position of the tab row
 
 	-- We need to manually handle SameLine logic within the widget
 	local currentLineMaxHeight = 0
+	win.cursorX = initialCursorX -- Start cursor at calculated centered position
 
 	for i, tabLabel in ipairs(tabs) do
 		local isSelected = (i == currentTabIndex)
@@ -652,14 +701,8 @@ function Widgets.TabControl(win, id, tabs, currentTabIndex)
 		-- Calculate button dimensions (similar to Widgets.Button)
 		draw.SetFont(Globals.Style.Font)
 		local textWidth, textHeight = draw.GetTextSize(tabLabel)
-		local padding = Globals.Style.ItemPadding
 		local btnWidth = textWidth + (padding * 2)
 		local btnHeight = textHeight + (padding * 2)
-
-		-- Add spacing before the button if it's not the first one
-		if i > 1 then
-			win.cursorX = win.cursorX + Globals.Defaults.ITEM_SPACING
-		end
 
 		-- Manually reserve space (like win:AddWidget but simpler for this context)
 		local currentButtonX = win.cursorX
@@ -742,8 +785,8 @@ function Widgets.TabControl(win, id, tabs, currentTabIndex)
 	end)
 
 	-- Update the window's cursor Y position based on the tallest element in the row + underline space
-	-- Add space for underline (2px) + separator (1px) + some padding (e.g., 3px)
-	win.cursorY = startY + currentLineMaxHeight + (selectedTabInfo and 2 or 0) + 1 + 3
+	-- Add space for underline (2px) + separator (1px) + increased padding (e.g., 12px)
+	win.cursorY = startY + currentLineMaxHeight + (selectedTabInfo and 2 or 0) + 1 + 12
 	-- Reset cursorX for the next line (standard behavior after a row)
 	win.cursorX = Globals.Defaults.WINDOW_CONTENT_PADDING
 	win.lineHeight = 0 -- Reset line height as this widget manually managed it
