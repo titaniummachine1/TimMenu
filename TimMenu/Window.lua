@@ -127,13 +127,15 @@ function Window:_Draw()
 		Common.DrawOutlinedRect(self.X, self.Y, self.X + self.W, self.Y + titleHeight + self.H + bottomPad)
 	end
 
-	-- Title text (left-aligned)
+	-- Title text
 	draw.Color(table.unpack(Globals.Colors.Text))
-	Common.DrawText(
-		self.X + Globals.Defaults.WINDOW_CONTENT_PADDING,
-		self.Y + (titleHeight - txtHeight) / 2,
-		self.title
-	)
+	local titleX
+	if self._hasHeaderTabs then
+		titleX = self.X + Globals.Defaults.WINDOW_CONTENT_PADDING
+	else
+		titleX = self.X + (self.W - txtWidth) / 2
+	end
+	Common.DrawText(titleX, self.Y + (titleHeight - txtHeight) / 2, self.title)
 
 	-- Widget layers
 	for layer = 1, #self.Layers do
@@ -212,6 +214,8 @@ function Window:resetCursor()
 	self.lineHeight = 0
 	-- Clear any widget blocking regions at start of frame
 	self._widgetBlockedRegions = {}
+	-- Clear header tabs flag so titles center if no header tabs
+	self._hasHeaderTabs = false
 end
 
 -- Ensure draw functions use integer coordinates

@@ -44,8 +44,9 @@ local function TabControl(win, id, tabs, defaultSelection, isHeader)
 	local current = entry.selected
 	local selectedInfo
 
-	-- Header mode: draw tabs in title bar and return early
+	-- Header mode: draw tabs in title bar and signal Window to left-align title
 	if headerMode then
+		win._hasHeaderTabs = true
 		-- Measurement for header tabs
 		local pad = Globals.Style.ItemPadding
 		local spacing = Globals.Defaults.ITEM_SPACING
@@ -147,28 +148,37 @@ local function TabControl(win, id, tabs, defaultSelection, isHeader)
 		if isSel then
 			selectedInfo = { x = bx, y = by, w = bw, h = bh }
 		end
-		win:QueueDrawAtLayer(2, function()
+
+		win:QueueDrawAtLayer(1, function() -- Layer 1 for backgrounds
 			local cx, cy = win.X + bx, win.Y + by
+			local bgColor
+			if isSel then
+				bgColor = Globals.Colors.Title -- Blue for selected
+			elseif hover then
+				bgColor = Globals.Colors.ItemHover -- Hover color for non-selected
+			else
+				bgColor = Globals.Colors.Item -- Default item color for non-selected
+			end
+			draw.Color(table.unpack(bgColor))
+			Common.DrawFilledRect(cx, cy, cx + bw, cy + bh)
+		end)
+
+		win:QueueDrawAtLayer(2, function() -- Layer 2 for text
+			local cx, cy = win.X + bx, win.Y + by
+			-- Selected tab text is bright white, others are slightly dimmer
 			local txtColor = isSel and Globals.Colors.Text or { 180, 180, 180, 255 }
 			draw.Color(table.unpack(txtColor))
 			Common.DrawText(cx + (bw - w) / 2, cy + (bh - h) / 2, lbl)
 		end)
 	end
-	-- underline
-	if selectedInfo then
-		win:QueueDrawAtLayer(3, function(si)
-			local uy = win.Y + si.y + si.h
-			draw.Color(table.unpack(Globals.Colors.WindowBorder))
-			Common.DrawFilledRect(win.X + si.x, uy, win.X + si.x + si.w, uy + 2)
-		end, selectedInfo)
-	end
-	-- separator line below
+
+	-- separator line below all tabs (kept)
 	win:QueueDrawAtLayer(1, function()
-		local sy = win.Y + startY + lineH + (selectedInfo and 2 or 0) + 2
+		local sy = win.Y + startY + lineH + 2 -- Adjusted spacing a bit
 		draw.Color(table.unpack(Globals.Colors.WindowBorder))
 		Common.DrawLine(win.X + contentPad, sy, win.X + win.W - contentPad, sy)
 	end)
-	win.cursorY = startY + lineH + (selectedInfo and 2 or 0) + 1 + 12
+	win.cursorY = startY + lineH + 2 + 1 + 12 -- Adjusted spacing a bit
 	win.cursorX = contentPad
 	win.lineHeight = 0
 	return entry.selected, entry.changed
