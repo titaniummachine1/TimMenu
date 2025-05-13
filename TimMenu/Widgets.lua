@@ -386,13 +386,13 @@ function Widgets.Slider(win, label, value, min, max, step)
 		end
 	end
 
-	-- Draw slider background, fill, and centered label
-	win:QueueDrawAtLayer(2, function()
+	-- Draw slider background, fill, and centered label (with hover effect)
+	win:QueueDrawAtLayer(2, function(hv)
 		-- Calculate position inside window so it follows dragging
 		local absX = win.X + x
 		local absY = win.Y + y
-		-- Background
-		local bg = Globals.Colors.Item
+		-- Background with hover highlight
+		local bg = hv and Globals.Colors.ItemHover or Globals.Colors.Item
 		draw.Color(table.unpack(bg))
 		Common.DrawFilledRect(absX, absY, absX + width, absY + height)
 		-- Fill portion
@@ -406,7 +406,7 @@ function Widgets.Slider(win, label, value, min, max, step)
 		draw.Color(table.unpack(Globals.Colors.Text))
 		draw.SetFont(Globals.Style.Font)
 		Common.DrawText(absX + (width - txtW) * 0.5, absY + (height - txtH) * 0.5, labelText)
-	end)
+	end, hovered)
 
 	return value, changed
 end
@@ -759,6 +759,34 @@ function Widgets.Selector(win, label, selectedIndex, options)
 		Interaction.Release(nextBtnKey)
 	end
 
+	-- Handle central region click (left/right half)
+	local centralKey = key .. ":center"
+	local textAbsBounds = {
+		x = absX + relativeTextBounds.x,
+		y = absY + relativeTextBounds.y,
+		w = relativeTextBounds.w,
+		h = relativeTextBounds.h,
+	}
+	if Interaction.IsHovered(win, textAbsBounds) and Interaction.IsPressed(centralKey) then
+		local mXc, mYc = table.unpack(input.GetMousePos())
+		local centerX = textAbsBounds.x + textAbsBounds.w * 0.5
+		if mXc < centerX then
+			entry.selected = entry.selected - 1
+			if entry.selected < 1 then
+				entry.selected = #options
+			end
+		else
+			entry.selected = entry.selected + 1
+			if entry.selected > #options then
+				entry.selected = 1
+			end
+		end
+		entry.changed = true
+	end
+	if not input.IsButtonDown(MOUSE_LEFT) then
+		Interaction.Release(centralKey)
+	end
+
 	-- --- Drawing --- (Draw all parts manually)
 	win:QueueDrawAtLayer(2, function()
 		local currentAbsX, currentAbsY = win.X + x, win.Y + y -- Recalculate in case window moved
@@ -801,14 +829,28 @@ function Widgets.Selector(win, label, selectedIndex, options)
 		local prevTxtW, prevTxtH = draw.GetTextSize("<")
 		Common.DrawText(prevBounds.x + (prevBounds.w - prevTxtW) / 2, prevBounds.y + (prevBounds.h - prevTxtH) / 2, "<")
 
-		-- Text Area Drawing
+		-- Text Area Drawing with half-region hover highlight
 		local displayText = tostring(options[entry.selected])
-		local textBgColor = Globals.Colors.Item -- Use standard item background
-		draw.Color(table.unpack(textBgColor))
-		Common.DrawFilledRect(textBounds.x, textBounds.y, textBounds.x + textBounds.w, textBounds.y + textBounds.h)
-		draw.Color(table.unpack(Globals.Colors.Text))
+		draw.SetFont(Globals.Style.Font)
 		local dispTxtW, dispTxtH = draw.GetTextSize(displayText)
-		-- Center text horizontally and vertically in its area
+		local halfW = textBounds.w * 0.5
+		-- Left half highlight
+		local leftBounds = { x = textBounds.x, y = textBounds.y, w = halfW, h = textBounds.h }
+		local leftHover = Interaction.IsHovered(win, leftBounds)
+		draw.Color(table.unpack(leftHover and Globals.Colors.ItemHover or Globals.Colors.Item))
+		Common.DrawFilledRect(leftBounds.x, leftBounds.y, leftBounds.x + leftBounds.w, leftBounds.y + leftBounds.h)
+		-- Right half highlight
+		local rightBounds = { x = textBounds.x + halfW, y = textBounds.y, w = halfW, h = textBounds.h }
+		local rightHover = Interaction.IsHovered(win, rightBounds)
+		draw.Color(table.unpack(rightHover and Globals.Colors.ItemHover or Globals.Colors.Item))
+		Common.DrawFilledRect(
+			rightBounds.x,
+			rightBounds.y,
+			rightBounds.x + rightBounds.w,
+			rightBounds.y + rightBounds.h
+		)
+		-- Text label
+		draw.Color(table.unpack(Globals.Colors.Text))
 		Common.DrawText(
 			textBounds.x + (textBounds.w - dispTxtW) / 2,
 			textBounds.y + (textBounds.h - dispTxtH) / 2,
