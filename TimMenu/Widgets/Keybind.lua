@@ -52,16 +52,14 @@ local function Keybind(win, label, currentKey)
 	end
 	-- Capture key when listening
 	if entry.listening then
-		-- Wait for mouse release to avoid capturing the click as a key
-		if not input.IsButtonDown(MOUSE_LEFT) then
-			for code = 1, 255 do
-				-- Skip mouse button code
-				if code ~= MOUSE_LEFT and input.IsButtonPressed(code) then
-					entry.keycode = code
-					entry.changed = true
-					entry.listening = false
-					break
-				end
+		-- Immediately capture any key press (no need to wait for mouse release)
+		for code = 1, 255 do
+			-- Skip mouse button code
+			if code ~= MOUSE_LEFT and input.IsButtonPressed(code) then
+				entry.keycode = code
+				entry.changed = true
+				entry.listening = false
+				break
 			end
 		end
 	end
@@ -69,8 +67,23 @@ local function Keybind(win, label, currentKey)
 		Interaction.Release(key)
 	end
 
+	-- Update fullLabel to reflect any key changes immediately
+	do
+		local newDisplay
+		if entry.listening then
+			newDisplay = "<press key>"
+		elseif entry.keycode > 0 then
+			local name = Common.Input.GetKeyName(entry.keycode)
+			newDisplay = (name ~= "UNKNOWN") and name or tostring(entry.keycode)
+		else
+			newDisplay = "<none>"
+		end
+		fullLabel = label .. ": " .. newDisplay
+	end
+
 	-- Draw
 	win:QueueDrawAtLayer(2, function()
+		local px, py = win.X + x, win.Y + y
 		local bg = Globals.Colors.Item
 		if entry.listening then
 			bg = Globals.Colors.ItemActive
@@ -78,14 +91,14 @@ local function Keybind(win, label, currentKey)
 			bg = Globals.Colors.ItemHover
 		end
 		draw.Color(table.unpack(bg))
-		Common.DrawFilledRect(absX, absY, absX + width, absY + height)
+		Common.DrawFilledRect(px, py, px + width, py + height)
 		-- Border
 		draw.Color(table.unpack(Globals.Colors.WindowBorder))
-		Common.DrawOutlinedRect(absX, absY, absX + width, absY + height)
+		Common.DrawOutlinedRect(px, py, px + width, py + height)
 		-- Text
 		draw.Color(table.unpack(Globals.Colors.Text))
 		draw.SetFont(Globals.Style.Font)
-		Common.DrawText(absX + pad, absY + pad, fullLabel)
+		Common.DrawText(px + pad, py + pad, fullLabel)
 	end)
 
 	return entry.keycode, entry.changed

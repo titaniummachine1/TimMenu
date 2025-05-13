@@ -91,6 +91,16 @@ Globals.Style.ItemPadding = 8
 - Use `BeginSector`/`EndSector` to group widgets in bordered panels.
 - After dragging windows, widgets automatically snap to their new positions.
 
+## Changelog
+
+### Fixed Keybind Widget Lag
+
+- Keybind widget now recalculates its display label immediately after a key press and dynamically computes its draw position inside the rendering callback, eliminating frame delay when dragging windows.
+
+### Fixed TabControl Header Lag
+
+- Header-mode tabs now calculate their offsets relative to the window's current position at draw time, preventing one-frame lag during window movement.
+
 ## License
 
 MIT License. See [LICENSE](LICENSE) for details.

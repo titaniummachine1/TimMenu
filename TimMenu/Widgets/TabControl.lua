@@ -61,7 +61,7 @@ local function TabControl(win, id, tabs, defaultSelection, isHeader)
 			lineH = math.max(lineH, bh)
 		end
 		-- Compute starting cursor based on window title width, clamped to window bounds
-		draw.SetFont(Globals.Style.FontBold) -- Use bold font for title measurement if it impacts layout before tabs
+		draw.SetFont(Globals.Style.Font) -- Use title font for measuring the title text width
 		local titleW = draw.GetTextSize(win.title)
 		local contentPad = Globals.Defaults.WINDOW_CONTENT_PADDING
 		local startX = win.X + contentPad + titleW + spacing
@@ -78,6 +78,7 @@ local function TabControl(win, id, tabs, defaultSelection, isHeader)
 			local isSel = (i == entry.selected)
 			local keyBtn = id .. ":tab:" .. item.lbl
 			local absX, absY = cursorX, startY
+			local offsetX, offsetY = absX - win.X, absY - win.Y
 			-- Interaction
 			local hover = Interaction.IsHovered(win, { x = absX, y = absY, w = item.bw, h = item.bh })
 			if hover and Interaction.IsPressed(keyBtn) then
@@ -87,28 +88,34 @@ local function TabControl(win, id, tabs, defaultSelection, isHeader)
 			if not input.IsButtonDown(MOUSE_LEFT) then
 				Interaction.Release(keyBtn)
 			end
-			-- Hover underline for non-selected tabs
+			-- Hover underline for non-selected tabs (dynamic positioning)
 			if hover and not isSel then
-				win:QueueDrawAtLayer(1, function(px, py, bw)
+				win:QueueDrawAtLayer(1, function(offX, offY, bw)
+					local px = win.X + offX
+					local py = win.Y + offY
 					local uy = py + item.bh
 					draw.Color(table.unpack(Globals.Colors.Highlight))
 					Common.DrawFilledRect(px, uy, px + bw, uy + 2)
-				end, absX, absY, item.bw)
+				end, offsetX, offsetY, item.bw)
 			end
-			-- Tab text
-			win:QueueDrawAtLayer(2, function(lbl, w, h, bw, bh, sel, px, py)
+			-- Tab text (dynamic positioning)
+			win:QueueDrawAtLayer(2, function(lbl, w, h, bw, bh, sel, offX, offY)
+				local px = win.X + offX
+				local py = win.Y + offY
 				local txtColor = sel and Globals.Colors.Text or { 180, 180, 180, 255 }
-				draw.SetFont(Globals.Style.FontBold) -- Ensure bold font is set for drawing text in header mode
+				draw.SetFont(Globals.Style.FontBold)
 				draw.Color(table.unpack(txtColor))
 				Common.DrawText(px + (bw - w) / 2, py + (bh - h) / 2, lbl)
-			end, item.lbl, item.w, item.h, item.bw, item.bh, isSel, absX, absY)
-			-- Underline for selected tab
+			end, item.lbl, item.w, item.h, item.bw, item.bh, isSel, offsetX, offsetY)
+			-- Underline for selected tab (dynamic positioning)
 			if isSel then
-				win:QueueDrawAtLayer(3, function(px, py, bw)
+				win:QueueDrawAtLayer(3, function(offX, offY, bw)
+					local px = win.X + offX
+					local py = win.Y + offY
 					local uy = py + item.bh
 					draw.Color(table.unpack(Globals.Colors.TabSelectedUnderline))
 					Common.DrawFilledRect(px, uy, px + bw, uy + 2)
-				end, absX, absY, item.bw)
+				end, offsetX, offsetY, item.bw)
 			end
 			cursorX = cursorX + item.bw + spacing
 		end

@@ -440,6 +440,7 @@ function TimMenu.EndSector(label)
 end
 
 -- Named function for the global draw callback
+local reRegistered = false
 local function _TimMenu_GlobalDraw()
 	local mouseX, mouseY = table.unpack(input.GetMousePos())
 	local focusedWindowKey = nil
@@ -513,11 +514,19 @@ local function _TimMenu_GlobalDraw()
 			win:_Draw()
 		end
 	end
+
+	-- One-time re-registration to ensure this draw callback runs after user callbacks
+	if not reRegistered then
+		callbacks.Unregister("Draw", "zTimMenu_GlobalDraw")
+		callbacks.Register("Draw", "zTimMenu_GlobalDraw", _TimMenu_GlobalDraw)
+		reRegistered = true
+	end
 end
 
--- Register the global draw callback
+-- Ensure old callback is removed, then register this after user callbacks (name changed to be last alphabetically)
 callbacks.Unregister("Draw", "TimMenu_GlobalDraw")
-callbacks.Register("Draw", "TimMenu_GlobalDraw", _TimMenu_GlobalDraw)
+callbacks.Unregister("Draw", "zTimMenu_GlobalDraw")
+callbacks.Register("Draw", "zTimMenu_GlobalDraw", _TimMenu_GlobalDraw)
 
 --[[ Play sound when loaded -- consider if this is still desired with centralized model ]]
 engine.PlaySound("hl1/fvox/activated.wav")

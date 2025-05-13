@@ -21,8 +21,9 @@ Globals.Colors = {
 
 -- Style settings
 Globals.Style = {
-	Font = draw.CreateFont("Arial Black", 14, 510), -- Changed to Arial Black
-	ItemPadding = 5,
+	Font = draw.CreateFont("Verdana", 14, 700), -- Now Verdana Bold for general widget text
+	FontBold = draw.CreateFont("Arial Black", 14, 510), -- Now Arial Black for TabControl labels
+	ItemPadding = 7, -- Increased from 5 to 7 for potentially wider tab label font
 	ItemMargin = 5,
 	ItemSize = 10,
 	EnableWindowBorder = true,
@@ -45,7 +46,7 @@ Globals.Defaults = {
 	SLIDER_WIDTH = 250, -- Default slider width from ImMenu
 	TITLE_BAR_HEIGHT = 30,
 	WINDOW_CONTENT_PADDING = 10,
-	ITEM_SPACING = 5, -- Spacing between items on the same line
+	ITEM_SPACING = 8, -- Increased from 5 to 8 for better header tab spacing
 	DebugHeaderX = 20,
 	DebugHeaderY = 20,
 	DebugLineSpacing = 20,
@@ -60,7 +61,7 @@ Globals.Style.Font = draw.CreateFont("Verdana", math.ceil(14 * scale), 700)
 Globals.Style.FontBold = draw.CreateFont("Arial Black", math.ceil(14 * scale), 510)
 
 -- Scale style metrics
-Globals.Style.ItemPadding = math.ceil(Globals.Style.ItemPadding * scale)
+Globals.Style.ItemPadding = math.ceil(Globals.Style.ItemPadding * scale) -- This will apply scaling to the new base value
 Globals.Style.ItemMargin = math.ceil(Globals.Style.ItemMargin * scale)
 Globals.Style.ItemSize = math.ceil(Globals.Style.ItemSize * scale)
 -- Scale default dimensions
@@ -69,7 +70,7 @@ Globals.Defaults.DEFAULT_H = math.ceil(Globals.Defaults.DEFAULT_H * scale)
 Globals.Defaults.SLIDER_WIDTH = math.ceil(Globals.Defaults.SLIDER_WIDTH * scale)
 Globals.Defaults.TITLE_BAR_HEIGHT = math.ceil(Globals.Defaults.TITLE_BAR_HEIGHT * scale)
 Globals.Defaults.WINDOW_CONTENT_PADDING = math.ceil(Globals.Defaults.WINDOW_CONTENT_PADDING * scale)
-Globals.Defaults.ITEM_SPACING = math.ceil(Globals.Defaults.ITEM_SPACING * scale)
+Globals.Defaults.ITEM_SPACING = math.ceil(Globals.Defaults.ITEM_SPACING * scale) -- Will apply scaling to the new base value
 Globals.Defaults.DebugHeaderX = math.ceil(Globals.Defaults.DebugHeaderX * scale)
 Globals.Defaults.DebugHeaderY = math.ceil(Globals.Defaults.DebugHeaderY * scale)
 Globals.Defaults.DebugLineSpacing = math.ceil(Globals.Defaults.DebugLineSpacing * scale)

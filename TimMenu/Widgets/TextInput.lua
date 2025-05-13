@@ -95,6 +95,7 @@ local function TextInput(win, label, text)
 			text = text or "",
 			active = false,
 			debouncedKeys = {}, -- For per-key press debouncing
+			keyStates = {}, -- For key repeat logic (new)
 		}
 		win._textInputs[storageKey] = entry
 	elseif text and text ~= entry.text and not entry.active then
@@ -124,70 +125,129 @@ local function TextInput(win, label, text)
 				for k, _ in pairs(entry.debouncedKeys) do
 					entry.debouncedKeys[k] = false
 				end
+				entry.keyStates = {} -- Reset key repeat states on activation
 			end
 		elseif entry.active then
 			entry.active = false
 			for k, _ in pairs(entry.debouncedKeys) do
 				entry.debouncedKeys[k] = false
 			end
+			entry.keyStates = {} -- Reset key repeat states on deactivation
 		end
 	end
 
 	if entry.active then
-		local isShiftDown = input.IsButtonDown(KEY_LSHIFT) or input.IsButtonDown(KEY_RSHIFT)
+		local lmbx_globals = _G.globals
+		local currentTime = lmbx_globals and lmbx_globals.RealTime and lmbx_globals.RealTime() or 0
+		local KEY_REPEAT_INITIAL_DELAY = 0.4 -- seconds
+		local KEY_REPEAT_INTERVAL = 0.05 -- seconds
 
-		-- Handle character keys from KeyCodeToCharTable
+		local isShiftDown = input.IsButtonDown(KEY_LSHIFT) or input.IsButtonDown(KEY_RSHIFT)
+		entry.keyStates = entry.keyStates or {} -- Ensure keyStates table exists
+
+		-- Handle character keys from KeyCodeToCharTable with repeat
 		for keyCode, _ in pairs(KeyCodeToCharTable) do
+			local state = entry.keyStates[keyCode] or {}
 			if input.IsButtonDown(keyCode) then
-				if not entry.debouncedKeys[keyCode] then
+				if not state.firstDownTime then -- Key just pressed
 					local char = MapKeyCodeToChar(keyCode, isShiftDown)
 					if char then
 						entry.text = entry.text .. char
 						changed = true
 					end
-					entry.debouncedKeys[keyCode] = true
+					state.firstDownTime = currentTime
+					state.lastRepeatTime = currentTime
+				elseif
+					state.firstDownTime
+					and (currentTime - state.firstDownTime > KEY_REPEAT_INITIAL_DELAY)
+					and (currentTime - state.lastRepeatTime > KEY_REPEAT_INTERVAL)
+				then -- Key held long enough for repeat
+					local char = MapKeyCodeToChar(keyCode, isShiftDown)
+					if char then
+						entry.text = entry.text .. char
+						changed = true
+					end
+					state.lastRepeatTime = currentTime
 				end
-			else
-				if entry.debouncedKeys[keyCode] then -- Key released
-					entry.debouncedKeys[keyCode] = false
+				-- If key is down but not yet time for repeat, state.firstDownTime is already set, no specific action here.
+			else -- Key is UP
+				if state.firstDownTime then -- If it *was* pressed (had a firstDownTime)
+					state.firstDownTime = nil
+					state.lastRepeatTime = nil
 				end
 			end
+			entry.keyStates[keyCode] = state -- Store the updated state (pressed, repeating, or reset)
 		end
 
-		-- Handle special keys (Backspace, Enter, Escape) separately with similar debounce
-		local specialActionKeys = { KEY_BACKSPACE, KEY_ENTER, KEY_PAD_ENTER, KEY_ESCAPE }
-		for _, keyCode in ipairs(specialActionKeys) do
+		-- Handle Backspace with repeat
+		local backspaceKeyCode = KEY_BACKSPACE
+		local bkspState = entry.keyStates[backspaceKeyCode] or {}
+		if input.IsButtonDown(backspaceKeyCode) then
+			if not bkspState.firstDownTime then -- Backspace just pressed
+				if #entry.text > 0 then
+					entry.text = string.sub(entry.text, 1, -2)
+					changed = true
+				end
+				bkspState.firstDownTime = currentTime
+				bkspState.lastRepeatTime = currentTime
+			elseif
+				bkspState.firstDownTime
+				and (currentTime - bkspState.firstDownTime > KEY_REPEAT_INITIAL_DELAY)
+				and (currentTime - bkspState.lastRepeatTime > KEY_REPEAT_INTERVAL)
+			then -- Backspace held
+				if #entry.text > 0 then
+					entry.text = string.sub(entry.text, 1, -2)
+					changed = true
+				end
+				bkspState.lastRepeatTime = currentTime
+			end
+		else -- Backspace is UP
+			if bkspState.firstDownTime then -- If it *was* pressed
+				bkspState.firstDownTime = nil
+				bkspState.lastRepeatTime = nil
+			end
+		end
+		entry.keyStates[backspaceKeyCode] = bkspState -- Store updated state
+
+		-- Handle Enter, Escape (single action, no repeat using original debounce)
+		local singleActionKeys = { KEY_ENTER, KEY_PAD_ENTER, KEY_ESCAPE }
+		for _, keyCode in ipairs(singleActionKeys) do
 			if input.IsButtonDown(keyCode) then
 				if not entry.debouncedKeys[keyCode] then
-					if keyCode == KEY_BACKSPACE then
-						if #entry.text > 0 then
-							entry.text = string.sub(entry.text, 1, -2)
-							changed = true
-						end
-					elseif keyCode == KEY_ENTER or keyCode == KEY_PAD_ENTER then
+					if keyCode == KEY_ENTER or keyCode == KEY_PAD_ENTER or keyCode == KEY_ESCAPE then
 						entry.active = false
 						for k, _ in pairs(entry.debouncedKeys) do
 							entry.debouncedKeys[k] = false
 						end
-					elseif keyCode == KEY_ESCAPE then
-						entry.active = false
-						for k, _ in pairs(entry.debouncedKeys) do
-							entry.debouncedKeys[k] = false
-						end
+						entry.keyStates = {} -- Clear key repeat states
 					end
 					entry.debouncedKeys[keyCode] = true
-				end
-			else
-				if entry.debouncedKeys[keyCode] then -- Key released
-					entry.debouncedKeys[keyCode] = false
+				else
+					if entry.debouncedKeys[keyCode] then
+						entry.debouncedKeys[keyCode] = false
+					end
+					-- If key is up and was part of keyStates, clear it (though these aren't typically in keyStates)
+					if entry.keyStates[keyCode] then
+						entry.keyStates[keyCode] = nil
+					end
 				end
 			end
 		end
 	else
-		-- If not active, ensure all keys are marked as released for debounce state for next activation
-		if entry.active == false and next(entry.debouncedKeys) ~= nil then
-			for k, _ in pairs(entry.debouncedKeys) do
-				entry.debouncedKeys[k] = false
+		-- If not active, ensure all keys are marked as released for debounce and keyStates
+		if entry.active == false then
+			local resetAllKeyStates = false
+			for k, state in pairs(entry.keyStates) do
+				if state.firstDownTime ~= nil then -- if any key was active
+					resetAllKeyStates = true
+					break
+				end
+			end
+			if resetAllKeyStates or next(entry.debouncedKeys) ~= nil then
+				for k, _ in pairs(entry.debouncedKeys) do
+					entry.debouncedKeys[k] = false
+				end
+				entry.keyStates = {} -- Clear all key repeat states
 			end
 		end
 	end
