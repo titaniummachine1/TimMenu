@@ -1,14 +1,10 @@
 local Globals = require("TimMenu.Globals")
 local Common = require("TimMenu.Common")
 local Utils = require("TimMenu.Utils")
+local Interaction = require("TimMenu.Interaction")
+local DrawHelpers = require("TimMenu.DrawHelpers")
 
 local Widgets = {}
-
--- Track last pressed state per widget key to debounce clicks
-local lastPressState = {}
-
--- Track last pressed state per button key to debounce clicks
-local buttonPressState = {}
 
 -- Local table to track slider dragging state (replaces former Widgets._sliderDragging)
 local sliderDragState = {}
@@ -20,24 +16,7 @@ end
 
 -- Helper to check if widget can be interacted with
 local function canInteract(win, bounds)
-	-- Only allow interaction if the mouse is within this widget and not blocked by windows above
-	local mX, mY = table.unpack(input.GetMousePos())
-	if not isInBounds(mX, mY, bounds) then
-		return false
-	end
-	-- Block if overlapped by higher windows
-	if Utils.IsPointBlocked(TimMenuGlobal.order, TimMenuGlobal.windows, mX, mY, win.id) then
-		return false
-	end
-	-- Block if inside any widget-level blocking region (e.g., dropdown/combo popups)
-	if win._widgetBlockedRegions then
-		for _, region in ipairs(win._widgetBlockedRegions) do
-			if isInBounds(mX, mY, region) then
-				return false
-			end
-		end
-	end
-	return true
+	return Interaction.IsHovered(win, bounds)
 end
 
 -- Add named draw helpers for Dropdown and Combo widgets
@@ -74,23 +53,12 @@ local function DrawDropdownField(win, relX, relY, width, height, pad, label, ent
 	local _, txtH = draw.GetTextSize(label)
 	Common.DrawText(absX + pad, absY + (height - txtH) / 2, label)
 
-	-- Arrow (chevron) - Corrected scaling to 0.5
-	local actualArrowW = arrowW * 0.5 -- Make arrow smaller
-	local actualArrowH = arrowH * 0.5 -- Make arrow smaller
-	draw.Color(table.unpack(Globals.Colors.Text))
-	-- Center the smaller arrow within the arrowBox
+	-- Arrow (chevron) via DrawHelpers
+	local actualArrowW = arrowW * 0.5
+	local actualArrowH = arrowH * 0.5
 	local triX = arrowBoxX + (arrowBoxW - actualArrowW) / 2
 	local triY = absY + (height - actualArrowH) / 2
-
-	if entryOpen then
-		-- Pointing up (e.g., ^)
-		Common.DrawLine(triX, triY + actualArrowH, triX + actualArrowW / 2, triY)
-		Common.DrawLine(triX + actualArrowW / 2, triY, triX + actualArrowW, triY + actualArrowH)
-	else
-		-- Pointing down (e.g., v)
-		Common.DrawLine(triX, triY, triX + actualArrowW / 2, triY + actualArrowH)
-		Common.DrawLine(triX + actualArrowW / 2, triY + actualArrowH, triX + actualArrowW, triY)
-	end
+	DrawHelpers.DrawArrow(triX, triY, actualArrowW, actualArrowH, entryOpen and "up" or "down", Globals.Colors.Text)
 end
 
 -- Corrected DrawDropdownPopupBackground
@@ -156,23 +124,12 @@ local function DrawComboField(win, relX, relY, width, height, pad, label, entryO
 	local _, txtH = draw.GetTextSize(label)
 	Common.DrawText(absX + pad, absY + (height - txtH) / 2, label)
 
-	-- Arrow (chevron) - smaller and centered
-	local actualArrowW = arrowW * 0.5 -- Make arrow smaller
-	local actualArrowH = arrowH * 0.5 -- Make arrow smaller
-	draw.Color(table.unpack(Globals.Colors.Text))
-	-- Center the smaller arrow within the arrowBox
+	-- Arrow via DrawHelpers
+	local actualArrowW = arrowW * 0.5
+	local actualArrowH = arrowH * 0.5
 	local triX = arrowBoxX + (arrowBoxW - actualArrowW) / 2
 	local triY = absY + (height - actualArrowH) / 2
-
-	if entryOpen then
-		-- Pointing up (e.g., ^)
-		Common.DrawLine(triX, triY + actualArrowH, triX + actualArrowW / 2, triY)
-		Common.DrawLine(triX + actualArrowW / 2, triY, triX + actualArrowW, triY + actualArrowH)
-	else
-		-- Pointing down (e.g., v)
-		Common.DrawLine(triX, triY, triX + actualArrowW / 2, triY + actualArrowH)
-		Common.DrawLine(triX + actualArrowW / 2, triY + actualArrowH, triX + actualArrowW, triY)
-	end
+	DrawHelpers.DrawArrow(triX, triY, actualArrowW, actualArrowH, entryOpen and "up" or "down", Globals.Colors.Text)
 end
 
 local function DrawComboPopupBackground(win, relX, relY, width, listH)
@@ -244,13 +201,9 @@ function Widgets.Button(win, label)
 	-- Handle interaction
 	local hovered = canInteract(win, bounds)
 	local key = tostring(win.id) .. ":" .. label .. ":" .. widgetIndex
-	local clicked = false
-	if hovered and input.IsButtonPressed(MOUSE_LEFT) and not buttonPressState[key] then
-		clicked = true
-		buttonPressState[key] = true
-	end
-	if buttonPressState[key] and not input.IsButtonDown(MOUSE_LEFT) then
-		buttonPressState[key] = false
+	local clicked = hovered and Interaction.IsPressed(key)
+	if not input.IsButtonDown(MOUSE_LEFT) then
+		Interaction.Release(key)
 	end
 
 	win:QueueDrawAtLayer(2, function()
@@ -259,7 +212,7 @@ function Widgets.Button(win, label)
 		absY = win.Y + y
 		-- Background using ImMenu style
 		local bgColor = Globals.Colors.Item
-		if buttonPressState[key] then
+		if Interaction._PressState[key] then
 			bgColor = Globals.Colors.ItemActive
 		elseif hovered then
 			bgColor = Globals.Colors.ItemHover
@@ -311,16 +264,15 @@ function Widgets.Checkbox(win, label, state)
 	local checkBounds = { x = absX, y = absY, w = width, h = height }
 	local hovered = canInteract(win, checkBounds)
 
-	-- Debounce: immediate toggle on press, reset on release
+	-- Debounce using Interaction helpers
 	local key = tostring(win.id) .. ":" .. label .. ":" .. widgetIndex
 	local clicked = false
-	if hovered and input.IsButtonPressed(MOUSE_LEFT) and not lastPressState[key] then
+	if hovered and Interaction.IsPressed(key) then
 		state = not state
 		clicked = true
-		lastPressState[key] = true
 	end
-	if lastPressState[key] and not input.IsButtonDown(MOUSE_LEFT) then
-		lastPressState[key] = false
+	if not input.IsButtonDown(MOUSE_LEFT) then
+		Interaction.Release(key)
 	end
 
 	win:QueueDrawAtLayer(2, function()
@@ -638,22 +590,13 @@ function Widgets.Dropdown(win, label, selectedIndex, options)
 	local dropBounds = { x = absX, y = absY, w = width, h = height }
 	-- Unpack mouse position for hit test
 	local mX2, mY2 = table.unpack(input.GetMousePos())
-	local hovered = isInBounds(mX2, mY2, dropBounds)
-		and not Utils.IsPointBlocked(TimMenuGlobal.order, TimMenuGlobal.windows, mX2, mY2, win.id)
-	-- Close dropdown popup on outside raw click
-	local pressed = input.IsButtonPressed(MOUSE_LEFT)
+	local hovered = Interaction.IsHovered(win, dropBounds)
+	-- Close dropdown popup on outside click
 	local popupX, popupY = absX, absY + height
 	local popupBounds = { x = popupX, y = popupY, w = width, h = #options * height }
-	if entry.open and pressed and not isInBounds(mX2, mY2, dropBounds) and not isInBounds(mX2, mY2, popupBounds) then
-		entry.open = false
-		win._widgetBlockedRegions = {}
-	end
+	Interaction.ClosePopupOnOutsideClick(entry, mX2, mY2, dropBounds, popupBounds, win)
 	-- Interaction: single-click consumption to toggle, select, or close
-	local clicked = false
-	-- Only consume click when combo field is hovered or popup is already open
-	if hovered or entry.open then
-		clicked = Utils.ConsumeClick()
-	end
+	local clicked = Interaction.ConsumeWidgetClick(win, hovered, entry.open)
 	if clicked then
 		local mX, mY = table.unpack(input.GetMousePos())
 		local popupX, popupY = absX, absY + height
@@ -664,7 +607,7 @@ function Widgets.Dropdown(win, label, selectedIndex, options)
 			win._widgetBlockedRegions = win._widgetBlockedRegions or {}
 			win._widgetBlockedRegions[#win._widgetBlockedRegions + 1] = popupBounds
 		elseif entry.open then
-			if isInBounds(mX, mY, popupBounds) then
+			if Interaction.IsHovered(win, popupBounds) then
 				-- Toggle selection inside popup
 				local idx = math.floor((mY - popupY) / height) + 1
 				if idx >= 1 and idx <= #options then
@@ -707,17 +650,7 @@ function Widgets.Dropdown(win, label, selectedIndex, options)
 			-- Calculate absolute position of item for hover check
 			local itemAbsX = absX
 			local itemAbsY = absY + height + (i - 1) * itemH
-			local hoverOpt = isInBounds(
-				input.GetMousePos()[1],
-				input.GetMousePos()[2],
-				{ x = itemAbsX, y = itemAbsY, w = width, h = itemH }
-			) and not Utils.IsPointBlocked(
-				TimMenuGlobal.order,
-				TimMenuGlobal.windows,
-				input.GetMousePos()[1],
-				input.GetMousePos()[2],
-				win.id
-			)
+			local hoverOpt = Interaction.IsHovered(win, { x = itemAbsX, y = itemAbsY, w = width, h = itemH })
 			win:QueueDrawAtLayer(
 				5,
 				DrawDropdownPopupItem,
@@ -781,7 +714,7 @@ function Widgets.Selector(win, label, selectedIndex, options)
 	-- --- Interaction --- (Needs internal state like Button)
 	local prevBtnKey = key .. ":prev"
 	local nextBtnKey = key .. ":next"
-	buttonPressState = buttonPressState or {}
+	-- press-state handled by Interaction module
 
 	local mX, mY = input.GetMousePos()
 
@@ -804,29 +737,27 @@ function Widgets.Selector(win, label, selectedIndex, options)
 	})
 
 	-- Handle Prev Button Click
-	if prevHovered and input.IsButtonPressed(MOUSE_LEFT) and not buttonPressState[prevBtnKey] then
-		buttonPressState[prevBtnKey] = true
+	if prevHovered and Interaction.IsPressed(prevBtnKey) then
 		entry.selected = entry.selected - 1
 		if entry.selected < 1 then
 			entry.selected = #options
 		end
 		entry.changed = true
 	end
-	if buttonPressState[prevBtnKey] and not input.IsButtonDown(MOUSE_LEFT) then
-		buttonPressState[prevBtnKey] = false
+	if not input.IsButtonDown(MOUSE_LEFT) then
+		Interaction.Release(prevBtnKey)
 	end
 
 	-- Handle Next Button Click
-	if nextHovered and input.IsButtonPressed(MOUSE_LEFT) and not buttonPressState[nextBtnKey] then
-		buttonPressState[nextBtnKey] = true
+	if nextHovered and Interaction.IsPressed(nextBtnKey) then
 		entry.selected = entry.selected + 1
 		if entry.selected > #options then
 			entry.selected = 1
 		end
 		entry.changed = true
 	end
-	if buttonPressState[nextBtnKey] and not input.IsButtonDown(MOUSE_LEFT) then
-		buttonPressState[nextBtnKey] = false
+	if not input.IsButtonDown(MOUSE_LEFT) then
+		Interaction.Release(nextBtnKey)
 	end
 
 	-- --- Drawing --- (Draw all parts manually)
@@ -859,7 +790,7 @@ function Widgets.Selector(win, label, selectedIndex, options)
 
 		-- Prev Button Drawing
 		local prevBgColor = Globals.Colors.Item
-		if buttonPressState[prevBtnKey] then
+		if Interaction._PressState[prevBtnKey] then
 			prevBgColor = Globals.Colors.ItemActive
 		elseif prevHovered then
 			prevBgColor = Globals.Colors.ItemHover
@@ -887,7 +818,7 @@ function Widgets.Selector(win, label, selectedIndex, options)
 
 		-- Next Button Drawing
 		local nextBgColor = Globals.Colors.Item
-		if buttonPressState[nextBtnKey] then
+		if Interaction._PressState[nextBtnKey] then
 			nextBgColor = Globals.Colors.ItemActive
 		elseif nextHovered then
 			nextBgColor = Globals.Colors.ItemHover
@@ -956,7 +887,6 @@ function Widgets.TabControl(win, id, tabs, defaultSelection)
 	end
 
 	local currentTabIndex = entry.selected
-	local newIndex = currentTabIndex
 	local selectedTabInfo = nil -- To store position/size of the selected tab button
 
 	-- Calculate total width required for tabs to center them
@@ -1008,16 +938,12 @@ function Widgets.TabControl(win, id, tabs, defaultSelection)
 
 		-- Interaction (similar to Widgets.Button but without unique index)
 		local hovered = canInteract(win, bounds)
-		buttonPressState = buttonPressState or {}
-		local buttonKeyInternal = tostring(win.id) .. ":" .. buttonKey -- Match button's internal key format
-		local clicked = false
-		if hovered and input.IsButtonPressed(MOUSE_LEFT) and not buttonPressState[buttonKeyInternal] then
-			clicked = true
-			buttonPressState[buttonKeyInternal] = true
-			newIndex = i -- Update selection on click
+		if hovered and Interaction.IsPressed(buttonKey) then
+			entry.selected = i -- Update selection on click
+			entry.changed = true
 		end
-		if buttonPressState[buttonKeyInternal] and not input.IsButtonDown(MOUSE_LEFT) then
-			buttonPressState[buttonKeyInternal] = false
+		if not input.IsButtonDown(MOUSE_LEFT) then
+			Interaction.Release(buttonKey)
 		end
 
 		-- Store info for the selected tab to draw underline later
@@ -1052,7 +978,7 @@ function Widgets.TabControl(win, id, tabs, defaultSelection)
 			draw.SetFont(Globals.Style.Font)
 			local actualTxtW, actualTxtH = draw.GetTextSize(clabel)
 			Common.DrawText(currentAbsX + (cw - actualTxtW) / 2, currentAbsY + (ch - actualTxtH) / 2, clabel)
-		end, currentButtonX, currentButtonY, btnWidth, btnHeight, tabLabel, buttonKeyInternal, isSelected, hovered)
+		end, currentButtonX, currentButtonY, btnWidth, btnHeight, tabLabel, buttonKey, isSelected, hovered)
 	end
 
 	-- After drawing all buttons, draw the underline if a tab is selected
@@ -1083,12 +1009,6 @@ function Widgets.TabControl(win, id, tabs, defaultSelection)
 	-- Reset cursorX for the next line (standard behavior after a row)
 	win.cursorX = Globals.Defaults.WINDOW_CONTENT_PADDING
 	win.lineHeight = 0 -- Reset line height as this widget manually managed it
-
-	-- Update persistent state
-	if newIndex ~= entry.selected then
-		entry.selected = newIndex
-		entry.changed = true
-	end
 
 	return tabs[entry.selected], entry.changed
 end
@@ -1137,24 +1057,16 @@ function Widgets.Combo(win, label, selected, options)
 	local dropX, dropY = absX + width, absY -- Note: dropX/Y are for popup list position, not used for field drawing
 	-- Input handling
 	local mX, mY = table.unpack(input.GetMousePos())
-	local hovered = isInBounds(mX, mY, { x = absX, y = absY, w = width, h = height })
-		and not Utils.IsPointBlocked(TimMenuGlobal.order, TimMenuGlobal.windows, mX, mY, win.id)
+	local hovered = Interaction.IsHovered(win, { x = absX, y = absY, w = width, h = height })
 	local listH = #options * height
 	local dropBounds = { x = absX, y = absY, w = width, h = height }
-	-- Close combo popup on outside raw click
-	local pressed = input.IsButtonPressed(MOUSE_LEFT)
+	-- Close combo popup on outside click
+	local mXc, mYc = table.unpack(input.GetMousePos())
 	local popupX, popupY = absX, absY + height
 	local popupBounds = { x = popupX, y = popupY, w = width, h = listH }
-	if entry.open and pressed and not isInBounds(mX, mY, dropBounds) and not isInBounds(mX, mY, popupBounds) then
-		entry.open = false
-		win._widgetBlockedRegions = {}
-	end
+	Interaction.ClosePopupOnOutsideClick(entry, mXc, mYc, dropBounds, popupBounds, win)
 	-- Interaction: single-click consumption to toggle, multi-select, or close
-	local clicked = false
-	-- Only consume click when combo field is hovered or popup is already open
-	if hovered or entry.open then
-		clicked = Utils.ConsumeClick()
-	end
+	local clicked = Interaction.ConsumeWidgetClick(win, hovered, entry.open)
 	if clicked then
 		local popupX, popupY = absX, absY + height
 		local popupBounds = { x = popupX, y = popupY, w = width, h = listH }
@@ -1163,7 +1075,7 @@ function Widgets.Combo(win, label, selected, options)
 			win._widgetBlockedRegions = win._widgetBlockedRegions or {}
 			win._widgetBlockedRegions[#win._widgetBlockedRegions + 1] = popupBounds
 		elseif entry.open then
-			if isInBounds(mX, mY, popupBounds) then
+			if Interaction.IsHovered(win, popupBounds) then
 				-- Toggle selection inside popup
 				local idx = math.floor((mY - popupY) / height) + 1
 				if idx >= 1 and idx <= #options then
@@ -1192,17 +1104,7 @@ function Widgets.Combo(win, label, selected, options)
 			-- Calculate absolute position of item for hover check
 			local itemAbsX = absX
 			local itemAbsY = absY + height + (i - 1) * itemH
-			local hoverOpt = isInBounds(
-				input.GetMousePos()[1],
-				input.GetMousePos()[2],
-				{ x = itemAbsX, y = itemAbsY, w = width, h = itemH }
-			) and not Utils.IsPointBlocked(
-				TimMenuGlobal.order,
-				TimMenuGlobal.windows,
-				input.GetMousePos()[1],
-				input.GetMousePos()[2],
-				win.id
-			)
+			local hoverOpt = Interaction.IsHovered(win, { x = itemAbsX, y = itemAbsY, w = width, h = itemH })
 			local isSelectedFlag = entry.selected[i]
 			win:QueueDrawAtLayer(
 				5,
