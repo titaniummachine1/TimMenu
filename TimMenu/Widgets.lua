@@ -9,11 +9,6 @@ local Widgets = {}
 -- Local table to track slider dragging state (replaces former Widgets._sliderDragging)
 local sliderDragState = {}
 
--- Helper function to check if a point is within bounds
-local function isInBounds(x, y, bounds)
-	return x >= bounds.x and x <= bounds.x + bounds.w and y >= bounds.y and y <= bounds.y + bounds.h
-end
-
 -- Helper to check if widget can be interacted with
 local function canInteract(win, bounds)
 	return Interaction.IsHovered(win, bounds)
@@ -247,7 +242,7 @@ function Widgets.Checkbox(win, label, state)
 	draw.SetFont(Globals.Style.Font)
 	local txtW, txtH = draw.GetTextSize(label)
 	local padding = Globals.Style.ItemPadding
-	local boxSize = txtH * 1.5
+	local boxSize = txtH -- smaller checkbox for better visual separation
 	local width = boxSize + padding + txtW
 	local height = boxSize
 
@@ -843,13 +838,6 @@ function Widgets.Selector(win, label, selectedIndex, options)
 		local rightBounds = { x = textBounds.x + halfW, y = textBounds.y, w = halfW, h = textBounds.h }
 		local rightHover = Interaction.IsHovered(win, rightBounds)
 		draw.Color(table.unpack(rightHover and Globals.Colors.ItemHover or Globals.Colors.Item))
-		Common.DrawFilledRect(
-			rightBounds.x,
-			rightBounds.y,
-			rightBounds.x + rightBounds.w,
-			rightBounds.y + rightBounds.h
-		)
-		-- Text label
 		draw.Color(table.unpack(Globals.Colors.Text))
 		Common.DrawText(
 			textBounds.x + (textBounds.w - dispTxtW) / 2,
@@ -900,6 +888,12 @@ function Widgets.TabControl(win, id, tabs, defaultSelection)
 	assert(type(id) == "string", "Widgets.TabControl: id must be a string")
 	assert(type(tabs) == "table", "Widgets.TabControl: tabs must be a table of strings")
 
+	-- ensure TabControl starts on its own line
+	local padding = Globals.Defaults.WINDOW_CONTENT_PADDING
+	if win.cursorX > padding then
+		win:NextLine(0)
+	end
+
 	-- Resolve default selection index (may be string or number or nil)
 	local function resolveDefault()
 		if type(defaultSelection) == "number" then
@@ -932,11 +926,11 @@ function Widgets.TabControl(win, id, tabs, defaultSelection)
 
 	-- Calculate total width required for tabs to center them
 	local totalTabsWidth = 0
-	local padding = Globals.Style.ItemPadding
+	local pad = Globals.Style.ItemPadding
 	draw.SetFont(Globals.Style.Font) -- Set font once for measurement
 	for i, tabLabel in ipairs(tabs) do
 		local textWidth, _ = draw.GetTextSize(tabLabel)
-		local btnWidth = textWidth + (padding * 2)
+		local btnWidth = textWidth + (pad * 2)
 		totalTabsWidth = totalTabsWidth + btnWidth
 		if i < #tabs then
 			totalTabsWidth = totalTabsWidth + Globals.Defaults.ITEM_SPACING
@@ -965,8 +959,8 @@ function Widgets.TabControl(win, id, tabs, defaultSelection)
 		-- Calculate button dimensions (similar to Widgets.Button)
 		draw.SetFont(Globals.Style.Font)
 		local textWidth, textHeight = draw.GetTextSize(tabLabel)
-		local btnWidth = textWidth + (padding * 2)
-		local btnHeight = textHeight + (padding * 2)
+		local btnWidth = textWidth + (pad * 2)
+		local btnHeight = textHeight + (pad * 2)
 
 		-- Manually reserve space (like win:AddWidget but simpler for this context)
 		local currentButtonX = win.cursorX
@@ -1051,7 +1045,7 @@ function Widgets.TabControl(win, id, tabs, defaultSelection)
 	win.cursorX = Globals.Defaults.WINDOW_CONTENT_PADDING
 	win.lineHeight = 0 -- Reset line height as this widget manually managed it
 
-	return tabs[entry.selected], entry.changed
+	return entry.selected, entry.changed
 end
 
 --- Draws a multi-selection combo box; returns a table of booleans and whether changed.
@@ -1079,7 +1073,7 @@ function Widgets.Combo(win, label, selected, options)
 	local txtW, txtH = draw.GetTextSize(label)
 	local pad = Globals.Style.ItemPadding
 	-- checkbox size for popup
-	local boxSize = txtH * 1.5
+	local boxSize = math.floor(txtH * 0.75) -- smaller checkbox for better visual separation
 	-- arrow triangle size (used for height calculation)
 	local arrowChar = "▼"
 	local arrowW, arrowH = draw.GetTextSize(arrowChar)
@@ -1168,4 +1162,25 @@ function Widgets.Combo(win, label, selected, options)
 	return entry.selected, entry.changed
 end
 
-return Widgets
+-- Widgets index module: import and expose individual widget modules
+local Button = require("TimMenu.Widgets.Button")
+local Checkbox = require("TimMenu.Widgets.Checkbox")
+local Slider = require("TimMenu.Widgets.Slider")
+local Separator = require("TimMenu.Widgets.Separator")
+local TextInput = require("TimMenu.Widgets.TextInput")
+local Dropdown = require("TimMenu.Widgets.Dropdown")
+local Combo = require("TimMenu.Widgets.Combo")
+local Selector = require("TimMenu.Widgets.Selector")
+local TabControl = require("TimMenu.Widgets.TabControl")
+
+return {
+	Button = Button,
+	Checkbox = Checkbox,
+	Slider = Slider,
+	Separator = Separator,
+	TextInput = TextInput,
+	Dropdown = Dropdown,
+	Combo = Combo,
+	Selector = Selector,
+	TabControl = TabControl,
+}

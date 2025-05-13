@@ -9,6 +9,10 @@ local selectedIndex1 = 1
 local dropdownIndex1 = 1
 local comboState1 = { false, false, false }
 
+-- TabControl demo state
+local tabOptions1 = { "Tab 1", "Tab 2", "Tab 3" }
+local selectedTab1 = 1
+
 local function OnDraw_Menudemo1()
 	if TimMenu.Begin("Demo Window 1") then
 		-- First row: Demonstrate multiple widgets and alignment
@@ -79,6 +83,13 @@ local function OnDraw_Menudemo1()
 
 		TimMenu.Spacing(20) -- Add extra vertical space (custom amount)
 		TimMenu.Text("Another line after custom spacing.")
+
+		-- Tab control example
+		selectedTab1, changed1 = TimMenu.TabControl("demo1_tabs", tabOptions1, selectedTab1)
+		if changed1 then
+			print("[Menudemo1] Tab changed to: " .. tabOptions1[selectedTab1])
+		end
+		TimMenu.NextLine()
 
 		TimMenu.End()
 	end
