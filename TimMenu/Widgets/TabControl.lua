@@ -50,7 +50,7 @@ local function TabControl(win, id, tabs, defaultSelection, isHeader)
 		-- Measurement for header tabs
 		local pad = Globals.Style.ItemPadding
 		local spacing = Globals.Defaults.ITEM_SPACING
-		draw.SetFont(Globals.Style.Font)
+		draw.SetFont(Globals.Style.FontBold) -- Use bold font
 		local items = {}
 		local totalW, lineH = 0, 0
 		for i, lbl in ipairs(tabs) do
@@ -61,7 +61,7 @@ local function TabControl(win, id, tabs, defaultSelection, isHeader)
 			lineH = math.max(lineH, bh)
 		end
 		-- Compute starting cursor based on window title width, clamped to window bounds
-		draw.SetFont(Globals.Style.Font)
+		draw.SetFont(Globals.Style.FontBold) -- Use bold font for title measurement if it impacts layout before tabs
 		local titleW = draw.GetTextSize(win.title)
 		local contentPad = Globals.Defaults.WINDOW_CONTENT_PADDING
 		local startX = win.X + contentPad + titleW + spacing
@@ -98,6 +98,7 @@ local function TabControl(win, id, tabs, defaultSelection, isHeader)
 			-- Tab text
 			win:QueueDrawAtLayer(2, function(lbl, w, h, bw, bh, sel, px, py)
 				local txtColor = sel and Globals.Colors.Text or { 180, 180, 180, 255 }
+				draw.SetFont(Globals.Style.FontBold) -- Ensure bold font is set for drawing text in header mode
 				draw.Color(table.unpack(txtColor))
 				Common.DrawText(px + (bw - w) / 2, py + (bh - h) / 2, lbl)
 			end, item.lbl, item.w, item.h, item.bw, item.bh, isSel, absX, absY)
@@ -116,7 +117,7 @@ local function TabControl(win, id, tabs, defaultSelection, isHeader)
 
 	-- measure total width
 	local totalW, pad = 0, Globals.Style.ItemPadding
-	draw.SetFont(Globals.Style.Font)
+	draw.SetFont(Globals.Style.FontBold) -- Use bold font
 	for i, lbl in ipairs(tabs) do
 		local w, _ = draw.GetTextSize(lbl)
 		totalW = totalW + w + pad * 2 + (i < #tabs and Globals.Defaults.ITEM_SPACING or 0)
@@ -130,7 +131,7 @@ local function TabControl(win, id, tabs, defaultSelection, isHeader)
 	for i, lbl in ipairs(tabs) do
 		local isSel = (i == current)
 		local keyBtn = id .. ":tab:" .. lbl
-		draw.SetFont(Globals.Style.Font)
+		draw.SetFont(Globals.Style.FontBold) -- Use bold font
 		local w, h = draw.GetTextSize(lbl)
 		local bw, bh = w + pad * 2, h + pad * 2
 		local bx, by = win.cursorX, startY
@@ -167,6 +168,7 @@ local function TabControl(win, id, tabs, defaultSelection, isHeader)
 			local cx, cy = win.X + bx, win.Y + by
 			-- Selected tab text is bright white, others are slightly dimmer
 			local txtColor = isSel and Globals.Colors.Text or { 180, 180, 180, 255 }
+			draw.SetFont(Globals.Style.FontBold) -- Ensure bold font is set for drawing text
 			draw.Color(table.unpack(txtColor))
 			Common.DrawText(cx + (bw - w) / 2, cy + (bh - h) / 2, lbl)
 		end)

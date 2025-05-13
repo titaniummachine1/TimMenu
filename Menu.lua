@@ -5,7 +5,8 @@
 local MenuManager = {
     CurrentID = 1,
     Menus = {},
-    Font = draw.CreateFont("Verdana", 14, 510),
+    Font = draw.CreateFont("Arial Black", 14, 510),
+    NavFont = draw.CreateFont("Verdana", 18, 700),
     Version = 1.52,
     DebugInfo = false,
     _CurrentMenu = nil -- track current menu for wrappers
@@ -298,6 +299,7 @@ function Button:Render(menu)
     -- Drawing
     draw.FilledRect(menu.X + menu.Cursor.X, menu.Y + menu.Cursor.Y, menu.X + menu.Cursor.X + btnWidth, menu.Y + menu.Cursor.Y + btnHeight)
     SetColorStyle(menu.Style.Text)
+    draw.SetFont(MenuManager.Font)
     draw.Text(math.floor(menu.X + menu.Cursor.X + (btnWidth / 2) - (lblWidth / 2)), math.floor(menu.Y + menu.Cursor.Y + (btnHeight / 2) - (lblHeight / 2)), self.Label)
 
     menu.Cursor.Y = menu.Cursor.Y + btnHeight + menu.Style.Space
@@ -512,6 +514,7 @@ function Keybind:Render(menu)
     -- Drawing
     draw.FilledRect(menu.X + menu.Cursor.X, menu.Y + menu.Cursor.Y, menu.X + menu.Cursor.X + btnWidth, menu.Y + menu.Cursor.Y + btnHeight)
     SetColorStyle(menu.Style.Text)
+    draw.SetFont(MenuManager.Font)
     draw.Text(math.floor(menu.X + menu.Cursor.X + (btnWidth / 2) - (lblWidth / 2)), math.floor(menu.Y + menu.Cursor.Y + (btnHeight / 2) - (lblHeight / 2)), btnLabel)
 
     menu.Cursor.Y = menu.Cursor.Y + btnHeight + menu.Style.Space
@@ -791,6 +794,7 @@ function Combobox:Render(menu)
     -- Drawing
     draw.FilledRect(menu.X + menu.Cursor.X, menu.Y + menu.Cursor.Y, menu.X + menu.Cursor.X + cmbWidth, menu.Y + menu.Cursor.Y + cmbHeight)
     SetColorStyle(menu.Style.Text)
+    draw.SetFont(MenuManager.Font)
     draw.Text(math.floor(menu.X + menu.Cursor.X + (cmbWidth / 2) - (lblWidth / 2)), math.floor(menu.Y + menu.Cursor.Y + (cmbHeight / 2) - (lblHeight / 2)), self.Label)
 
     menu.Cursor.Y = menu.Cursor.Y + cmbHeight + menu.Style.Space
@@ -897,6 +901,7 @@ function MultiCombobox:Render(menu)
     -- Drawing
     draw.FilledRect(menu.X + menu.Cursor.X, menu.Y + menu.Cursor.Y, menu.X + menu.Cursor.X + cmbWidth, menu.Y + menu.Cursor.Y + cmbHeight)
     SetColorStyle(menu.Style.Text)
+    draw.SetFont(MenuManager.Font)
     draw.Text(math.floor(menu.X + menu.Cursor.X + (cmbWidth / 2) - (lblWidth / 2)), math.floor(menu.Y + menu.Cursor.Y + (cmbHeight / 2) - (lblHeight / 2)), self.Label)
 
     menu.Cursor.Y = menu.Cursor.Y + cmbHeight + menu.Style.Space
@@ -1170,6 +1175,7 @@ end
 
 -- Prints debug info about menus and components
 function MenuManager.DrawDebug()
+    draw.SetFont(MenuManager.Font)
     draw.Text(50, 50, "## DEBUG INFO ##")
 
     local currentY = 70

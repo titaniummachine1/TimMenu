@@ -21,7 +21,7 @@ Globals.Colors = {
 
 -- Style settings
 Globals.Style = {
-	Font = draw.CreateFont("Verdana", 14, 510), -- "verdana.ttf",
+	Font = draw.CreateFont("Arial Black", 14, 510), -- Changed to Arial Black
 	ItemPadding = 5,
 	ItemMargin = 5,
 	ItemSize = 10,
@@ -54,7 +54,11 @@ Globals.Defaults = {
 -- Scale UI elements based on Style.Scale
 local scale = Globals.Style.Scale or 1
 -- Recreate font with scaled size
-Globals.Style.Font = draw.CreateFont("Verdana", math.ceil(14 * scale), 510)
+-- Globals.Style.Font will now be Verdana Bold (previously FontBold)
+Globals.Style.Font = draw.CreateFont("Verdana", math.ceil(14 * scale), 700)
+-- Globals.Style.FontBold will now be Arial Black (previously Font)
+Globals.Style.FontBold = draw.CreateFont("Arial Black", math.ceil(14 * scale), 510)
+
 -- Scale style metrics
 Globals.Style.ItemPadding = math.ceil(Globals.Style.ItemPadding * scale)
 Globals.Style.ItemMargin = math.ceil(Globals.Style.ItemMargin * scale)
