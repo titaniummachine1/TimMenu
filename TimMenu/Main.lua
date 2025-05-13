@@ -1,32 +1,8 @@
 local TimMenu = {}
 
--- Monkey-patch draw.* to ensure integer coordinates in all draw calls
-do
-	local origFilled = draw.FilledRect
-	draw.FilledRect = function(x1, y1, x2, y2)
-		origFilled(math.floor(x1), math.floor(y1), math.floor(x2), math.floor(y2))
-	end
-	local origOutlined = draw.OutlinedRect
-	draw.OutlinedRect = function(x1, y1, x2, y2)
-		origOutlined(math.floor(x1), math.floor(y1), math.floor(x2), math.floor(y2))
-	end
-	local origLine = draw.Line
-	if origLine then
-		draw.Line = function(x1, y1, x2, y2)
-			origLine(math.floor(x1), math.floor(y1), math.floor(x2), math.floor(y2))
-		end
-	end
-	local origText = draw.Text
-	draw.Text = function(x, y, text)
-		origText(math.floor(x), math.floor(y), text)
-	end
-	local origTextured = draw.TexturedRect
-	if origTextured then
-		draw.TexturedRect = function(id, x1, y1, x2, y2)
-			origTextured(id, math.floor(x1), math.floor(y1), math.floor(x2), math.floor(y2))
-		end
-	end
-end
+-- Alias Lmaobox globals and import defaults
+local lmbx = globals
+local Defaults = require("TimMenu.Defaults")
 
 -- Simplified global state
 local function Setup()
@@ -140,17 +116,17 @@ end
 
 --- Displays debug information.
 function TimMenu.ShowDebug()
-	local currentFrame = globals.FrameCount()
+	local currentFrame = lmbx.FrameCount()
 	draw.SetFont(Globals.Style.Font)
-	draw.Color(255, 255, 255, 255)
-	local headerX, headerY = 20, 20
-	local lineSpacing = 20
+	draw.Color(table.unpack(Globals.Colors.Text))
+	local headerX, headerY = Defaults.DebugHeaderX, Defaults.DebugHeaderY
+	local lineSpacing = Defaults.DebugLineSpacing
 
 	local windowCount = 0
 	for _ in pairs(TimMenuGlobal.windows) do
 		windowCount = windowCount + 1
 	end
-	draw.Text(headerX, headerY, "Active Windows (" .. windowCount .. "):")
+	Common.DrawText(headerX, headerY, "Active Windows (" .. windowCount .. "):")
 
 	local yOffset = headerY + lineSpacing
 	-- Iterate in Z-order for debug display
@@ -159,11 +135,11 @@ function TimMenu.ShowDebug()
 		local win = TimMenuGlobal.windows[key]
 		if win then
 			local delay = currentFrame - (win._lastFrameTouched or currentFrame)
-			local info = "ID: " .. key .. " | " .. win.title .. " (Z: " .. i .. ", Delay: " .. delay .. ")"
+			local info = string.format("ID: %s | %s (Z: %d, Delay: %d)", key, win.title, i, delay)
 			if not win.visible then
 				info = info .. " (Hidden)"
 			end
-			draw.Text(headerX, yOffset, info)
+			Common.DrawText(headerX, yOffset, info)
 			yOffset = yOffset + lineSpacing
 		end
 	end
