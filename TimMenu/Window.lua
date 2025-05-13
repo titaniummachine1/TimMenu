@@ -127,9 +127,13 @@ function Window:_Draw()
 		Common.DrawOutlinedRect(self.X, self.Y, self.X + self.W, self.Y + titleHeight + self.H + bottomPad)
 	end
 
-	-- Title text
+	-- Title text (left-aligned)
 	draw.Color(table.unpack(Globals.Colors.Text))
-	Common.DrawText(self.X + (self.W - txtWidth) / 2, self.Y + (titleHeight - txtHeight) / 2, self.title)
+	Common.DrawText(
+		self.X + Globals.Defaults.WINDOW_CONTENT_PADDING,
+		self.Y + (titleHeight - txtHeight) / 2,
+		self.title
+	)
 
 	-- Widget layers
 	for layer = 1, #self.Layers do
