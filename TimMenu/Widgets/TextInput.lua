@@ -219,10 +219,11 @@ local function TextInput(win, label, text)
 
 		-- Truncation Logic
 		local availableWidthForText = width - (pad * 2)
-		local cursorCharacterWidth = 0
+		local cursorRenderWidth = 0
 		if entry.active then
-			cursorCharacterWidth, _ = draw.GetTextSize("|")
-			availableWidthForText = availableWidthForText - cursorCharacterWidth - 2 -- Reserve for cursor and small buffer
+			cursorRenderWidth, _ = draw.GetTextSize("|")
+			local wideCharExtraPadding, _ = draw.GetTextSize("O") -- Get width of a reference wide character
+			availableWidthForText = availableWidthForText - cursorRenderWidth - wideCharExtraPadding - pad -- Added extra 'pad' for good measure
 		end
 
 		local finalDrawableText = textContentForDisplay
