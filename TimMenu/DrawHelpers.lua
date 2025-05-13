@@ -1,0 +1,44 @@
+local Common = require("TimMenu.Common")
+local Globals = require("TimMenu.Globals")
+
+--[[ Imported by: Widgets, TabControl, etc. ]]
+--
+
+local DrawHelpers = {}
+
+----------------------------------------------------
+-- DrawArrow : draws a simple filled arrow (up or down)
+-- absX, absY : top-left corner of bounding box
+-- w, h       : width / height of bounding box
+-- direction  : "up" | "down"
+-- colorTbl   : {r,g,b,a}
+----------------------------------------------------
+function DrawHelpers.DrawArrow(absX, absY, w, h, direction, colorTbl)
+	draw.Color(table.unpack(colorTbl or Globals.Colors.Text))
+
+	if direction == "up" then
+		Common.DrawLine(absX, absY + h, absX + w / 2, absY) -- /\ left edge
+		Common.DrawLine(absX + w / 2, absY, absX + w, absY + h) -- /\ right edge
+	else -- default to down
+		Common.DrawLine(absX, absY, absX + w / 2, absY + h) -- \/ left edge
+		Common.DrawLine(absX + w / 2, absY + h, absX + w, absY) -- \/ right edge
+	end
+end
+
+----------------------------------------------------
+-- DrawLabeledBox : draws a filled rect with border + centered label
+----------------------------------------------------
+function DrawHelpers.DrawLabeledBox(absX, absY, w, h, label, bgCol, borderCol)
+	draw.Color(table.unpack(bgCol or Globals.Colors.Item))
+	Common.DrawFilledRect(absX, absY, absX + w, absY + h)
+
+	draw.Color(table.unpack(borderCol or Globals.Colors.WindowBorder))
+	Common.DrawOutlinedRect(absX, absY, absX + w, absY + h)
+
+	draw.Color(table.unpack(Globals.Colors.Text))
+	draw.SetFont(Globals.Style.Font)
+	local txtW, txtH = draw.GetTextSize(label)
+	Common.DrawText(absX + (w - txtW) / 2, absY + (h - txtH) / 2, label)
+end
+
+return DrawHelpers

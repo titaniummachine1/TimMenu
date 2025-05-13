@@ -10,6 +10,9 @@ local lastPressState = {}
 -- Track last pressed state per button key to debounce clicks
 local buttonPressState = {}
 
+-- Local table to track slider dragging state (replaces former Widgets._sliderDragging)
+local sliderDragState = {}
+
 -- Helper function to check if a point is within bounds
 local function isInBounds(x, y, bounds)
 	return x >= bounds.x and x <= bounds.x + bounds.w and y >= bounds.y and y <= bounds.y + bounds.h
@@ -401,14 +404,14 @@ function Widgets.Slider(win, label, value, min, max, step)
 	local pressed = input.IsButtonPressed(MOUSE_LEFT)
 	local down = input.IsButtonDown(MOUSE_LEFT)
 	local key = tostring(win.id) .. ":slider:" .. label
-	Widgets._sliderDragging = Widgets._sliderDragging or {}
-	local dragging = Widgets._sliderDragging[key] or false
+	sliderDragState = sliderDragState or {}
+	local dragging = sliderDragState[key] or false
 	if hovered and pressed then
 		dragging = true
 	elseif not down then
 		dragging = false
 	end
-	Widgets._sliderDragging[key] = dragging
+	sliderDragState[key] = dragging
 
 	-- Compute new value when dragging
 	local changed = false

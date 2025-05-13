@@ -6,10 +6,6 @@ local input = input
 local draw = draw
 local engine = engine
 local callbacks = callbacks
-local globals = globals
-local MOUSE_LEFT = MOUSE_LEFT
-local KEY_BACKSPACE = KEY_BACKSPACE
-local KEY_SPACE = KEY_SPACE
 local TimMenuGlobal = TimMenuGlobal
 
 local Utils = require("TimMenu.Utils")
