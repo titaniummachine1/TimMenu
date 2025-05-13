@@ -388,7 +388,7 @@ function TimMenu.EndSector(label)
 		args = {},
 	})
 	-- dynamic draw border and optional header label
-	win:QueueDrawAtLayer(5, function()
+	win:QueueDrawAtLayer(3, function() -- Changed from layer 5 to layer 3
 		local x0 = win.X + sector.startX
 		local y0 = win.Y + sector.startY
 		local w0 = (sector.maxX - sector.startX) + sector.padding

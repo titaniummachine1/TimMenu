@@ -15,8 +15,59 @@ local bindKey1 = 0
 local tabOptions1 = { "Tab 1", "Tab 2", "Tab 3" }
 local selectedTab1 = 1
 
+-- Showcase Tab State
+local showcaseTabNames = { "Showcase Alpha", "Showcase Beta", "Showcase Gamma" }
+local showcaseSelectedTab = 1
+local showcaseCbX = false
+local showcaseSliderP = 50
+local showcaseKeyK = 0
+local showcaseDropdownOptions = { "Opt D-One", "Opt D-Two", "Opt D-Three" }
+local showcaseDropdownD = 1
+local showcaseComboOptions = { "Item C-X", "Item C-Y", "Item C-Z" }
+local showcaseComboC = { false, false, false }
+local showcaseSelectorOptions = { "Sel Foo", "Sel Bar", "Sel Baz Qux" }
+local showcaseSelectorS = 1
+local showcaseTextT = "Edit this showcase text!"
+local showcaseButtonClicks = 0
+
 local function OnDraw_Menudemo1()
 	if TimMenu.Begin("Demo Window 1") then
+		-- NEW Showcase Header TabControl
+		showcaseSelectedTab, _ = TimMenu.TabControl("ShowcaseHeaderTabs", showcaseTabNames, showcaseSelectedTab, true)
+
+		if showcaseSelectedTab == 1 then
+			TimMenu.Text("Widgets in Showcase Alpha:")
+			TimMenu.NextLine()
+			showcaseCbX = TimMenu.Checkbox("Alpha Checkbox", showcaseCbX)
+			TimMenu.SameLine()
+			if TimMenu.Button("Alpha Button") then
+				showcaseButtonClicks = showcaseButtonClicks + 1
+			end
+			TimMenu.NextLine()
+			showcaseSliderP, _ = TimMenu.Slider("Alpha Slider", showcaseSliderP, 0, 200, 5)
+			TimMenu.Text("Button Clicks: " .. showcaseButtonClicks)
+			TimMenu.Separator()
+		elseif showcaseSelectedTab == 2 then
+			TimMenu.Text("Demonstrating more widgets in Beta:")
+			TimMenu.NextLine()
+			showcaseKeyK, _ = TimMenu.Keybind("Beta Keybind", showcaseKeyK)
+			showcaseDropdownD, _ = TimMenu.Dropdown("Beta Dropdown", showcaseDropdownD, showcaseDropdownOptions)
+			showcaseComboC, _ = TimMenu.Combo("Beta Combo", showcaseComboC, showcaseComboOptions)
+			TimMenu.Separator()
+		elseif showcaseSelectedTab == 3 then
+			TimMenu.Text("Input and Selection in Gamma:")
+			TimMenu.NextLine()
+			showcaseSelectorS, _ = TimMenu.Selector("Gamma Selector", showcaseSelectorS, showcaseSelectorOptions)
+			local newTextGamma
+			newTextGamma, _ = TimMenu.TextInput("Gamma Text Input", showcaseTextT, 128)
+			if newTextGamma ~= showcaseTextT then
+				showcaseTextT = newTextGamma
+			end
+			TimMenu.Button("Gamma Action Button")
+			TimMenu.Separator()
+		end
+		TimMenu.NextLine() -- Ensure content below header tabs starts on a new line.
+
 		-- First row: Demonstrate multiple widgets and alignment
 		TimMenu.BeginSector("Multi-Widget Area")
 		TimMenu.Text("Content in A")
