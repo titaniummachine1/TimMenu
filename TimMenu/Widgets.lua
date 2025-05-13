@@ -352,7 +352,7 @@ function Widgets.Slider(win, label, value, min, max, step)
 
 	-- Interaction logic: click+drag across full slider
 	local mX, mY = table.unpack(input.GetMousePos())
-	local hovered = (mX >= absX and mX <= absX + width and mY >= absY and mY <= absY + height)
+	local hovered = Interaction.IsHovered(win, { x = absX, y = absY, w = width, h = height })
 	local pressed = input.IsButtonPressed(MOUSE_LEFT)
 	local down = input.IsButtonDown(MOUSE_LEFT)
 	local key = tostring(win.id) .. ":slider:" .. label

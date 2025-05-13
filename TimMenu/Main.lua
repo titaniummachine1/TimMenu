@@ -1,8 +1,7 @@
 local TimMenu = {}
 
--- Alias Lmaobox globals and import defaults
+-- Alias Lmaobox globals
 local lmbx = globals
-local Defaults = require("TimMenu.Defaults")
 
 -- Simplified global state
 local function Setup()
@@ -22,11 +21,6 @@ local Globals = require("TimMenu.Globals")
 local Utils = require("TimMenu.Utils")
 local Window = require("TimMenu.Window")
 local Widgets = require("TimMenu.Widgets")
-
-print("[TimMenu/Main.lua] Utils loaded:", type(Utils), Utils) -- See if Utils is a table
-if Utils then
-	print("[TimMenu/Main.lua] Utils.BeginFrame type:", type(Utils.BeginFrame)) -- See if BeginFrame is a function
-end
 
 local function getOrCreateWindow(key, title, visible)
 	local win = TimMenuGlobal.windows[key]
@@ -119,8 +113,8 @@ function TimMenu.ShowDebug()
 	local currentFrame = lmbx.FrameCount()
 	draw.SetFont(Globals.Style.Font)
 	draw.Color(table.unpack(Globals.Colors.Text))
-	local headerX, headerY = Defaults.DebugHeaderX, Defaults.DebugHeaderY
-	local lineSpacing = Defaults.DebugLineSpacing
+	local headerX, headerY = Globals.Defaults.DebugHeaderX, Globals.Defaults.DebugHeaderY
+	local lineSpacing = Globals.Defaults.DebugLineSpacing
 
 	local windowCount = 0
 	for _ in pairs(TimMenuGlobal.windows) do

@@ -44,6 +44,9 @@ Globals.Defaults = {
 	TITLE_BAR_HEIGHT = 30,
 	WINDOW_CONTENT_PADDING = 10,
 	ITEM_SPACING = 5, -- Spacing between items on the same line
+	DebugHeaderX = 20,
+	DebugHeaderY = 20,
+	DebugLineSpacing = 20,
 }
 
 return Globals
