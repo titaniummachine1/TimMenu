@@ -256,7 +256,14 @@ function TimMenu.TabControl(id, tabs, defaultSelection)
 		win,
 		"TimMenu.TabControl: no active window. Ensure TimMenu.Begin() was called before using widget functions."
 	)
-	return Widgets.TabControl(win, id, tabs, defaultSelection)
+	-- Call core TabControl to get index and changed flag
+	local newIndex, changed = Widgets.TabControl(win, id, tabs, defaultSelection)
+	-- If defaultSelection was a string, return label instead of index for backward compatibility
+	if type(defaultSelection) == "string" then
+		return tabs[newIndex], changed
+	end
+	-- Otherwise, return numeric index
+	return newIndex, changed
 end
 
 --- Begins a visual sector grouping; widgets until EndSector are enclosed.
