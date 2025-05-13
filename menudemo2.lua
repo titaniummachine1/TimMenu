@@ -14,21 +14,11 @@ local comboState2 = { false, false, false, false }
 
 local function OnDraw_Menudemo2()
 	if TimMenu.Begin("Demo Window 2 - Advanced") then
-		-- Find current tab index
-		local currentTabIndex = 1
-		for i, tabName in ipairs(tabs) do
-			if tabName == currentTab then
-				currentTabIndex = i
-				break
-			end
-		end
+		-- Use simplified TabControl (returns selected label)
+		local newTabLabel, changedTab = TimMenu.TabControl("DemoTabs", tabs, currentTab)
 
-		-- Use the new TabControl widget
-		local newTabIndex = TimMenu.TabControl("DemoTabs", tabs, currentTabIndex)
-
-		-- Update state if selection changed
-		if newTabIndex ~= currentTabIndex then
-			currentTab = tabs[newTabIndex]
+		if changedTab then
+			currentTab = newTabLabel
 		end
 
 		if currentTab == "Main" then

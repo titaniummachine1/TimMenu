@@ -918,14 +918,41 @@ end
 ---@param win table The current window object.
 ---@param id string A unique identifier for this tab control.
 ---@param tabs table A list of strings representing the tab labels.
----@param currentTabIndex integer The 1-based index of the currently selected tab.
+---@param defaultSelection integer The 1-based index of the currently selected tab.
 ---@return integer newCurrentTabIndex The potentially updated selected tab index.
-function Widgets.TabControl(win, id, tabs, currentTabIndex)
+function Widgets.TabControl(win, id, tabs, defaultSelection)
 	assert(type(win) == "table", "Widgets.TabControl: win must be a table")
 	assert(type(id) == "string", "Widgets.TabControl: id must be a string")
 	assert(type(tabs) == "table", "Widgets.TabControl: tabs must be a table of strings")
-	assert(type(currentTabIndex) == "number", "Widgets.TabControl: currentTabIndex must be a number")
 
+	-- Resolve default selection index (may be string or number or nil)
+	local function resolveDefault()
+		if type(defaultSelection) == "number" then
+			if defaultSelection >= 1 and defaultSelection <= #tabs then
+				return defaultSelection
+			end
+		elseif type(defaultSelection) == "string" then
+			for i, lbl in ipairs(tabs) do
+				if lbl == defaultSelection then
+					return i
+				end
+			end
+		end
+		return 1 -- fallback
+	end
+
+	-- Per-window persistent storage
+	win._tabControls = win._tabControls or {}
+	local key = tostring(win.id) .. ":tabctrl:" .. id
+	local entry = win._tabControls[key]
+	if not entry then
+		entry = { selected = resolveDefault(), changed = false }
+		win._tabControls[key] = entry
+	else
+		entry.changed = false -- reset per frame
+	end
+
+	local currentTabIndex = entry.selected
 	local newIndex = currentTabIndex
 	local selectedTabInfo = nil -- To store position/size of the selected tab button
 
@@ -1054,7 +1081,13 @@ function Widgets.TabControl(win, id, tabs, currentTabIndex)
 	win.cursorX = Globals.Defaults.WINDOW_CONTENT_PADDING
 	win.lineHeight = 0 -- Reset line height as this widget manually managed it
 
-	return newIndex
+	-- Update persistent state
+	if newIndex ~= entry.selected then
+		entry.selected = newIndex
+		entry.changed = true
+	end
+
+	return tabs[entry.selected], entry.changed
 end
 
 --- Draws a multi-selection combo box; returns a table of booleans and whether changed.
