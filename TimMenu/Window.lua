@@ -60,6 +60,8 @@ function Window.new(params)
 	self.cursorX = 0
 	self.cursorY = 0
 	self.lineHeight = 0
+	-- Initialize per-widget blocking regions for popup widgets
+	self._widgetBlockedRegions = {}
 	return self
 end
 
@@ -209,6 +211,8 @@ function Window:resetCursor()
 	self.cursorX = padding
 	self.cursorY = Globals.Defaults.TITLE_BAR_HEIGHT + padding
 	self.lineHeight = 0
+	-- Clear any widget blocking regions at start of frame
+	self._widgetBlockedRegions = {}
 end
 
 -- Ensure draw functions use integer coordinates

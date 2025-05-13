@@ -22,8 +22,17 @@ local function canInteract(win, bounds)
 	if not isInBounds(mX, mY, bounds) then
 		return false
 	end
+	-- Block if overlapped by higher windows
 	if Utils.IsPointBlocked(TimMenuGlobal.order, TimMenuGlobal.windows, mX, mY, win.id) then
 		return false
+	end
+	-- Block if inside any widget-level blocking region (e.g., dropdown/combo popups)
+	if win._widgetBlockedRegions then
+		for _, region in ipairs(win._widgetBlockedRegions) do
+			if isInBounds(mX, mY, region) then
+				return false
+			end
+		end
 	end
 	return true
 end
@@ -628,34 +637,43 @@ function Widgets.Dropdown(win, label, selectedIndex, options)
 	local mX2, mY2 = table.unpack(input.GetMousePos())
 	local hovered = isInBounds(mX2, mY2, dropBounds)
 		and not Utils.IsPointBlocked(TimMenuGlobal.order, TimMenuGlobal.windows, mX2, mY2, win.id)
-	-- Interaction: press to open/select, debounce until release
-	local listX, listY = absX + width, absY
-	local itemH = height
-	local listH = #options * itemH
-	local pressKey = key .. ":press"
+	-- Close dropdown popup on outside raw click
 	local pressed = input.IsButtonPressed(MOUSE_LEFT)
-	if pressed and not buttonPressState[pressKey] then
+	local popupX, popupY = absX, absY + height
+	local popupBounds = { x = popupX, y = popupY, w = width, h = #options * height }
+	if entry.open and pressed and not isInBounds(mX2, mY2, dropBounds) and not isInBounds(mX2, mY2, popupBounds) then
+		entry.open = false
+		win._widgetBlockedRegions = {}
+	end
+	-- Interaction: single-click consumption to toggle, select, or close
+	local clicked = false
+	-- Only consume click when combo field is hovered or popup is already open
+	if hovered or entry.open then
+		clicked = Utils.ConsumeClick()
+	end
+	if clicked then
+		local mX, mY = table.unpack(input.GetMousePos())
+		local popupX, popupY = absX, absY + height
+		local listH = #options * height
+		local popupBounds = { x = popupX, y = popupY, w = width, h = listH }
 		if not entry.open and hovered then
-			-- Open dropdown on click press when cursor is over control
 			entry.open = true
+			win._widgetBlockedRegions = win._widgetBlockedRegions or {}
+			win._widgetBlockedRegions[#win._widgetBlockedRegions + 1] = popupBounds
 		elseif entry.open then
-			-- Calculate popup bounds (below the field)
-			local popupAbsX, popupAbsY = absX, absY + height
-			-- Toggle selection if clicking on an item
-			if isInBounds(mX2, mY2, { x = popupAbsX, y = popupAbsY, w = width, h = listH }) then
-				local idx = math.floor((mY2 - popupAbsY) / itemH) + 1
+			if isInBounds(mX, mY, popupBounds) then
+				-- Toggle selection inside popup
+				local idx = math.floor((mY - popupY) / height) + 1
 				if idx >= 1 and idx <= #options then
 					entry.selected = idx
 					entry.changed = true
 				end
+			else
+				-- Click outside field and popup: close
+				entry.open = false
+				win._widgetBlockedRegions = {}
 			end
-			-- Close popup on any click press when open
-			entry.open = false
 		end
-		buttonPressState[pressKey] = true
-	end
-	if buttonPressState[pressKey] and not input.IsButtonDown(MOUSE_LEFT) then
-		buttonPressState[pressKey] = false
 	end
 	-- Draw field
 	win:QueueDrawAtLayer(
@@ -1081,33 +1099,47 @@ function Widgets.Combo(win, label, selected, options)
 	local x, y = win:AddWidget(width, height)
 	local absX, absY = win.X + x, win.Y + y
 	local dropX, dropY = absX + width, absY -- Note: dropX/Y are for popup list position, not used for field drawing
-	-- Input handling with debounce
+	-- Input handling
 	local mX, mY = table.unpack(input.GetMousePos())
 	local hovered = isInBounds(mX, mY, { x = absX, y = absY, w = width, h = height })
 		and not Utils.IsPointBlocked(TimMenuGlobal.order, TimMenuGlobal.windows, mX, mY, win.id)
 	local listH = #options * height
-	local pressKey = key .. ":press"
-	if input.IsButtonPressed(MOUSE_LEFT) and not buttonPressState[pressKey] then
+	local dropBounds = { x = absX, y = absY, w = width, h = height }
+	-- Close combo popup on outside raw click
+	local pressed = input.IsButtonPressed(MOUSE_LEFT)
+	local popupX, popupY = absX, absY + height
+	local popupBounds = { x = popupX, y = popupY, w = width, h = listH }
+	if entry.open and pressed and not isInBounds(mX, mY, dropBounds) and not isInBounds(mX, mY, popupBounds) then
+		entry.open = false
+		win._widgetBlockedRegions = {}
+	end
+	-- Interaction: single-click consumption to toggle, multi-select, or close
+	local clicked = false
+	-- Only consume click when combo field is hovered or popup is already open
+	if hovered or entry.open then
+		clicked = Utils.ConsumeClick()
+	end
+	if clicked then
+		local popupX, popupY = absX, absY + height
+		local popupBounds = { x = popupX, y = popupY, w = width, h = listH }
 		if not entry.open and hovered then
 			entry.open = true
+			win._widgetBlockedRegions = win._widgetBlockedRegions or {}
+			win._widgetBlockedRegions[#win._widgetBlockedRegions + 1] = popupBounds
 		elseif entry.open then
-			-- Calculate popup bounds (below the field)
-			local popupAbsX, popupAbsY = absX, absY + height
-			-- Toggle selection if clicking on an item
-			if isInBounds(mX, mY, { x = popupAbsX, y = popupAbsY, w = width, h = listH }) then
-				local idx = math.floor((mY - popupAbsY) / height) + 1
+			if isInBounds(mX, mY, popupBounds) then
+				-- Toggle selection inside popup
+				local idx = math.floor((mY - popupY) / height) + 1
 				if idx >= 1 and idx <= #options then
 					entry.selected[idx] = not entry.selected[idx]
 					entry.changed = true
 				end
+			else
+				-- Click outside field and popup: close
+				entry.open = false
+				win._widgetBlockedRegions = {}
 			end
-			-- Close popup on any click press when open
-			entry.open = false
 		end
-		buttonPressState[pressKey] = true
-	end
-	if buttonPressState[pressKey] and not input.IsButtonDown(MOUSE_LEFT) then
-		buttonPressState[pressKey] = false
 	end
 	-- Draw the combo button
 	win:QueueDrawAtLayer(2, DrawComboField, win, x, y, width, height, pad, label, entry.open, hovered, arrowW, arrowH)

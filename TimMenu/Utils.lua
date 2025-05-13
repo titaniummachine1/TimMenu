@@ -76,4 +76,16 @@ function Utils.GetWindowUnderMouse(order, windows, x, y, titleBarHeight)
 	return nil
 end
 
+-- Click consumption: returns true once per press until release
+local clickConsumed = false
+function Utils.ConsumeClick()
+	if input.IsButtonPressed(MOUSE_LEFT) and not clickConsumed then
+		clickConsumed = true
+		return true
+	elseif not input.IsButtonDown(MOUSE_LEFT) then
+		clickConsumed = false
+	end
+	return false
+end
+
 return Utils
