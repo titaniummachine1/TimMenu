@@ -1008,6 +1008,14 @@ function Widgets.TabControl(win, id, tabs, defaultSelection)
 			--[[ draw.Color(table.unpack(Globals.Colors.WindowBorder))
 			Common.DrawOutlinedRect(currentAbsX, currentAbsY, currentAbsX + cw, currentAbsY + ch) ]]
 
+			-- Add conditional background fill for tabs
+			if Globals.Style.TabBackground then
+				local bgColor = cIsSelected and Globals.Colors.ItemActive
+					or (cHovered and Globals.Colors.ItemHover or Globals.Colors.Item)
+				draw.Color(table.unpack(bgColor))
+				Common.DrawFilledRect(currentAbsX, currentAbsY, currentAbsX + cw, currentAbsY + ch)
+			end
+
 			-- Label text (centered)
 			draw.Color(table.unpack(textColor))
 			draw.SetFont(Globals.Style.Font)
@@ -1040,7 +1048,10 @@ function Widgets.TabControl(win, id, tabs, defaultSelection)
 
 	-- Update the window's cursor Y position based on the tallest element in the row + underline space
 	-- Add space for underline (2px) + separator (1px) + increased padding (e.g., 12px)
-	win.cursorY = startY + currentLineMaxHeight + (selectedTabInfo and 2 or 0) + 1 + 12
+	local underlineOffset = selectedTabInfo and 2 or 0
+	local separatorThickness = 1
+	local bottomSpacing = Globals.Style.ItemPadding * 2
+	win.cursorY = startY + currentLineMaxHeight + underlineOffset + separatorThickness + bottomSpacing
 	-- Reset cursorX for the next line (standard behavior after a row)
 	win.cursorX = Globals.Defaults.WINDOW_CONTENT_PADDING
 	win.lineHeight = 0 -- Reset line height as this widget manually managed it

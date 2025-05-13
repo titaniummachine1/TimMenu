@@ -33,6 +33,8 @@ Globals.Style = {
 	Border = false,
 	Popup = false,
 	Alignment = "left", -- or "center"
+	Scale = 1.2, -- Scaling factor for UI elements (1 = 100%)
+	TabBackground = true, -- Enable background fill for tabs; disable via this flag if needed
 }
 
 Globals.Defaults = {
@@ -48,5 +50,24 @@ Globals.Defaults = {
 	DebugHeaderY = 20,
 	DebugLineSpacing = 20,
 }
+
+-- Scale UI elements based on Style.Scale
+local scale = Globals.Style.Scale or 1
+-- Recreate font with scaled size
+Globals.Style.Font = draw.CreateFont("Verdana", math.ceil(14 * scale), 510)
+-- Scale style metrics
+Globals.Style.ItemPadding = math.ceil(Globals.Style.ItemPadding * scale)
+Globals.Style.ItemMargin = math.ceil(Globals.Style.ItemMargin * scale)
+Globals.Style.ItemSize = math.ceil(Globals.Style.ItemSize * scale)
+-- Scale default dimensions
+Globals.Defaults.DEFAULT_W = math.ceil(Globals.Defaults.DEFAULT_W * scale)
+Globals.Defaults.DEFAULT_H = math.ceil(Globals.Defaults.DEFAULT_H * scale)
+Globals.Defaults.SLIDER_WIDTH = math.ceil(Globals.Defaults.SLIDER_WIDTH * scale)
+Globals.Defaults.TITLE_BAR_HEIGHT = math.ceil(Globals.Defaults.TITLE_BAR_HEIGHT * scale)
+Globals.Defaults.WINDOW_CONTENT_PADDING = math.ceil(Globals.Defaults.WINDOW_CONTENT_PADDING * scale)
+Globals.Defaults.ITEM_SPACING = math.ceil(Globals.Defaults.ITEM_SPACING * scale)
+Globals.Defaults.DebugHeaderX = math.ceil(Globals.Defaults.DebugHeaderX * scale)
+Globals.Defaults.DebugHeaderY = math.ceil(Globals.Defaults.DebugHeaderY * scale)
+Globals.Defaults.DebugLineSpacing = math.ceil(Globals.Defaults.DebugLineSpacing * scale)
 
 return Globals
