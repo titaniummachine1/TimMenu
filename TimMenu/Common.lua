@@ -76,12 +76,15 @@ function Common.Refresh()
 	package.loaded["TimMenu"] = nil
 end
 
---- Clamps a floating-point value to the closest integer.
+--- Rounds a floating-point value to the nearest integer.
 ---@param value number
 ---@return number
-function Common.Clamp(value)
+function Common.RoundNearest(value)
 	return math.floor(value + 0.5)
 end
+
+-- Alias Clamp for backwards compatibility; prefer RoundNearest for clarity
+Common.Clamp = Common.RoundNearest
 
 -- Track button state globally
 local wasPressed = false

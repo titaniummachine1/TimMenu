@@ -1,3 +1,4 @@
+local lmbx = globals -- alias for Lmaobox API
 local Utils = {}
 
 function Utils.GetWindowCount()
@@ -8,7 +9,7 @@ end
 -- Updated: Prune windows and clean the order array.
 function Utils.PruneOrphanedWindows(windows, order)
 	-- Prune windows not updated in the last 2 frames
-	local currentFrame = globals.FrameCount()
+	local currentFrame = lmbx.FrameCount()
 	local threshold = 2
 	for key, win in pairs(windows) do
 		if not win.lastFrame or (currentFrame - win.lastFrame) >= threshold then

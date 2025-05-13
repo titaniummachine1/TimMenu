@@ -1,5 +1,6 @@
 local Common = require("TimMenu.Common")
 local Globals = require("TimMenu.Globals")
+local lmbx = globals -- alias for Lmaobox API
 
 local Window = {}
 Window.__index = Window
@@ -26,7 +27,7 @@ end
 
 function Window:update()
 	-- Mark this window as touched this frame for pruning
-	self._lastFrameTouched = globals.FrameCount()
+	self._lastFrameTouched = lmbx.FrameCount()
 end
 
 function Window.new(params)
@@ -45,7 +46,7 @@ function Window.new(params)
 	self.Y = params.Y
 	self.W = params.W
 	self.H = params.H
-	self._lastFrameTouched = globals.FrameCount() -- Initialize touch timestamp
+	self._lastFrameTouched = lmbx.FrameCount() -- Initialize touch timestamp
 	self.IsDragging = false
 	self.DragPos = { X = 0, Y = 0 }
 	-- Initialize a table of layers
@@ -71,12 +72,6 @@ function Window:QueueDrawAtLayer(layer, drawFunc, ...)
 		table.insert(self.Layers[layer], { fn = drawFunc, args = { ... } })
 	end
 end
-
--- Pre-calculate static colors
-local DefaultWindowColor = Globals.Colors.Window or { 30, 30, 30, 255 }
-local DefaultTitleColor = Globals.Colors.Title or { 55, 100, 215, 255 }
-local DefaultTextColor = Globals.Colors.Text or { 255, 255, 255, 255 }
-local DefaultBorderColor = Globals.Colors.WindowBorder or { 55, 100, 215, 255 }
 
 --- Hit test: is a point inside this window (including title bar and bottom padding)?
 function Window:_HitTest(x, y)
@@ -126,7 +121,7 @@ function Window:_Draw()
 	Common.DrawFilledRect(self.X, self.Y, self.X + self.W, self.Y + titleHeight)
 
 	-- Border
-	if Globals.Style.WindowBorder then
+	if Globals.Style.EnableWindowBorder then
 		draw.Color(table.unpack(Globals.Colors.WindowBorder))
 		-- Outline around full window including title and bottom padding
 		Common.DrawOutlinedRect(self.X, self.Y, self.X + self.W, self.Y + titleHeight + self.H + bottomPad)

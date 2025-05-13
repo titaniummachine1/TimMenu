@@ -356,7 +356,6 @@ function Widgets.Slider(win, label, value, min, max, step)
 	local pressed = input.IsButtonPressed(MOUSE_LEFT)
 	local down = input.IsButtonDown(MOUSE_LEFT)
 	local key = tostring(win.id) .. ":slider:" .. label
-	sliderDragState = sliderDragState or {}
 	local dragging = sliderDragState[key] or false
 	if hovered and pressed then
 		dragging = true
@@ -496,7 +495,7 @@ function Widgets.TextInput(win, label, text)
 	local textInputBounds = { x = absX, y = absY, w = width, h = height }
 	-- Properly unpack mouse coordinates for hit test
 	local mX, mY = table.unpack(input.GetMousePos())
-	local hovered = isInBounds(mX, mY, textInputBounds)
+	local hovered = Interaction.IsHovered(win, textInputBounds)
 	-- Activate on click
 	if hovered and input.IsButtonPressed(MOUSE_LEFT) then
 		entry.active = true
