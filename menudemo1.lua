@@ -8,6 +8,8 @@ local options1 = { "Option A", "Option B", "Option C" }
 local selectedIndex1 = 1
 local dropdownIndex1 = 1
 local comboState1 = { false, false, false }
+-- Keybind demo state
+local bindKey1 = 0
 
 -- TabControl demo state
 local tabOptions1 = { "Tab 1", "Tab 2", "Tab 3" }
@@ -88,6 +90,11 @@ local function OnDraw_Menudemo1()
 		selectedTab1, changed1 = TimMenu.TabControl("demo1_tabs", tabOptions1, selectedTab1)
 		if changed1 then
 			print("[Menudemo1] Tab changed to: " .. tabOptions1[selectedTab1])
+		end
+		-- Keybind widget
+		bindKey1, changed1 = TimMenu.Keybind("Demo1 Bind", bindKey1)
+		if changed1 then
+			print("[Menudemo1] New bind key code: " .. tostring(bindKey1))
 		end
 		TimMenu.NextLine()
 

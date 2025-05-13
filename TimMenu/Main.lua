@@ -21,6 +21,8 @@ local Globals = require("TimMenu.Globals")
 local Utils = require("TimMenu.Utils")
 local Window = require("TimMenu.Window")
 local Widgets = require("TimMenu.Widgets")
+-- Explicitly require Keybind module so bundler includes it
+local _ = require("TimMenu.Widgets.Keybind")
 
 local function getOrCreateWindow(key, title, visible)
 	local win = TimMenuGlobal.windows[key]
@@ -523,6 +525,14 @@ engine.PlaySound("hl1/fvox/activated.wav")
 -- Alias for backward compatibility: Textbox
 function TimMenu.Textbox(label, text)
 	return TimMenu.TextInput(label, text)
+end
+
+--- Runs a keybinding widget; returns new key code and whether changed.
+function TimMenu.Keybind(label, currentKey)
+	assert(type(label) == "string", "TimMenu.Keybind: 'label' must be a string, got " .. type(label))
+	local win = TimMenu.GetCurrentWindow()
+	assert(win, "TimMenu.Keybind: no active window. Ensure TimMenu.Begin() was called before using widget functions.")
+	return Widgets.Keybind(win, label, currentKey)
 end
 
 return TimMenu

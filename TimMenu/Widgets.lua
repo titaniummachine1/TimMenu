@@ -8,6 +8,7 @@ local Dropdown = require("TimMenu.Widgets.Dropdown")
 local Combo = require("TimMenu.Widgets.Combo")
 local Selector = require("TimMenu.Widgets.Selector")
 local TabControl = require("TimMenu.Widgets.TabControl")
+local Keybind = require("TimMenu.Widgets.Keybind")
 
 return {
 	Button = Button,
@@ -19,4 +20,5 @@ return {
 	Combo = Combo,
 	Selector = Selector,
 	TabControl = TabControl,
+	Keybind = Keybind,
 }

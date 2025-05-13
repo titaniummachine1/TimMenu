@@ -11,6 +11,8 @@ local tabs = { "Main", "Audio", "Options", "Debug" }
 local currentTab = tabs[1]
 local dropdownIndex2 = 1
 local comboState2 = { false, false, false, false }
+-- Keybind demo state
+local bindKey2 = 0
 
 local function OnDraw_Menudemo2()
 	if TimMenu.Begin("Demo Window 2 - Advanced") then
@@ -28,6 +30,12 @@ local function OnDraw_Menudemo2()
 			TimMenu.NextLine()
 			if TimMenu.Button("Run Action") then
 				print("[Menudemo2] Action executed")
+			end
+			TimMenu.NextLine()
+			-- Keybind widget
+			bindKey2, changed2 = TimMenu.Keybind("Demo2 Bind", bindKey2)
+			if changed2 then
+				print("[Menudemo2] New bind key code: " .. tostring(bindKey2))
 			end
 		elseif currentTab == "Audio" then
 			sliderVal2, changed2 = TimMenu.Slider("Volume", sliderVal2, 0, 100, 5)
