@@ -94,6 +94,24 @@ Globals.Style.ItemPadding = 8
 - Use `BeginSector`/`EndSector` to group widgets in bordered panels.
 - After dragging windows, widgets automatically snap to their new positions.
 
+## Sector Grouping
+
+Use `TimMenu.BeginSector(label)` and `TimMenu.EndSector()` to enclose widgets in a shaded, bordered panel. Nested sectors will automatically lighten the background more as depth increases.
+
+Example:
+
+```lua
+if TimMenu.Begin("Example Window") then
+    -- Start a grouped panel
+    TimMenu.BeginSector("Settings")
+    -- Place widgets inside the sector
+    local volume, changed = TimMenu.Slider("Volume", 50, 0, 100, 1)
+    TimMenu.EndSector()
+
+    TimMenu.End()
+end
+```
+
 ## Changelog
 
 ### Fixed Keybind Widget Lag
