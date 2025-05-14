@@ -198,12 +198,6 @@ local function TabControl(win, id, tabs, defaultSelection, isHeader)
 		lineH = math.max(lineH, bh)
 	end
 
-	-- Group outline (layer 4)
-	win:QueueDrawAtLayer(4, function(px, py, w, h)
-		draw.Color(table.unpack(LIGHT_TAB_OUTLINE))
-		Common.DrawOutlinedRect(px, py, px + w, py + h)
-	end, win.X + startX, win.Y + startY, totalW, lineH)
-
 	-- Advance cursor to below the tab control
 	win.cursorY = startY + lineH + pad
 	win.cursorX = contentPad
