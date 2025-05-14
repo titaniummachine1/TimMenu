@@ -371,14 +371,15 @@ function TimMenu.EndSector()
 	local captureH = prev and prev.height or ((sector.maxY - sector.startY) + sector.padding)
 
 	-- dynamic draw background behind sector, adjusting for nesting depth
-	DrawManager.Enqueue(win.id, 1, function()
-		local windowBgColor = Globals.Colors.Window
-		-- lighten by 5 per nested level (max 40)
-		local totalLighten = math.min(40, depth * 5)
-		local finalR = math.min(255, windowBgColor[1] + totalLighten)
-		local finalG = math.min(255, windowBgColor[2] + totalLighten)
-		local finalB = math.min(255, windowBgColor[3] + totalLighten)
-		local finalColor = { finalR, finalG, finalB, windowBgColor[4] }
+	local backgroundLayer = 0.1 + (depth - 1) * 0.01
+	DrawManager.Enqueue(win.id, backgroundLayer, function()
+		local baseBgColor = Globals.Colors.SectorBackground -- Changed from Window to SectorBackground
+		-- lighten by 10 per nested level (max 40)
+		local totalLighten = math.min(40, depth * 10) -- Changed from 5 to 10
+		local finalR = math.min(255, baseBgColor[1] + totalLighten)
+		local finalG = math.min(255, baseBgColor[2] + totalLighten)
+		local finalB = math.min(255, baseBgColor[3] + totalLighten)
+		local finalColor = { finalR, finalG, finalB, baseBgColor[4] } -- Use baseBgColor for alpha
 
 		local x0 = win.X + captureStartX
 		local y0 = win.Y + captureStartY
@@ -386,7 +387,8 @@ function TimMenu.EndSector()
 		Common.DrawFilledRect(x0, y0, x0 + captureW, y0 + captureH)
 	end)
 	-- dynamic draw border and optional header label
-	win:QueueDrawAtLayer(3, function() -- Changed from layer 5 to layer 3
+	local borderLayer = 2.1 + (depth - 1) * 0.01
+	DrawManager.Enqueue(win.id, borderLayer, function() -- Changed from win:QueueDrawAtLayer(3, ...) and adjusted layer
 		local x0 = win.X + sector.startX
 		local y0 = win.Y + sector.startY
 		local w0 = (sector.maxX - sector.startX) + sector.padding
