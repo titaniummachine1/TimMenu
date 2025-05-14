@@ -371,7 +371,7 @@ function TimMenu.EndSector()
 	local captureH = prev and prev.height or ((sector.maxY - sector.startY) + sector.padding)
 
 	-- dynamic draw background behind sector, adjusting for nesting depth
-	DrawManager.Enqueue(win.id, 1, function()
+	DrawManager.Enqueue(win.id, depth * 0.1, function()
 		local windowBgColor = Globals.Colors.Window
 		-- Use captured depth (1-based, so depth 1 means first-level sector)
 		local totalLighten = math.min(40, depth * 10)
