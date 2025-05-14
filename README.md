@@ -3,25 +3,24 @@
 [![Commit Activity](https://img.shields.io/github/commit-activity/m/titaniummachine1/TimMenu)](https://github.com/titaniummachine1/TimMenu/commits/main)
 [![Release Date](https://img.shields.io/github/release-date/titaniummachine1/TimMenu)](https://github.com/titaniummachine1/TimMenu/releases/latest)
 [![All Releases](https://img.shields.io/github/downloads/titaniummachine1/TimMenu/total)](https://github.com/titaniummachine1/TimMenu/releases)
-
-## Download Latest
-
 [![Download Latest](https://img.shields.io/badge/Download-Latest-blue?style=for-the-badge&logo=github)](https://github.com/titaniummachine1/TimMenu/releases/latest)
 
 Terminator`s Immediate-Mode Menu for Lmaobox
 
-A lightweight, immediate-mode GUI library for Lmaobox scripts, allowing rapid construction of in-game menus with minimal boilerplate.
+A lightweight, immediate-mode GUI library for Lmaobox scripts, designed for rapid construction of in-game menus.
 
 https://github.com/user-attachments/assets/7b0481bd-3382-4f84-833e-2cb8094ed448
 
 ## Installation
 
-To install, click the badge above to download the latest release, then:
+To install, download the latest release using the badge at the top of this page, then:
 
 1. Unzip or extract the downloaded package.
 2. Copy `TimMenu.lua` into your Lmaobox scripts folder (e.g., `%localappdata%\Scripts`).
 
 ## Usage
+
+Building a menu with TimMenu is like writing a document: widgets are added from left to right, and `TimMenu.NextLine()` moves the cursor to the beginning of the next line, ready for more widgets.
 
 ```lua
 local TimMenu = require("TimMenu")
