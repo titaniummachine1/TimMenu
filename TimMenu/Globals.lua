@@ -21,8 +21,13 @@ Globals.Colors = {
 
 -- Style settings
 Globals.Style = {
-	Font = draw.CreateFont("Verdana", 14, 700), -- Now Verdana Bold for general widget text
-	FontBold = draw.CreateFont("Arial Black", 14, 510), -- Now Arial Black for TabControl labels
+	-- Font configuration (user can change and call Globals.ReloadFonts)
+	FontName = "Verdana",
+	FontSize = 14,
+	FontWeight = 700,
+	FontBoldName = "Arial Black",
+	FontBoldSize = 14,
+	FontBoldWeight = 510,
 	ItemPadding = 7, -- Increased from 5 to 7 for potentially wider tab label font
 	ItemMargin = 5,
 	ItemSize = 10,
@@ -52,15 +57,29 @@ Globals.Defaults = {
 	DebugLineSpacing = 20,
 }
 
--- Scale UI elements based on Style.Scale
-local scale = Globals.Style.Scale or 1
--- Recreate font with scaled size
--- Globals.Style.Font will now be Verdana Bold (previously FontBold)
-Globals.Style.Font = draw.CreateFont("Verdana", math.ceil(14 * scale), 700)
--- Globals.Style.FontBold will now be Arial Black (previously Font)
-Globals.Style.FontBold = draw.CreateFont("Arial Black", math.ceil(14 * scale), 510)
+-- [[ Setup scalable fonts based on Style.Font* and Scale ]]
+local function SetupFonts()
+	local scale = Globals.Style.Scale or 1
+	local fSize = math.ceil(Globals.Style.FontSize * scale)
+	local bSize = math.ceil(Globals.Style.FontBoldSize * scale)
+	Globals.Style.Font = draw.CreateFont(Globals.Style.FontName, fSize, Globals.Style.FontWeight)
+	Globals.Style.FontBold = draw.CreateFont(Globals.Style.FontBoldName, bSize, Globals.Style.FontBoldWeight)
+end
+SetupFonts()
+Globals.ReloadFonts = SetupFonts
+
+-- Preserve default font settings for quick reset
+Globals.DefaultFontSettings = {
+	FontName = Globals.Style.FontName,
+	FontSize = Globals.Style.FontSize,
+	FontWeight = Globals.Style.FontWeight,
+	FontBoldName = Globals.Style.FontBoldName,
+	FontBoldSize = Globals.Style.FontBoldSize,
+	FontBoldWeight = Globals.Style.FontBoldWeight,
+}
 
 -- Scale style metrics
+local scale = Globals.Style.Scale or 1
 Globals.Style.ItemPadding = math.ceil(Globals.Style.ItemPadding * scale) -- This will apply scaling to the new base value
 Globals.Style.ItemMargin = math.ceil(Globals.Style.ItemMargin * scale)
 Globals.Style.ItemSize = math.ceil(Globals.Style.ItemSize * scale)

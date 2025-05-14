@@ -544,4 +544,32 @@ function TimMenu.Keybind(label, currentKey)
 	return Widgets.Keybind(win, label, currentKey)
 end
 
+--- Change the normal font for widgets at runtime
+function TimMenu.FontSet(name, size, weight)
+	Globals.Style.FontName = name
+	Globals.Style.FontSize = size
+	Globals.Style.FontWeight = weight
+	Globals.ReloadFonts()
+end
+
+--- Change the bold font for widgets at runtime (e.g. TabControl)
+function TimMenu.FontSetBold(name, size, weight)
+	Globals.Style.FontBoldName = name
+	Globals.Style.FontBoldSize = size
+	Globals.Style.FontBoldWeight = weight
+	Globals.ReloadFonts()
+end
+
+--- Reset fonts to the defaults loaded at startup
+function TimMenu.FontReset()
+	local d = Globals.DefaultFontSettings
+	Globals.Style.FontName = d.FontName
+	Globals.Style.FontSize = d.FontSize
+	Globals.Style.FontWeight = d.FontWeight
+	Globals.Style.FontBoldName = d.FontBoldName
+	Globals.Style.FontBoldSize = d.FontBoldSize
+	Globals.Style.FontBoldWeight = d.FontBoldWeight
+	Globals.ReloadFonts()
+end
+
 return TimMenu
