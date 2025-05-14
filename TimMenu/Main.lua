@@ -23,6 +23,7 @@ local Window = require("TimMenu.Window")
 local Widgets = require("TimMenu.Widgets")
 -- Explicitly require Keybind module so bundler includes it
 local _ = require("TimMenu.Widgets.Keybind")
+local DrawManager = require("TimMenu.DrawManager")
 
 local function getOrCreateWindow(key, title, visible)
 	local win = TimMenuGlobal.windows[key]
@@ -369,24 +370,20 @@ function TimMenu.EndSector(label)
 	local captureH = prev and prev.height or ((sector.maxY - sector.startY) + sector.padding)
 
 	-- dynamic draw background behind sector, adjusting for nesting depth
-	-- Add to the FRONT of Layer 1 queue to ensure correct draw order (outermost first)
-	table.insert(win.Layers[1], 1, {
-		fn = function()
-			local windowBgColor = Globals.Colors.Window
-			-- Use captured depth (1-based, so depth 1 means first-level sector)
-			local totalLighten = math.min(40, depth * 10)
-			local finalR = math.min(255, windowBgColor[1] + totalLighten)
-			local finalG = math.min(255, windowBgColor[2] + totalLighten)
-			local finalB = math.min(255, windowBgColor[3] + totalLighten)
-			local finalColor = { finalR, finalG, finalB, windowBgColor[4] }
+	DrawManager.Enqueue(win.id, 1, function()
+		local windowBgColor = Globals.Colors.Window
+		-- Use captured depth (1-based, so depth 1 means first-level sector)
+		local totalLighten = math.min(40, depth * 10)
+		local finalR = math.min(255, windowBgColor[1] + totalLighten)
+		local finalG = math.min(255, windowBgColor[2] + totalLighten)
+		local finalB = math.min(255, windowBgColor[3] + totalLighten)
+		local finalColor = { finalR, finalG, finalB, windowBgColor[4] }
 
-			local x0 = win.X + captureStartX
-			local y0 = win.Y + captureStartY
-			draw.Color(table.unpack(finalColor))
-			Common.DrawFilledRect(x0, y0, x0 + captureW, y0 + captureH)
-		end,
-		args = {},
-	})
+		local x0 = win.X + captureStartX
+		local y0 = win.Y + captureStartY
+		draw.Color(table.unpack(finalColor))
+		Common.DrawFilledRect(x0, y0, x0 + captureW, y0 + captureH)
+	end)
 	-- dynamic draw border and optional header label
 	win:QueueDrawAtLayer(3, function() -- Changed from layer 5 to layer 3
 		local x0 = win.X + sector.startX
@@ -514,6 +511,9 @@ local function _TimMenu_GlobalDraw()
 			win:_Draw()
 		end
 	end
+
+	-- Flush all widget draw calls in proper Z-order and layer
+	DrawManager.Flush(TimMenuGlobal.order)
 
 	-- One-time re-registration to ensure this draw callback runs after user callbacks
 	if not reRegistered then

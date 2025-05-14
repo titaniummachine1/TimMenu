@@ -1,5 +1,6 @@
 local Common = require("TimMenu.Common")
 local Globals = require("TimMenu.Globals")
+local DrawManager = require("TimMenu.DrawManager")
 local lmbx = globals -- alias for Lmaobox API
 
 local Window = {}
@@ -49,11 +50,6 @@ function Window.new(params)
 	self._lastFrameTouched = lmbx.FrameCount() -- Initialize touch timestamp
 	self.IsDragging = false
 	self.DragPos = { X = 0, Y = 0 }
-	-- Initialize a table of layers
-	self.Layers = {}
-	for i = 1, 5 do
-		self.Layers[i] = {}
-	end
 	-- Set __close metamethod so it auto-cleans when used as a to-be-closed variable.
 	local mt = getmetatable(self)
 	mt.__close = Window.__close
@@ -66,11 +62,9 @@ function Window.new(params)
 	return self
 end
 
--- Queue a drawing function under a specified layer
+--- Queue a drawing function under a specified layer
 function Window:QueueDrawAtLayer(layer, drawFunc, ...)
-	if self.Layers[layer] then
-		table.insert(self.Layers[layer], { fn = drawFunc, args = { ... } })
-	end
+	DrawManager.Enqueue(self.id, layer, drawFunc, ...)
 end
 
 --- Hit test: is a point inside this window (including title bar and bottom padding)?
@@ -137,13 +131,7 @@ function Window:_Draw()
 	end
 	Common.DrawText(titleX, self.Y + (titleHeight - txtHeight) / 2, self.title)
 
-	-- Widget layers
-	for layer = 1, #self.Layers do
-		for _, entry in ipairs(self.Layers[layer]) do
-			entry.fn(table.unpack(entry.args))
-		end
-		self.Layers[layer] = {}
-	end
+	-- (All widget draw calls are now collected centrally by DrawManager)
 end
 
 --- Calculates widget position and updates window size if needed
@@ -216,34 +204,6 @@ function Window:resetCursor()
 	self._widgetBlockedRegions = {}
 	-- Clear header tabs flag so titles center if no header tabs
 	self._hasHeaderTabs = false
-end
-
--- Ensure draw functions use integer coordinates
-do
-	local origFilled = draw.FilledRect
-	draw.FilledRect = function(x1, y1, x2, y2)
-		origFilled(math.floor(x1), math.floor(y1), math.floor(x2), math.floor(y2))
-	end
-	local origOutlined = draw.OutlinedRect
-	draw.OutlinedRect = function(x1, y1, x2, y2)
-		origOutlined(math.floor(x1), math.floor(y1), math.floor(x2), math.floor(y2))
-	end
-	local origLine = draw.Line
-	if origLine then
-		draw.Line = function(x1, y1, x2, y2)
-			origLine(math.floor(x1), math.floor(y1), math.floor(x2), math.floor(y2))
-		end
-	end
-	local origText = draw.Text
-	draw.Text = function(x, y, text)
-		origText(math.floor(x), math.floor(y), text)
-	end
-	local origTextured = draw.TexturedRect
-	if origTextured then
-		draw.TexturedRect = function(id, x1, y1, x2, y2)
-			origTextured(id, math.floor(x1), math.floor(y1), math.floor(x2), math.floor(y2))
-		end
-	end
 end
 
 return Window

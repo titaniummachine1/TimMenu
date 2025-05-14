@@ -120,12 +120,14 @@ local function Combo(win, label, selected, options)
 	win:QueueDrawAtLayer(2, DrawComboField, win, x, y, width, height, pad, label, entry.open, hovered, arrowW, arrowH)
 	if entry.open then
 		local px, py = x, y + height
-		win:QueueDrawAtLayer(5, DrawComboPopupBackground, win, px, py, width, listH)
+		-- Background behind combo list
+		win:QueueDrawAtLayer(3, DrawComboPopupBackground, win, px, py, width, listH)
 		for i, opt in ipairs(options) do
 			local isH =
 				Interaction.IsHovered(win, { x = absX, y = absY + height + (i - 1) * height, w = width, h = height })
+			-- Individual combo items
 			win:QueueDrawAtLayer(
-				5,
+				4,
 				DrawComboPopupItem,
 				win,
 				px,
@@ -139,6 +141,7 @@ local function Combo(win, label, selected, options)
 				entry.selected[i]
 			)
 		end
+		-- Outline around the combo list
 		win:QueueDrawAtLayer(5, DrawComboPopupOutline, win, px, py, width, listH)
 	end
 	return entry.selected, entry.changed

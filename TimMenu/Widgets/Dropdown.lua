@@ -121,12 +121,14 @@ local function Dropdown(win, label, selectedIndex, options)
 	)
 	if entry.open then
 		local popupX, popupY = x, y + height
-		win:QueueDrawAtLayer(5, DrawDropdownPopupBackground, win, popupX, popupY, width, listH)
+		-- Background behind popup list
+		win:QueueDrawAtLayer(3, DrawDropdownPopupBackground, win, popupX, popupY, width, listH)
 		for i, opt in ipairs(options) do
 			local isH =
 				Interaction.IsHovered(win, { x = absX, y = absY + height + (i - 1) * height, w = width, h = height })
+			-- Individual popup items
 			win:QueueDrawAtLayer(
-				5,
+				4,
 				DrawDropdownPopupItem,
 				win,
 				popupX,
@@ -138,6 +140,7 @@ local function Dropdown(win, label, selectedIndex, options)
 				isH
 			)
 		end
+		-- Outline around the popup list
 		win:QueueDrawAtLayer(5, DrawDropdownPopupOutline, win, popupX, popupY, width, listH)
 	end
 	return entry.selected, entry.changed
