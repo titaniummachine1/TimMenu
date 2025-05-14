@@ -12,7 +12,7 @@ local function Keybind(win, label, currentKey)
 	local key = tostring(win.id) .. ":keybind:" .. label
 	local entry = win._keybinds[key]
 	if not entry then
-		entry = { keycode = currentKey or 0, listening = false, changed = false }
+		entry = { keycode = currentKey or 0, listening = false, changed = false, waitingRelease = false }
 		win._keybinds[key] = entry
 	else
 		entry.changed = false
@@ -47,22 +47,32 @@ local function Keybind(win, label, currentKey)
 
 	-- Interaction: click to start listening
 	local hovered = Interaction.IsHovered(win, bounds)
-	if hovered and Interaction.IsPressed(key) then
+	local clicked = Interaction.ConsumeWidgetClick(win, hovered, entry.listening)
+	if clicked and not entry.listening then
 		entry.listening = true
+		entry.waitingRelease = true
 	end
+
 	-- Capture key when listening
 	if entry.listening then
-		-- Immediately capture any key press (no need to wait for mouse release)
-		for code = 1, 255 do
-			-- Skip mouse button code
-			if code ~= MOUSE_LEFT and input.IsButtonPressed(code) then
-				entry.keycode = code
-				entry.changed = true
-				entry.listening = false
-				break
+		-- Wait for M1 release before capturing, then bind on next press
+		if entry.waitingRelease then
+			if not input.IsButtonDown(MOUSE_LEFT) then
+				entry.waitingRelease = false
+			end
+		else
+			for code = 1, 255 do
+				if input.IsButtonPressed(code) then
+					entry.keycode = code
+					entry.changed = true
+					entry.listening = false
+					break
+				end
 			end
 		end
 	end
+
+	-- Release click state for this widget
 	if not input.IsButtonDown(MOUSE_LEFT) then
 		Interaction.Release(key)
 	end
