@@ -12,7 +12,7 @@ Terminator's Immediate-Mode Menu for Lmaobox
 
 A GUI library for Lmaobox scripts, offering a convenient immediate-mode style API built on a retained-mode foundation. It's designed for light usage and rapid construction of in-game menus.
 
-https://github.com/user-attachments/assets/7b0481bd-3382-4f84-833e-2cb8094ed448
+
 
 ## Installation
 
