@@ -36,7 +36,7 @@ local function Checkbox(win, label, state)
 	local hovered = canInteract(win, bounds)
 
 	-- Debounce using Interaction helpers
-	local key = tostring(win.id) .. ":" .. label .. ":" .. widgetIndex
+	local key = tostring(win.id) .. ":" .. widgetIndex
 	local clicked = false
 	if hovered and Interaction.IsPressed(key) then
 		state = not state

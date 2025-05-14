@@ -31,7 +31,7 @@ local function Button(win, label)
 	-- Interaction bounds
 	local bounds = { x = absX, y = absY, w = width, h = height }
 	local hovered = canInteract(win, bounds)
-	local key = tostring(win.id) .. ":" .. label .. ":" .. widgetIndex
+	local key = tostring(win.id) .. ":" .. widgetIndex
 	local clicked = hovered and Interaction.IsPressed(key)
 	if not input.IsButtonDown(MOUSE_LEFT) then
 		Interaction.Release(key)

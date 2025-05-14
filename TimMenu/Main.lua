@@ -1,14 +1,12 @@
 local TimMenu = {}
-
--- Alias Lmaobox globals
-local lmbx = globals
+-- Internal retained-mode state for windows and Z-order (scoped locally to avoid global pollution)
+local TimMenuGlobal = { windows = {}, order = {} }
 
 -- Simplified global state
 local function Setup()
-	TimMenuGlobal = {
-		windows = {}, -- Stores window objects, keyed by ID
-		order = {}, -- Array of window IDs, defining Z-order (last = topmost)
-	}
+	-- Reset global window state (preserve locals)
+	TimMenuGlobal.windows = {}
+	TimMenuGlobal.order = {}
 end
 
 Setup()
@@ -69,7 +67,12 @@ function TimMenu.Begin(title, visible, id)
 end
 
 function TimMenu.End()
-	-- This is now a no-op. Drawing and main logic are handled by _TimMenu_GlobalDraw.
+	-- Clean up any unclosed sectors to restore window layout functions
+	if _currentWindow and _currentWindow._sectorStack then
+		while #_currentWindow._sectorStack > 0 do
+			TimMenu.EndSector()
+		end
+	end
 	_currentWindow = nil -- Clear current window context
 end
 
@@ -115,7 +118,7 @@ end
 
 --- Displays debug information.
 function TimMenu.ShowDebug()
-	local currentFrame = lmbx.FrameCount()
+	local currentFrame = globals.FrameCount()
 	draw.SetFont(Globals.Style.Font)
 	draw.Color(table.unpack(Globals.Colors.Text))
 	local headerX, headerY = Globals.Defaults.DebugHeaderX, Globals.Defaults.DebugHeaderY
@@ -371,7 +374,8 @@ function TimMenu.EndSector()
 	local captureH = prev and prev.height or ((sector.maxY - sector.startY) + sector.padding)
 
 	-- dynamic draw background behind sector, adjusting for nesting depth
-	DrawManager.Enqueue(win.id, depth * 0.1, function()
+	-- Use integer negative layers so backgrounds always draw before widgets
+	DrawManager.Enqueue(win.id, -depth * 5, function()
 		local windowBgColor = Globals.Colors.Window
 		-- Use captured depth (1-based, so depth 1 means first-level sector)
 		local totalLighten = math.min(40, depth * 10)
