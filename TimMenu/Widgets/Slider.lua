@@ -55,7 +55,7 @@ local function Slider(win, label, value, min, max, step)
 	if dragging then
 		local t = math.min(1, math.max(0, (mX - absX) / width))
 		local raw = min + ((max - min) * t)
-		local stepped = min + (Common.Clamp((raw - min) / step) * step)
+		local stepped = min + (Common.RoundNearest((raw - min) / step) * step)
 		stepped = math.min(max, math.max(min, stepped))
 		if stepped ~= value then
 			value = stepped
