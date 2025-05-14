@@ -23,6 +23,7 @@ local Window = require("TimMenu.Window")
 local Widgets = require("TimMenu.Widgets")
 -- Explicitly require Keybind module so bundler includes it
 local _ = require("TimMenu.Widgets.Keybind")
+local SectorWidget = require("TimMenu.Widgets.Sector")
 local DrawManager = require("TimMenu.DrawManager")
 
 local function getOrCreateWindow(key, title, visible)
@@ -149,10 +150,10 @@ function TimMenu.NextLine(spacing)
 	local win = TimMenu.GetCurrentWindow()
 	if win then
 		win:NextLine(spacing) -- Pass optional spacing to window method
-		-- Apply sector indentation after moving to the new line
-		local depth = win._sectorStack and #win._sectorStack or 0
-		local pad = Globals.Defaults.WINDOW_CONTENT_PADDING
-		win.cursorX = pad + (depth * pad)
+		-- Apply sector indentation after moving to the new line -- This logic is now managed by SectorWidget
+		-- local depth = win._sectorStack and #win._sectorStack or 0
+		-- local pad = Globals.Defaults.WINDOW_CONTENT_PADDING
+		-- win.cursorX = pad + (depth * pad)
 	end
 end
 
@@ -278,165 +279,16 @@ function TimMenu.BeginSector(label)
 	if not win then
 		return
 	end
-	-- initialize sector stack
-	win._sectorStack = win._sectorStack or {}
-	-- persistent storage for sector sizes
-	win._sectorSizes = win._sectorSizes or {}
-	-- capture current cursor as sector origin
-	local startX, startY = win.cursorX, win.cursorY
-	local pad = Globals.Defaults.WINDOW_CONTENT_PADDING
-	-- restore previous max extents if available
-	local stored = win._sectorSizes[label]
-	local sector = {
-		startX = startX,
-		startY = startY,
-		maxX = stored and (startX + stored.width - pad) or startX,
-		maxY = stored and (startY + stored.height - pad) or startY,
-		label = label,
-		padding = pad,
-		origAdd = win.AddWidget,
-	}
-	table.insert(win._sectorStack, sector)
-	-- override AddWidget & NextLine to track extents within this sector
-	sector.origNext = win.NextLine
-	win.AddWidget = function(self, w, h)
-		local x, y = sector.origAdd(self, w, h)
-		-- track widest and tallest widget positions relative to window origin
-		sector.maxX = math.max(sector.maxX, x + w)
-		sector.maxY = math.max(sector.maxY, y + h)
-		return x, y
-	end
-	win.NextLine = function(self, spacing)
-		-- Call original to handle vertical advance and line height
-		sector.origNext(self, spacing)
-		-- Crucially, reset cursorX to the sector's indented start position
-		self.cursorX = sector.startX + sector.padding
-		-- track y position after line break relative to window origin
-		sector.maxY = math.max(sector.maxY, self.cursorY + self.lineHeight)
-	end
-	-- indent cursor for sector padding
-	win.cursorX = sector.startX + sector.padding
-	win.cursorY = sector.startY + sector.padding
+	SectorWidget.Begin(win, label) -- Delegated to SectorWidget
 end
 
 --- Ends the most recently begun sector, drawing its background and border and restoring layout.
 function TimMenu.EndSector()
 	local win = TimMenu.GetCurrentWindow()
-	if not win or not win._sectorStack or #win._sectorStack == 0 then
+	if not win or not win._sectorStack or #win._sectorStack == 0 then -- Keep basic check here
 		return
 	end
-	-- Compute depth before popping
-	local depth = #win._sectorStack
-	-- Capture the sector table before removing it
-	local sector = win._sectorStack[depth]
-	-- pop last sector
-	table.remove(win._sectorStack)
-
-	-- restore AddWidget and NextLine
-	win.AddWidget = sector.origAdd
-	win.NextLine = sector.origNext
-	local pad = sector.padding
-	-- compute sector dimensions (+padding)
-	local width = (sector.maxX - sector.startX) + pad
-	local height = (sector.maxY - sector.startY) + pad
-
-	-- ensure minimum width to fit header label plus padding
-	if type(sector.label) == "string" then
-		draw.SetFont(Globals.Style.Font)
-		local lw, lh = draw.GetTextSize(sector.label)
-		local minW = lw + (pad * 2)
-		if width < minW then
-			width = minW
-		end
-	end
-	-- store persistent sector size to avoid shrinking below max content size
-	win._sectorSizes = win._sectorSizes or {}
-	local prev = win._sectorSizes[sector.label]
-	if not prev or width > prev.width or height > prev.height then -- Update if wider or taller
-		win._sectorSizes[sector.label] = { width = width, height = height }
-	end
-
-	-- *** Explicitly update window bounds to contain this sector ***
-	local requiredW = sector.startX + width + sector.padding -- Sector start + width + right padding
-	local requiredH = sector.startY + height + sector.padding -- Sector start + height + bottom padding
-	win.W = math.max(win.W, requiredW)
-	win.H = math.max(win.H, requiredH)
-
-	local absX = win.X + sector.startX
-	local absY = win.Y + sector.startY
-	-- Prepare for background draw: capture variables local to this scope
-	local captureStartX = sector.startX
-	local captureStartY = sector.startY
-	local captureW = prev and prev.width or ((sector.maxX - sector.startX) + sector.padding)
-	local captureH = prev and prev.height or ((sector.maxY - sector.startY) + sector.padding)
-
-	-- dynamic draw background behind sector, adjusting for nesting depth
-	local backgroundLayer = 0.1 + (depth - 1) * 0.01
-	DrawManager.Enqueue(win.id, backgroundLayer, function()
-		local baseBgColor = Globals.Colors.SectorBackground -- Changed from Window to SectorBackground
-		-- lighten by 10 per nested level (max 40)
-		local totalLighten = math.min(40, depth * 10) -- Changed from 5 to 10
-		local finalR = math.min(255, baseBgColor[1] + totalLighten)
-		local finalG = math.min(255, baseBgColor[2] + totalLighten)
-		local finalB = math.min(255, baseBgColor[3] + totalLighten)
-		local finalColor = { finalR, finalG, finalB, baseBgColor[4] } -- Use baseBgColor for alpha
-
-		local x0 = win.X + captureStartX
-		local y0 = win.Y + captureStartY
-		draw.Color(table.unpack(finalColor))
-		Common.DrawFilledRect(x0, y0, x0 + captureW, y0 + captureH)
-	end)
-	-- dynamic draw border and optional header label
-	local borderLayer = 2.1 + (depth - 1) * 0.01
-	DrawManager.Enqueue(win.id, borderLayer, function() -- Changed from win:QueueDrawAtLayer(3, ...) and adjusted layer
-		local x0 = win.X + sector.startX
-		local y0 = win.Y + sector.startY
-		local w0 = (sector.maxX - sector.startX) + sector.padding
-		local h0 = (sector.maxY - sector.startY) + sector.padding
-		local pad0 = sector.padding
-		draw.Color(table.unpack(Globals.Colors.WindowBorder))
-		if type(sector.label) == "string" then
-			draw.SetFont(Globals.Style.Font)
-			local tw, th = draw.GetTextSize(sector.label)
-			local labelX = x0 + (w0 - tw) / 2
-			local lineY = y0
-			-- left border segment
-			Common.DrawLine(x0, lineY, labelX - pad0, lineY)
-			-- label text
-			draw.Color(table.unpack(Globals.Colors.Text))
-			Common.DrawText(labelX, lineY - math.floor(th / 2), sector.label)
-			-- right border segment
-			draw.Color(table.unpack(Globals.Colors.WindowBorder))
-			Common.DrawLine(labelX + tw + pad0, lineY, x0 + w0, lineY)
-		else
-			Common.DrawLine(x0, y0, x0 + w0, y0)
-		end
-		-- bottom border
-		Common.DrawLine(x0, y0 + h0, x0 + w0, y0 + h0)
-		-- left border
-		Common.DrawLine(x0, y0, x0, y0 + h0)
-		-- right border
-		Common.DrawLine(x0 + w0, y0, x0 + w0, y0 + h0)
-	end)
-	-- move parent cursor to right of this sector (allow horizontal stacking)
-	win.cursorX = sector.startX + width + pad
-	win.cursorY = sector.startY
-
-	-- Update window's layout state based on the ended sector
-	win.cursorX = sector.startX + width + pad -- Move cursor right for potential next element on same line
-	-- Update the line height to accommodate the sector's vertical extent
-	win.lineHeight = math.max(win.lineHeight or 0, height)
-
-	-- Update parent sector's bounds if nested
-	if #win._sectorStack > 0 then
-		local parentSector = win._sectorStack[#win._sectorStack]
-		-- Update parent's max X based on this sector's right edge
-		parentSector.maxX = math.max(parentSector.maxX, sector.startX + width)
-		-- Update parent's max Y based on this sector's bottom edge (cursorY already advanced)
-		parentSector.maxY = math.max(parentSector.maxY, win.cursorY + win.lineHeight)
-	end
-
-	-- Do NOT reset cursorY here; let the next NextLine handle vertical advancement based on updated lineHeight.
+	SectorWidget.End(win) -- Delegated to SectorWidget
 end
 
 -- Named function for the global draw callback
