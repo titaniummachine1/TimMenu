@@ -17,8 +17,8 @@ local function Checkbox(win, label, state)
 	draw.SetFont(Globals.Style.Font)
 	local txtW, txtH = draw.GetTextSize(label)
 	local padding = Globals.Style.ItemPadding
-	-- increase checkbox square to match button height (text height + vertical padding)
-	local boxSize = txtH + (padding * 2)
+	-- Use Globals.Style.ItemSize for the checkbox square's base size
+	local boxSize = Globals.Style.ItemSize + (padding * 2)
 	local width = boxSize + padding + txtW
 	local height = boxSize
 
