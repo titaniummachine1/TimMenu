@@ -26,7 +26,7 @@ Globals.Style = {
 	FontSize = 14,
 	FontWeight = 700,
 	FontBoldName = "Arial Black",
-	FontBoldSize = 14,
+	FontBoldSize = 17,
 	FontBoldWeight = 510,
 	ItemPadding = 7, -- Increased from 5 to 7 for potentially wider tab label font
 	ItemMargin = 5,
@@ -57,13 +57,23 @@ Globals.Defaults = {
 	DebugLineSpacing = 20,
 }
 
--- [[ Setup scalable fonts based on Style.Font* and Scale ]]
+-- Font cache to avoid recreating fonts every tick
+local fontCache = {}
+local function GetOrCreateFont(name, size, weight)
+	local key = name .. ":" .. size .. ":" .. weight
+	if not fontCache[key] then
+		fontCache[key] = draw.CreateFont(name, size, weight)
+	end
+	return fontCache[key]
+end
+
+-- Setup scalable fonts based on Style.Font* and Scale with caching
 local function SetupFonts()
 	local scale = Globals.Style.Scale or 1
 	local fSize = math.ceil(Globals.Style.FontSize * scale)
 	local bSize = math.ceil(Globals.Style.FontBoldSize * scale)
-	Globals.Style.Font = draw.CreateFont(Globals.Style.FontName, fSize, Globals.Style.FontWeight)
-	Globals.Style.FontBold = draw.CreateFont(Globals.Style.FontBoldName, bSize, Globals.Style.FontBoldWeight)
+	Globals.Style.Font = GetOrCreateFont(Globals.Style.FontName, fSize, Globals.Style.FontWeight)
+	Globals.Style.FontBold = GetOrCreateFont(Globals.Style.FontBoldName, bSize, Globals.Style.FontBoldWeight)
 end
 SetupFonts()
 Globals.ReloadFonts = SetupFonts
