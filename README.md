@@ -84,9 +84,8 @@ callbacks.Register("Draw", "ExampleDraw", OnDraw)
 All colors and styles can be tweaked via the `Globals` module:
 
 ```lua
-local Globals = require("TimMenu.Globals")
-Globals.Colors.Window = {40, 40, 40, 255}
-Globals.Style.ItemPadding = 8
+TimMenu.Globals.Colors.Window = {40, 40, 40, 255}
+TimMenu.Globals.Style.ItemPadding = 8
 ```
 
 ## Tips
