@@ -39,6 +39,8 @@ end
 
 function TimMenu.Begin(title, visible, id)
 	assert(type(title) == "string", "TimMenu.Begin requires a string title")
+	-- Auto-reset fonts to defaults at the start of this frame
+	TimMenu.FontReset()
 	visible = (visible == nil) and true or visible
 	if type(visible) == "string" then -- Handle shorthand TimMenu.Begin("Title", "id")
 		id, visible = visible, true
