@@ -371,10 +371,10 @@ function TimMenu.EndSector()
 	local captureH = prev and prev.height or ((sector.maxY - sector.startY) + sector.padding)
 
 	-- dynamic draw background behind sector, adjusting for nesting depth
-	DrawManager.Enqueue(win.id, depth * 0.1, function()
+	DrawManager.Enqueue(win.id, 1, function()
 		local windowBgColor = Globals.Colors.Window
-		-- Use captured depth (1-based, so depth 1 means first-level sector)
-		local totalLighten = math.min(40, depth * 10)
+		-- lighten by 5 per nested level (max 40)
+		local totalLighten = math.min(40, depth * 5)
 		local finalR = math.min(255, windowBgColor[1] + totalLighten)
 		local finalG = math.min(255, windowBgColor[2] + totalLighten)
 		local finalB = math.min(255, windowBgColor[3] + totalLighten)
@@ -504,17 +504,16 @@ local function _TimMenu_GlobalDraw()
 		end
 	end
 
-	-- 4. Draw Pass (iterate in new Z-order)
+	-- 4. Draw Pass (per-window widget flush)
 	for i = 1, #TimMenuGlobal.order do
 		local key = TimMenuGlobal.order[i]
 		local win = TimMenuGlobal.windows[key]
 		if win and win.visible then
 			win:_Draw()
+			-- Flush only this window's widget draw calls, in layer order
+			DrawManager.FlushWindow(key)
 		end
 	end
-
-	-- Flush all widget draw calls in proper Z-order and layer
-	DrawManager.Flush(TimMenuGlobal.order)
 
 	-- One-time re-registration to ensure this draw callback runs after user callbacks
 	if not reRegistered then
@@ -573,4 +572,6 @@ function TimMenu.FontReset()
 	Globals.ReloadFonts()
 end
 
+-- expose TimMenu globally for convenience
+_G.TimMenu = TimMenu
 return TimMenu

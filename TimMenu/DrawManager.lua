@@ -43,4 +43,29 @@ function DrawManager.Flush(zOrder)
 	DrawManager.queue = {}
 end
 
+--- Flush queued draw calls for a single window, sorted by layer
+---@param windowId string the ID of the window to flush
+function DrawManager.FlushWindow(windowId)
+	local keep = {}
+	local toFlush = {}
+	-- Separate entries for this window
+	for _, entry in ipairs(DrawManager.queue) do
+		if entry.windowId == windowId then
+			table.insert(toFlush, entry)
+		else
+			table.insert(keep, entry)
+		end
+	end
+	-- Sort this window's entries by layer
+	table.sort(toFlush, function(a, b)
+		return a.layer < b.layer
+	end)
+	-- Execute draw calls for this window
+	for _, entry in ipairs(toFlush) do
+		entry.fn(table.unpack(entry.args))
+	end
+	-- Retain entries for other windows
+	DrawManager.queue = keep
+end
+
 return DrawManager
