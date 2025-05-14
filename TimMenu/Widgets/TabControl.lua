@@ -2,6 +2,15 @@ local Globals = require("TimMenu.Globals")
 local Common = require("TimMenu.Common")
 local Interaction = require("TimMenu.Interaction")
 
+-- Light-blue outline, 20% lighter than WindowBorder
+local WB = Globals.Colors.WindowBorder
+local LIGHT_TAB_OUTLINE = {
+	math.min(255, WB[1] + math.floor((255 - WB[1]) * 0.2)),
+	math.min(255, WB[2] + math.floor((255 - WB[2]) * 0.2)),
+	math.min(255, WB[3] + math.floor((255 - WB[3]) * 0.2)),
+	WB[4],
+}
+
 local function TabControl(win, id, tabs, defaultSelection, isHeader)
 	assert(type(win) == "table", "TabControl: win must be a table")
 	assert(type(id) == "string", "TabControl: id must be a string")
@@ -122,30 +131,39 @@ local function TabControl(win, id, tabs, defaultSelection, isHeader)
 		return entry.selected, entry.changed
 	end
 
-	-- measure total width
-	local totalW, pad = 0, Globals.Style.ItemPadding
-	draw.SetFont(Globals.Style.FontBold) -- Use bold font
-	for i, lbl in ipairs(tabs) do
-		local w, _ = draw.GetTextSize(lbl)
-		totalW = totalW + w + pad * 2 + (i < #tabs and Globals.Defaults.ITEM_SPACING or 0)
-	end
+	-- Non-header TabControl: regular widget behavior
+	local pad = Globals.Style.ItemPadding
+	local spacing = math.floor(pad * 0.5)
 	local contentPad = Globals.Defaults.WINDOW_CONTENT_PADDING
-	local startX = contentPad + math.max(0, (win.W - contentPad * 2 - totalW) / 2)
-	local startY = win.cursorY
+
+	draw.SetFont(Globals.Style.FontBold)
+
+	-- Compute text sizes and total width for group outline
+	local totalW = 0
+	local textSizes = {}
+	for i, lbl in ipairs(tabs) do
+		local tw, th = draw.GetTextSize(lbl)
+		textSizes[i] = { w = tw, h = th }
+		totalW = totalW + tw + pad * 2 + (i < #tabs and spacing or 0)
+	end
+
+	-- Layout start positions
+	local startX = win.cursorX
+	local startY = win.cursorY + pad
 	win.cursorX = startX
 	local lineH = 0
 
+	-- Draw each tab button
 	for i, lbl in ipairs(tabs) do
-		local isSel = (i == current)
-		local keyBtn = id .. ":tab:" .. lbl
-		draw.SetFont(Globals.Style.FontBold) -- Use bold font
-		local w, h = draw.GetTextSize(lbl)
-		local bw, bh = w + pad * 2, h + pad * 2
+		local ts = textSizes[i]
+		local tw, th = ts.w, ts.h
+		local bw, bh = tw + pad * 2, th + pad * 2
 		local bx, by = win.cursorX, startY
-		win.cursorX = win.cursorX + bw + Globals.Defaults.ITEM_SPACING
-		lineH = math.max(lineH, bh)
 		local absX, absY = win.X + bx, win.Y + by
+
+		-- Interaction
 		local hover = Interaction.IsHovered(win, { x = absX, y = absY, w = bw, h = bh })
+		local keyBtn = id .. ":tab:" .. lbl
 		if hover and Interaction.IsPressed(keyBtn) then
 			entry.selected = i
 			entry.changed = true
@@ -153,41 +171,41 @@ local function TabControl(win, id, tabs, defaultSelection, isHeader)
 		if not input.IsButtonDown(MOUSE_LEFT) then
 			Interaction.Release(keyBtn)
 		end
-		if isSel then
-			selectedInfo = { x = bx, y = by, w = bw, h = bh }
-		end
 
-		win:QueueDrawAtLayer(1, function() -- Layer 1 for backgrounds
-			local cx, cy = win.X + bx, win.Y + by
-			local bgColor
-			if isSel then
-				bgColor = Globals.Colors.Title -- Blue for selected
-			elseif hover then
-				bgColor = Globals.Colors.ItemHover -- Hover color for non-selected
-			else
-				bgColor = Globals.Colors.Item -- Default item color for non-selected
-			end
-			draw.Color(table.unpack(bgColor))
-			Common.DrawFilledRect(cx, cy, cx + bw, cy + bh)
-		end)
+		-- Background (layer 1)
+		win:QueueDrawAtLayer(1, function(px, py, w, h, sel, hv)
+			local bg = sel and Globals.Colors.Title or (hv and Globals.Colors.ItemHover or Globals.Colors.Item)
+			draw.Color(table.unpack(bg))
+			Common.DrawFilledRect(px, py, px + w, py + h)
+		end, absX, absY, bw, bh, entry.selected == i, hover)
 
-		win:QueueDrawAtLayer(2, function() -- Layer 2 for text
-			local cx, cy = win.X + bx, win.Y + by
-			-- Selected tab text is bright white, others are slightly dimmer
-			local txtColor = isSel and Globals.Colors.Text or { 180, 180, 180, 255 }
-			draw.SetFont(Globals.Style.FontBold) -- Ensure bold font is set for drawing text
-			draw.Color(table.unpack(txtColor))
-			Common.DrawText(cx + (bw - w) / 2, cy + (bh - h) / 2, lbl)
-		end)
+		-- Per-button outline (layer 2)
+		win:QueueDrawAtLayer(2, function(px, py, w, h)
+			draw.Color(table.unpack(LIGHT_TAB_OUTLINE))
+			Common.DrawOutlinedRect(px, py, px + w, py + h)
+		end, absX, absY, bw, bh)
+
+		-- Text (layer 3)
+		win:QueueDrawAtLayer(3, function(px, py, txt, tw, th, sel)
+			draw.SetFont(Globals.Style.FontBold)
+			local txtC = sel and Globals.Colors.Text or { 180, 180, 180, 255 }
+			draw.Color(table.unpack(txtC))
+			Common.DrawText(px + (bw - tw) / 2, py + (bh - th) / 2, txt)
+		end, absX, absY, lbl, tw, th, entry.selected == i)
+
+		-- Advance cursor
+		win.cursorX = win.cursorX + bw + spacing
+		lineH = math.max(lineH, bh)
 	end
 
-	-- separator line below all tabs (kept)
-	win:QueueDrawAtLayer(1, function()
-		local sy = win.Y + startY + lineH + 2 -- Adjusted spacing a bit
-		draw.Color(table.unpack(Globals.Colors.WindowBorder))
-		Common.DrawLine(win.X + contentPad, sy, win.X + win.W - contentPad, sy)
-	end)
-	win.cursorY = startY + lineH + 2 + 1 + 12 -- Adjusted spacing a bit
+	-- Group outline (layer 4)
+	win:QueueDrawAtLayer(4, function(px, py, w, h)
+		draw.Color(table.unpack(LIGHT_TAB_OUTLINE))
+		Common.DrawOutlinedRect(px, py, px + w, py + h)
+	end, win.X + startX, win.Y + startY, totalW, lineH)
+
+	-- Advance cursor to below the tab control
+	win.cursorY = startY + lineH + pad
 	win.cursorX = contentPad
 	win.lineHeight = 0
 	return entry.selected, entry.changed
