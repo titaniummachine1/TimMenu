@@ -8,7 +8,7 @@
 
 [![Download Latest](https://img.shields.io/badge/Download-Latest-blue?style=for-the-badge&logo=github)](https://github.com/titaniummachine1/TimMenu/releases/latest)
 
-Titanium Immediate-Mode Menu for Lmaobox
+Terminator`s Immediate-Mode Menu for Lmaobox
 
 A lightweight, immediate-mode GUI library for Lmaobox scripts, allowing rapid construction of in-game menus with minimal boilerplate.
 
