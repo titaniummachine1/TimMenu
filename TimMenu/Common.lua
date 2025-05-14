@@ -86,22 +86,62 @@ end
 -- Alias Clamp for backwards compatibility; prefer RoundNearest for clarity
 Common.Clamp = Common.RoundNearest
 
--- Track button state globally
-local wasPressed = false
+-- Track button state globally -- THIS WILL BE REMOVED
+-- local wasPressed = false
 
--- New: Helper function for mouse interaction within a rectangle.
-function Common.GetInteraction(x, y, w, h)
+-- The old GetInteraction function will be removed.
+-- function Common.GetInteraction(x, y, w, h) ... end
+
+--- Checks if the current mouse position is within the given rectangular area.
+--- @param x number Top-left x coordinate of the area.
+--- @param y number Top-left y coordinate of the area.
+--- @param w number Width of the area.
+--- @param h number Height of the area.
+--- @return boolean true if mouse is in rect, false otherwise.
+function Common.IsMouseInRect(x, y, w, h)
 	local mX, mY = table.unpack(input.GetMousePos())
-	local hovered = (mX >= x) and (mX <= x + w) and (mY >= y) and (mY <= y + h)
-	local isPressed = input.IsButtonDown(MOUSE_LEFT)
+	return (mX >= x) and (mX <= x + w) and (mY >= y) and (mY <= y + h)
+end
 
-	-- Only trigger click when button is pressed and wasn't pressed last frame
-	local clicked = hovered and isPressed and not wasPressed
+--- Processes and returns the interaction state for a UI element.
+--- Uses TimMenuGlobal.InputState for global mouse status and
+--- gui.GetValue/SetValue for per-widget persistent state across frames.
+--- @param widgetUniqueId string A unique identifier for the widget instance.
+--- @param areaRect table {x, y, w, h} The widget's screen area.
+--- @return table InteractionState {isHovered, isPressed, isClicked, isReleased}
+function Common.ProcessInteraction(widgetUniqueId, areaRect)
+	assert(type(widgetUniqueId) == "string", "widgetUniqueId must be a string")
+	assert(type(areaRect) == "table", "areaRect must be a table")
+	assert(
+		type(areaRect.x) == "number"
+			and type(areaRect.y) == "number"
+			and type(areaRect.w) == "number"
+			and type(areaRect.h) == "number",
+		"areaRect must contain x,y,w,h numbers"
+	)
 
-	-- Update state for next frame
-	wasPressed = isPressed
+	local globalInputState = TimMenuGlobal.InputState -- from Main.lua {isLeftMouseDown, wasLeftMouseDownLastFrame}
 
-	return hovered, clicked
+	local isHovered = Common.IsMouseInRect(areaRect.x, areaRect.y, areaRect.w, areaRect.h)
+
+	-- Retrieve this widget's pressed state from the PREVIOUS frame
+	-- The default `false` is important for the first frame a widget appears.
+	local wasWidgetPressedLastFrame = gui.GetValue(widgetUniqueId .. "_TimMenu_pressed_last_frame") or false
+
+	local isWidgetPressedNow = isHovered and globalInputState.isLeftMouseDown
+
+	local isClickedNow = isWidgetPressedNow and not wasWidgetPressedLastFrame
+	local isReleasedNow = not isWidgetPressedNow and wasWidgetPressedLastFrame and isHovered -- Released while hovering
+
+	-- Store current pressed state for the NEXT frame for this specific widget
+	gui.SetValue(widgetUniqueId .. "_TimMenu_pressed_last_frame", isWidgetPressedNow)
+
+	return {
+		isHovered = isHovered,
+		isPressed = isWidgetPressedNow, -- True if mouse is down over the widget THIS frame
+		isClicked = isClickedNow, -- True if a new press started on this widget THIS frame
+		isReleased = isReleasedNow, -- True if mouse was released over this widget THIS frame (after being pressed on it)
+	}
 end
 
 --------------------------------------------------------------------------------

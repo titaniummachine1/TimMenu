@@ -8,6 +8,10 @@ local function Setup()
 	TimMenuGlobal = {
 		windows = {}, -- Stores window objects, keyed by ID
 		order = {}, -- Array of window IDs, defining Z-order (last = topmost)
+		InputState = { -- ADDED: To manage mouse button state across frames
+			isLeftMouseDown = false,
+			wasLeftMouseDownLastFrame = false,
+		},
 	}
 end
 
@@ -24,6 +28,7 @@ local Widgets = require("TimMenu.Widgets")
 -- Explicitly require Keybind module so bundler includes it
 local _ = require("TimMenu.Widgets.Keybind")
 local SectorWidget = require("TimMenu.Layout.Sector")
+local SeparatorLayout = require("TimMenu.Layout.Separator")
 local DrawManager = require("TimMenu.DrawManager")
 
 local function getOrCreateWindow(key, title, visible)
@@ -193,7 +198,7 @@ function TimMenu.Separator(label)
 	)
 	local win = TimMenu.GetCurrentWindow()
 	assert(win, "TimMenu.Separator: no active window. Ensure TimMenu.Begin() was called before using widget functions.")
-	return Widgets.Separator(win, label)
+	return SeparatorLayout.Draw(win, label)
 end
 
 --- Single-line text input; returns new string and whether it changed.
@@ -294,6 +299,10 @@ end
 -- Named function for the global draw callback
 local reRegistered = false
 local function _TimMenu_GlobalDraw()
+	-- Update global input state ONCE per frame, before any interaction processing
+	TimMenuGlobal.InputState.wasLeftMouseDownLastFrame = TimMenuGlobal.InputState.isLeftMouseDown
+	TimMenuGlobal.InputState.isLeftMouseDown = input.IsButtonDown(MOUSE_LEFT)
+
 	local mouseX, mouseY = table.unpack(input.GetMousePos())
 	local focusedWindowKey = nil
 
