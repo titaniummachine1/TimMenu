@@ -91,7 +91,7 @@ TimMenu.Globals.Style.ItemPadding = 8
 ## Tips
 
 - Use `BeginSector`/`EndSector` to group widgets in bordered panels.
-- After dragging windows, widgets automatically snap to their new positions.
+- sectors can be easly stacked horizontaly and verticaly
 
 ## Sector Grouping
 
