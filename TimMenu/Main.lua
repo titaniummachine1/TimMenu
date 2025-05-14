@@ -319,9 +319,8 @@ function TimMenu.BeginSector(label)
 	win.cursorY = sector.startY + sector.padding
 end
 
---- Ends the named sector, drawing its background and border and restoring layout.
----@param label string sector name to end
-function TimMenu.EndSector(label)
+--- Ends the most recently begun sector, drawing its background and border and restoring layout.
+function TimMenu.EndSector()
 	local win = TimMenu.GetCurrentWindow()
 	if not win or not win._sectorStack or #win._sectorStack == 0 then
 		return

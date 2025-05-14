@@ -75,13 +75,13 @@ local function OnDraw_Menudemo1()
 		cbState1 = TimMenu.Checkbox("Checkbox in A", cbState1)
 		TimMenu.NextLine()
 		TimMenu.Text("More text...")
-		TimMenu.EndSector("Multi-Widget Area")
+		TimMenu.EndSector()
 
 		TimMenu.BeginSector("Single Button")
 		if TimMenu.Button("Button in B") then
 			print("[Menudemo1] Button B clicked!XD")
 		end
-		TimMenu.EndSector("Single Button")
+		TimMenu.EndSector()
 		TimMenu.NextLine() -- End of the first row of sectors
 
 		-- Nested Sector Example
@@ -104,10 +104,10 @@ local function OnDraw_Menudemo1()
 			print("[Menudemo1] Button B clicked!XD")
 		end
 
-		TimMenu.EndSector("Nested Slider Area")
+		TimMenu.EndSector()
 		TimMenu.NextLine()
 		TimMenu.Text("Also inside Container")
-		TimMenu.EndSector("Nesting Container")
+		TimMenu.EndSector()
 		TimMenu.NextLine() -- End of Nesting Container block
 
 		-- Separator line (outside sectors)

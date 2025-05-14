@@ -1,6 +1,9 @@
 # TimMenu
 
-[![Latest Release](https://img.shields.io/github/v/release/titaniummachine1/TimMenu?label=Download%20Latest)](https://github.com/titaniummachine1/TimMenu/releases/latest)
+[![Commit Activity](https://img.shields.io/github/commit-activity/m/titaniummachine1/TimMenu)](https://github.com/titaniummachine1/TimMenu/commits/main)
+[![Release Date](https://img.shields.io/github/release-date/titaniummachine1/TimMenu)](https://github.com/titaniummachine1/TimMenu/releases/latest)
+[![All Releases](https://img.shields.io/github/downloads/titaniummachine1/TimMenu/total)](https://github.com/titaniummachine1/TimMenu/releases)
+[![Download Latest](https://img.shields.io/badge/Download-Latest-blue?style=for-the-badge&logo=github)](https://github.com/titaniummachine1/TimMenu/releases/latest)
 
 Titanium Immediate-Mode Menu for Lmaobox
 
@@ -10,15 +13,10 @@ https://github.com/user-attachments/assets/7b0481bd-3382-4f84-833e-2cb8094ed448
 
 ## Installation
 
-1. Run the bundler:
+To install, click the badge above to download the latest release, then:
 
-   ```bat
-   Bundle.bat
-   ```
-
-   This will produce `TimMenu.lua` in your workspace.
-
-2. Copy `TimMenu.lua` to your Lmaobox scripts folder (e.g., `%localappdata%\Scripts`).
+1. Unzip or extract the downloaded package.
+2. Copy `TimMenu.lua` into your Lmaobox scripts folder (e.g., `%localappdata%\Scripts`).
 
 ## Usage
 
@@ -76,7 +74,7 @@ callbacks.Register("Draw", "ExampleDraw", OnDraw)
 - `newIndex, changed = TimMenu.Combo(label, selectedIndex, options)`
 - `newIndex = TimMenu.TabControl(id, tabs, currentTabIndex)`
 - `TimMenu.Separator([label])`
-- `TimMenu.BeginSector(label)` / `TimMenu.EndSector(label)`
+- `TimMenu.BeginSector(label)` / `TimMenu.EndSector()`
 
 ### Customization
 
