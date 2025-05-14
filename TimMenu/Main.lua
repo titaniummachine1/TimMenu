@@ -23,7 +23,7 @@ local Window = require("TimMenu.Window")
 local Widgets = require("TimMenu.Widgets")
 -- Explicitly require Keybind module so bundler includes it
 local _ = require("TimMenu.Widgets.Keybind")
-local SectorWidget = require("TimMenu.Widgets.Sector")
+local SectorWidget = require("TimMenu.Layout.Sector")
 local DrawManager = require("TimMenu.DrawManager")
 
 local function getOrCreateWindow(key, title, visible)
