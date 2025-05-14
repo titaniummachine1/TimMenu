@@ -57,27 +57,28 @@ callbacks.Register("Draw", "ExampleDraw", OnDraw)
 
 ### Window Management
 
-- `bool = TimMenu.Begin(title, [visible, [id]])`
-- `TimMenu.End()`
+- Begin: `bool = TimMenu.Begin(title, [visible, [id]])`
+- End: `TimMenu.End()`
 
 ### Layout
 
-- `TimMenu.NextLine([spacing])`
-- `TimMenu.Spacing(amount)`
+- NextLine: `TimMenu.NextLine([spacing])`
+- Spacing: `TimMenu.Spacing(amount)`
+- Separator: `TimMenu.Separator([label])`
+- BeginSector: `TimMenu.BeginSector(label)`
+- EndSector: `TimMenu.EndSector()`
 
 ### Basic Widgets
 
-- `TimMenu.Text(text)`
-- `clicked = TimMenu.Button(label [, selected])`
-- `newState = TimMenu.Checkbox(label, state)`
-- `newText, changed = TimMenu.TextInput(label, text)`
-- `newValue, changed = TimMenu.Slider(label, value, min, max, step)`
-- `newIndex, changed = TimMenu.Selector(label, selectedIndex, options)`
-- `newIndex, changed = TimMenu.Dropdown(label, selectedIndex, options)`
-- `newIndex, changed = TimMenu.Combo(label, selectedIndex, options)`
-- `newIndex = TimMenu.TabControl(id, tabs, currentTabIndex)`
-- `TimMenu.Separator([label])`
-- `TimMenu.BeginSector(label)` / `TimMenu.EndSector()`
+- Text: `TimMenu.Text(text)`
+- Button: `clicked = TimMenu.Button(label [, selected])`
+- Checkbox: `newState = TimMenu.Checkbox(label, state)`
+- TextInput: `newText, changed = TimMenu.TextInput(label, text)`
+- Slider: `newValue, changed = TimMenu.Slider(label, value, min, max, step)`
+- Selector: `newIndex, changed = TimMenu.Selector(label, selectedIndex, options)`
+- Dropdown: `newIndex, changed = TimMenu.Dropdown(label, selectedIndex, options)`
+- Combo: `newIndex, changed = TimMenu.Combo(label, selectedIndex, options)`
+- TabControl: `newIndex = TimMenu.TabControl(id, tabs, currentTabIndex)`
 
 ### Customization
 
