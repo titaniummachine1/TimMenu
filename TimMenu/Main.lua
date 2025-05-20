@@ -151,19 +151,15 @@ function TimMenu.Text(text)
 	local w, h = draw.GetTextSize(text)
 	-- Reserve space in layout
 	local x, y = win:AddWidget(w, h)
-	-- Queue drawing at base layer
-	win:QueueDrawAtLayer(1, function()
-		draw.Color(table.unpack(Globals.Colors.Text))
-		draw.SetFont(Globals.Style.Font)
-		draw.Text(win.X + x, win.Y + y, text)
-	end)
+	-- Queue drawing at base layer using Common.QueueText
+	Common.QueueText(win, 1, win.X + x, win.Y + y, text, Globals.Colors.Text)
 end
 
 --- Displays debug information.
 function TimMenu.ShowDebug()
 	local currentFrame = lmbx.FrameCount()
 	draw.SetFont(Globals.Style.Font)
-	draw.Color(table.unpack(Globals.Colors.Text))
+	Common.SetColor(Globals.Colors.Text)
 	local headerX, headerY = Globals.Defaults.DebugHeaderX, Globals.Defaults.DebugHeaderY
 	local lineSpacing = Globals.Defaults.DebugLineSpacing
 

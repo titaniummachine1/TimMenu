@@ -99,29 +99,26 @@ local function TabControl(win, id, tabs, defaultSelection, isHeader)
 			-- Hover underline for non-selected tabs (dynamic positioning)
 			if hover and not isSel then
 				win:QueueDrawAtLayer(1, function(offX, offY, bw)
-					local px = win.X + offX
-					local py = win.Y + offY
+					local px, py = win.X + offX, win.Y + offY
 					local uy = py + item.bh
-					draw.Color(table.unpack(Globals.Colors.Highlight))
+					Common.SetColor(Globals.Colors.Highlight)
 					Common.DrawFilledRect(px, uy, px + bw, uy + 2)
 				end, offsetX, offsetY, item.bw)
 			end
 			-- Tab text (dynamic positioning)
 			win:QueueDrawAtLayer(2, function(lbl, w, h, bw, bh, sel, offX, offY)
-				local px = win.X + offX
-				local py = win.Y + offY
+				local px, py = win.X + offX, win.Y + offY
 				local txtColor = sel and Globals.Colors.Text or { 180, 180, 180, 255 }
 				draw.SetFont(Globals.Style.FontBold)
-				draw.Color(table.unpack(txtColor))
+				Common.SetColor(txtColor)
 				Common.DrawText(px + (bw - w) / 2, py + (bh - h) / 2, lbl)
 			end, item.lbl, item.w, item.h, item.bw, item.bh, isSel, offsetX, offsetY)
 			-- Underline for selected tab (dynamic positioning)
 			if isSel then
 				win:QueueDrawAtLayer(3, function(offX, offY, bw)
-					local px = win.X + offX
-					local py = win.Y + offY
+					local px, py = win.X + offX, win.Y + offY
 					local uy = py + item.bh
-					draw.Color(table.unpack(Globals.Colors.TabSelectedUnderline))
+					Common.SetColor(Globals.Colors.TabSelectedUnderline)
 					Common.DrawFilledRect(px, uy, px + bw, uy + 2)
 				end, offsetX, offsetY, item.bw)
 			end

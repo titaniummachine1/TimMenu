@@ -14,7 +14,7 @@ local DrawHelpers = {}
 -- colorTbl   : {r,g,b,a}
 ----------------------------------------------------
 function DrawHelpers.DrawArrow(absX, absY, w, h, direction, colorTbl)
-	draw.Color(table.unpack(colorTbl or Globals.Colors.Text))
+	Common.SetColor(colorTbl or Globals.Colors.Text)
 
 	if direction == "up" then
 		Common.DrawLine(absX, absY + h, absX + w / 2, absY) -- /\ left edge
@@ -29,13 +29,13 @@ end
 -- DrawLabeledBox : draws a filled rect with border + centered label
 ----------------------------------------------------
 function DrawHelpers.DrawLabeledBox(absX, absY, w, h, label, bgCol, borderCol)
-	draw.Color(table.unpack(bgCol or Globals.Colors.Item))
+	Common.SetColor(bgCol or Globals.Colors.Item)
 	Common.DrawFilledRect(absX, absY, absX + w, absY + h)
 
-	draw.Color(table.unpack(borderCol or Globals.Colors.WindowBorder))
+	Common.SetColor(borderCol or Globals.Colors.WindowBorder)
 	Common.DrawOutlinedRect(absX, absY, absX + w, absY + h)
 
-	draw.Color(table.unpack(Globals.Colors.Text))
+	Common.SetColor(Globals.Colors.Text)
 	draw.SetFont(Globals.Style.Font)
 	local txtW, txtH = draw.GetTextSize(label)
 	Common.DrawText(absX + (w - txtW) / 2, absY + (h - txtH) / 2, label)

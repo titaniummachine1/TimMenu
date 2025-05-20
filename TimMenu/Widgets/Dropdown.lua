@@ -17,13 +17,13 @@ local function DrawDropdownField(win, relX, relY, width, height, pad, label, ent
 	elseif hovered then
 		bgColor = Globals.Colors.ItemHover
 	end
-	draw.Color(table.unpack(bgColor))
+	Common.SetColor(bgColor)
 	Common.DrawFilledRect(absX, absY, absX + mainBgWidth, absY + height)
-	draw.Color(table.unpack(Globals.Colors.ArrowBoxBg))
+	Common.SetColor(Globals.Colors.ArrowBoxBg)
 	Common.DrawFilledRect(arrowBoxX, absY, arrowBoxX + arrowBoxW, absY + height)
-	draw.Color(table.unpack(Globals.Colors.WindowBorder))
+	Common.SetColor(Globals.Colors.WindowBorder)
 	Common.DrawOutlinedRect(absX, absY, absX + width, absY + height)
-	draw.Color(table.unpack(Globals.Colors.Text))
+	Common.SetColor(Globals.Colors.Text)
 	-- Use correct font to measure text
 	local _, txtH = draw.GetTextSize(label)
 	Common.DrawText(absX + pad, absY + (height - txtH) / 2, label)
@@ -35,7 +35,7 @@ end
 
 local function DrawDropdownPopupBackground(win, relX, relY, width, listH)
 	local absX, absY = win.X + relX, win.Y + relY
-	draw.Color(table.unpack(Globals.Colors.Window))
+	Common.SetColor(Globals.Colors.Window)
 	Common.DrawFilledRect(absX, absY, absX + width, absY + listH)
 end
 
@@ -43,16 +43,16 @@ local function DrawDropdownPopupItem(win, relX, relY, width, itemH, pad, opt, is
 	local absX, absY = win.X + relX, win.Y + relY
 	-- Ensure correct font for popup items
 	draw.SetFont(Globals.Style.Font)
-	draw.Color(table.unpack(isHovered and Globals.Colors.ItemHover or Globals.Colors.Item))
+	Common.SetColor(isHovered and Globals.Colors.ItemHover or Globals.Colors.Item)
 	Common.DrawFilledRect(absX, absY, absX + width, absY + itemH)
-	draw.Color(table.unpack(Globals.Colors.Text))
+	Common.SetColor(Globals.Colors.Text)
 	local _, optH = draw.GetTextSize(opt)
 	Common.DrawText(absX + pad, absY + (itemH - optH) / 2, opt)
 end
 
 local function DrawDropdownPopupOutline(win, relX, relY, width, listH)
 	local absX, absY = win.X + relX, win.Y + relY
-	draw.Color(table.unpack(Globals.Colors.WindowBorder))
+	Common.SetColor(Globals.Colors.WindowBorder)
 	Common.DrawOutlinedRect(absX, absY, absX + width, absY + listH)
 end
 

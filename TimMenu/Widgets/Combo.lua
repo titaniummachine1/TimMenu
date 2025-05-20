@@ -16,13 +16,13 @@ local function DrawComboField(win, relX, relY, width, height, pad, label, entryO
 	elseif hovered then
 		bgColor = Globals.Colors.ItemHover
 	end
-	draw.Color(table.unpack(bgColor))
+	Common.SetColor(bgColor)
 	Common.DrawFilledRect(absX, absY, absX + mainBgW, absY + height)
-	draw.Color(table.unpack(Globals.Colors.ArrowBoxBg))
+	Common.SetColor(Globals.Colors.ArrowBoxBg)
 	Common.DrawFilledRect(arrowBoxX, absY, arrowBoxX + arrowBoxW, absY + height)
-	draw.Color(table.unpack(Globals.Colors.WindowBorder))
+	Common.SetColor(Globals.Colors.WindowBorder)
 	Common.DrawOutlinedRect(absX, absY, absX + width, absY + height)
-	draw.Color(table.unpack(Globals.Colors.Text))
+	Common.SetColor(Globals.Colors.Text)
 	local _, txtH = draw.GetTextSize(label)
 	Common.DrawText(absX + pad, absY + (height - txtH) / 2, label)
 	DrawHelpers.DrawArrow(
@@ -37,7 +37,7 @@ end
 
 local function DrawComboPopupBackground(win, relX, relY, width, listH)
 	local absX, absY = win.X + relX, win.Y + relY
-	draw.Color(table.unpack(Globals.Colors.Window))
+	Common.SetColor(Globals.Colors.Window)
 	Common.DrawFilledRect(absX, absY, absX + width, absY + listH)
 end
 
@@ -45,17 +45,17 @@ local function DrawComboPopupItem(win, relX, relY, width, height, pad, opt, isHo
 	local absX, absY = win.X + relX, win.Y + relY
 	-- Ensure correct font for combo popup items
 	draw.SetFont(Globals.Style.Font)
-	draw.Color(table.unpack(isHovered and Globals.Colors.ItemHover or Globals.Colors.Item))
+	Common.SetColor(isHovered and Globals.Colors.ItemHover or Globals.Colors.Item)
 	Common.DrawFilledRect(absX, absY, absX + width, absY + height)
 	local bx, by = absX + pad, absY + (height / 2) - (boxSize / 2)
-	draw.Color(table.unpack(Globals.Colors.WindowBorder))
+	Common.SetColor(Globals.Colors.WindowBorder)
 	Common.DrawOutlinedRect(bx, by, bx + boxSize, by + boxSize)
 	if isSelected then
-		draw.Color(table.unpack(Globals.Colors.Highlight))
+		Common.SetColor(Globals.Colors.Highlight)
 		local m = math.floor(boxSize * 0.25)
 		Common.DrawFilledRect(bx + m, by + m, bx + boxSize - m, by + boxSize - m)
 	end
-	draw.Color(table.unpack(Globals.Colors.Text))
+	Common.SetColor(Globals.Colors.Text)
 	-- Use correct font to measure text
 	local _, optH = draw.GetTextSize(opt)
 	Common.DrawText(bx + boxSize + pad, absY + (height / 2) - (optH / 2), opt)
@@ -63,7 +63,7 @@ end
 
 local function DrawComboPopupOutline(win, relX, relY, width, listH)
 	local absX, absY = win.X + relX, win.Y + relY
-	draw.Color(table.unpack(Globals.Colors.WindowBorder))
+	Common.SetColor(Globals.Colors.WindowBorder)
 	Common.DrawOutlinedRect(absX, absY, absX + width, absY + listH)
 end
 

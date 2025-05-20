@@ -12,9 +12,7 @@ Terminator's Immediate-Mode Menu for Lmaobox
 
 A GUI library for Lmaobox scripts, offering a convenient immediate-mode style API built on a retained-mode foundation. It's designed for light usage and rapid construction of in-game menus.
 
-
 https://github.com/user-attachments/assets/7498dcd1-8b20-4347-bf32-6c1419b679c2
-
 
 ## Installation
 
@@ -50,7 +48,6 @@ local function OnDraw()
             print("Slider:", sliderValue)
         end
 
-        TimMenu.End()
     end
 end
 
@@ -62,7 +59,6 @@ callbacks.Register("Draw", "ExampleDraw", OnDraw)
 ### Window Management
 
 - Begin: `bool = TimMenu.Begin(title, [visible, [id]])`
-- End: `TimMenu.End()`
 
 ### Layout
 
@@ -111,8 +107,6 @@ if TimMenu.Begin("Example Window") then
     -- Place widgets inside the sector
     local volume, changed = TimMenu.Slider("Volume", 50, 0, 100, 1)
     TimMenu.EndSector()
-
-    TimMenu.End()
 end
 ```
 

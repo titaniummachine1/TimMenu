@@ -53,7 +53,7 @@ local function _enqueueBackgroundDraw(win, sector_data, depth, persistentWidth, 
 
 		local x0 = win.X + sector_data.startX
 		local y0 = win.Y + sector_data.startY
-		draw.Color(table.unpack(finalColor))
+		Common.SetColor(finalColor)
 		Common.DrawFilledRect(x0, y0, x0 + persistentWidth, y0 + persistentHeight)
 	end)
 end
@@ -67,16 +67,16 @@ local function _enqueueBorderDraw(win, sector_data, depth, persistentWidth, pers
 		local h0 = persistentHeight
 		local pad0 = sector_data.padding
 
-		draw.Color(table.unpack(Globals.Colors.WindowBorder))
+		Common.SetColor(Globals.Colors.WindowBorder)
 		if type(sector_data.label) == "string" then
 			draw.SetFont(Globals.Style.Font)
 			local tw, th = draw.GetTextSize(sector_data.label)
 			local labelX = x0 + (w0 - tw) / 2
 			local lineY = y0
 			Common.DrawLine(x0, lineY, labelX - pad0, lineY)
-			draw.Color(table.unpack(Globals.Colors.Text))
+			Common.SetColor(Globals.Colors.Text)
 			Common.DrawText(labelX, lineY - math.floor(th / 2), sector_data.label)
-			draw.Color(table.unpack(Globals.Colors.WindowBorder))
+			Common.SetColor(Globals.Colors.WindowBorder)
 			Common.DrawLine(labelX + tw + pad0, lineY, x0 + w0, lineY)
 		else
 			Common.DrawLine(x0, y0, x0 + w0, y0)

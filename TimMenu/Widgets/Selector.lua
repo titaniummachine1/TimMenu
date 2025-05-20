@@ -92,30 +92,30 @@ local function Selector(win, label, selectedIndex, options)
 		elseif prevHovered then
 			prevBg = Globals.Colors.ItemHover
 		end
-		draw.Color(table.unpack(prevBg))
+		Common.SetColor(prevBg)
 		Common.DrawFilledRect(cx, cy, cx + btnW, cy + btnH)
 		-- Calculate arrow symbol size for centering
 		draw.SetFont(Globals.Style.Font)
 		local symW, symH = draw.GetTextSize("<")
 		local sym2W, sym2H = draw.GetTextSize(">")
-		draw.Color(table.unpack(Globals.Colors.Text))
+		Common.SetColor(Globals.Colors.Text)
 		Common.DrawText(cx + (btnW - symW) / 2, cy + (btnH - symH) / 2, "<")
 		local display = tostring(options[entry.selected])
 		local halfW = fixedTextW / 2
 		local leftBounds = { x = cx + btnW + sepW, y = cy, w = halfW, h = totalHeight }
 		local rightBounds = { x = cx + btnW + sepW + halfW, y = cy, w = halfW, h = totalHeight }
 		local lh = Interaction.IsHovered(win, leftBounds)
-		draw.Color(table.unpack(lh and Globals.Colors.ItemHover or Globals.Colors.Item))
+		Common.SetColor(lh and Globals.Colors.ItemHover or Globals.Colors.Item)
 		Common.DrawFilledRect(leftBounds.x, leftBounds.y, leftBounds.x + leftBounds.w, leftBounds.y + leftBounds.h)
 		local rh = Interaction.IsHovered(win, rightBounds)
-		draw.Color(table.unpack(rh and Globals.Colors.ItemHover or Globals.Colors.Item))
+		Common.SetColor(rh and Globals.Colors.ItemHover or Globals.Colors.Item)
 		Common.DrawFilledRect(
 			rightBounds.x,
 			rightBounds.y,
 			rightBounds.x + rightBounds.w,
 			rightBounds.y + rightBounds.h
 		)
-		draw.Color(table.unpack(Globals.Colors.Text))
+		Common.SetColor(Globals.Colors.Text)
 		local dispW, dispH = draw.GetTextSize(display)
 		Common.DrawText(cx + btnW + sepW + (fixedTextW - dispW) / 2, cy + (totalHeight - dispH) / 2, display)
 		local nextX = cx + btnW + sepW + fixedTextW + sepW
@@ -125,11 +125,11 @@ local function Selector(win, label, selectedIndex, options)
 		elseif nextHovered then
 			nextBg = Globals.Colors.ItemHover
 		end
-		draw.Color(table.unpack(nextBg))
+		Common.SetColor(nextBg)
 		Common.DrawFilledRect(nextX, cy, nextX + btnW, cy + btnH)
-		draw.Color(table.unpack(Globals.Colors.Text))
+		Common.SetColor(Globals.Colors.Text)
 		Common.DrawText(nextX + (btnW - sym2W) / 2, cy + (btnH - sym2H) / 2, ">")
-		draw.Color(table.unpack(Globals.Colors.WindowBorder))
+		Common.SetColor(Globals.Colors.WindowBorder)
 		Common.DrawOutlinedRect(cx, cy, cx + totalWidth, cy + totalHeight)
 	end)
 

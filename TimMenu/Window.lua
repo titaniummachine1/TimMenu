@@ -107,23 +107,23 @@ function Window:_Draw()
 	local bottomPad = Globals.Defaults.WINDOW_CONTENT_PADDING
 
 	-- Background
-	draw.Color(table.unpack(Globals.Colors.Window))
+	Common.SetColor(Globals.Colors.Window)
 	-- Extend background with bottom padding
 	Common.DrawFilledRect(self.X, self.Y + titleHeight, self.X + self.W, self.Y + titleHeight + self.H + bottomPad)
 
 	-- Title bar
-	draw.Color(table.unpack(Globals.Colors.Title))
+	Common.SetColor(Globals.Colors.Title)
 	Common.DrawFilledRect(self.X, self.Y, self.X + self.W, self.Y + titleHeight)
 
 	-- Border
 	if Globals.Style.EnableWindowBorder then
-		draw.Color(table.unpack(Globals.Colors.WindowBorder))
+		Common.SetColor(Globals.Colors.WindowBorder)
 		-- Outline around full window including title and bottom padding
 		Common.DrawOutlinedRect(self.X, self.Y, self.X + self.W, self.Y + titleHeight + self.H + bottomPad)
 	end
 
 	-- Title text
-	draw.Color(table.unpack(Globals.Colors.Text))
+	Common.SetColor(Globals.Colors.Text)
 	local titleX
 	if self._hasHeaderTabs then
 		titleX = self.X + Globals.Defaults.WINDOW_CONTENT_PADDING

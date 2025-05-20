@@ -22,11 +22,11 @@ function LayoutSeparator.Draw(win, label)
 		win:QueueDrawAtLayer(1, function()
 			local absX, absY = win.X + x, win.Y + y
 			local centerY = absY + math.floor(textHeight / 2)
-			draw.Color(table.unpack(Globals.Colors.WindowBorder))
+			Common.SetColor(Globals.Colors.WindowBorder)
 			Common.DrawLine(absX, centerY, absX + (totalWidth - textWidth) / 2 - Globals.Style.ItemPadding, centerY)
-			draw.Color(table.unpack(Globals.Colors.Text))
+			Common.SetColor(Globals.Colors.Text)
 			Common.DrawText(absX + (totalWidth - textWidth) / 2, absY, label)
-			draw.Color(table.unpack(Globals.Colors.WindowBorder))
+			Common.SetColor(Globals.Colors.WindowBorder)
 			Common.DrawLine(
 				absX + (totalWidth + textWidth) / 2 + Globals.Style.ItemPadding,
 				centerY,
@@ -38,7 +38,7 @@ function LayoutSeparator.Draw(win, label)
 		local x, y = win:AddWidget(totalWidth, 1)
 		win:QueueDrawAtLayer(1, function()
 			local absX, absY = win.X + x, win.Y + y
-			draw.Color(table.unpack(Globals.Colors.WindowBorder))
+			Common.SetColor(Globals.Colors.WindowBorder)
 			Common.DrawLine(absX, absY, absX + totalWidth, absY)
 		end)
 	end

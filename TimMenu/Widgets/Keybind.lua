@@ -95,13 +95,13 @@ local function Keybind(win, label, currentKey)
 		elseif hovered then
 			bg = Globals.Colors.ItemHover
 		end
-		draw.Color(table.unpack(bg))
+		Common.SetColor(bg)
 		Common.DrawFilledRect(px, py, px + width, py + height)
 		-- Border
-		draw.Color(table.unpack(Globals.Colors.WindowBorder))
+		Common.SetColor(Globals.Colors.WindowBorder)
 		Common.DrawOutlinedRect(px, py, px + width, py + height)
 		-- Text
-		draw.Color(table.unpack(Globals.Colors.Text))
+		Common.SetColor(Globals.Colors.Text)
 		draw.SetFont(Globals.Style.Font)
 		Common.DrawText(px + pad, py + pad, fullLabel)
 	end)
