@@ -213,10 +213,8 @@ local function ColorPicker(win, label, initColor)
 
 	-- Draw popup only when open so it respects sector layer offsets
 	if state.open then
-		-- Compute sector group offset so popup draws on top of sector content
-		local depth = (win._sectorStack and #win._sectorStack) or 0
-		local layerOffset = depth * Globals.LayersPerGroup
-		local popupLayer = layerOffset + Globals.Layers.Popup
+		-- Always draw popup above all sector content using a high layer
+		local popupLayer = Globals.Layers.Popup + Globals.LayersPerGroup * 100
 		-- Popup background fill
 		DrawManager.Enqueue(win.id, popupLayer, function()
 			Common.SetColor(Globals.Colors.Window)
