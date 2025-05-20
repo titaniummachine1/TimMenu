@@ -1,5 +1,6 @@
 local Globals = require("TimMenu.Globals")
 local Common = require("TimMenu.Common")
+local Interaction = require("TimMenu.Interaction")
 
 local function Button(win, label)
 	assert(type(win) == "table", "Button: win must be a table")
@@ -21,21 +22,18 @@ local function Button(win, label)
 	local x, y = win:AddWidget(width, height)
 	local absX, absY = win.X + x, win.Y + y
 
-	-- Generate a unique ID for this button instance for stateful interaction
-	-- win.id should be unique per window. label provides uniqueness within the window for the button.
-	local widgetUniqueId = win.id .. "##Button##" .. label
-
-	-- Process interaction using the new common function
+	-- Occlusion-aware interaction using Interaction module
 	local areaRect = { x = absX, y = absY, w = width, h = height }
-	local interactionState = Common.ProcessInteraction(widgetUniqueId, areaRect)
+	local hovered = Interaction.IsHovered(win, areaRect)
+	local isDown = hovered and input.IsButtonDown(MOUSE_LEFT)
+	local clicked = Interaction.ConsumeWidgetClick(win, hovered, false)
 
 	win:QueueDrawAtLayer(2, function()
 		local px, py = win.X + x, win.Y + y
 		local bgColor = Globals.Colors.Item
-		-- Use new interaction state for visual feedback
-		if interactionState.isPressed then
+		if isDown then
 			bgColor = Globals.Colors.ItemActive
-		elseif interactionState.isHovered then
+		elseif hovered then
 			bgColor = Globals.Colors.ItemHover
 		end
 		draw.Color(table.unpack(bgColor))
@@ -47,8 +45,7 @@ local function Button(win, label)
 		Common.DrawText(px + padding, py + padding, label)
 	end)
 
-	-- Return true if the button was clicked this frame
-	return interactionState.isClicked
+	return clicked
 end
 
 return Button
