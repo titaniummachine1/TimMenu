@@ -45,9 +45,9 @@ local function Keybind(win, label, currentKey)
 	local absX, absY = win.X + x, win.Y + y
 	local bounds = { x = absX, y = absY, w = width, h = height }
 
-	-- Interaction: click to start listening
-	local hovered = Interaction.IsHovered(win, bounds)
-	local clicked = Interaction.ConsumeWidgetClick(win, hovered, entry.listening)
+	-- Unified interaction processing for click to start/stop listening
+	local widgetKey = key .. ":" .. win._widgetCounter
+	local hovered, pressed, clicked = Interaction.Process(win, widgetKey, bounds, entry.listening)
 	if clicked and not entry.listening then
 		entry.listening = true
 		entry.waitingRelease = true
@@ -70,11 +70,6 @@ local function Keybind(win, label, currentKey)
 				end
 			end
 		end
-	end
-
-	-- Release click state for this widget
-	if not input.IsButtonDown(MOUSE_LEFT) then
-		Interaction.Release(key)
 	end
 
 	-- Update fullLabel to reflect any key changes immediately

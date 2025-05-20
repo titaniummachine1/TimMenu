@@ -19,19 +19,20 @@ local function Button(win, label)
 	end
 
 	-- Get widget position
+	win._widgetCounter = (win._widgetCounter or 0) + 1
+	local widgetIndex = win._widgetCounter
 	local x, y = win:AddWidget(width, height)
 	local absX, absY = win.X + x, win.Y + y
 
-	-- Occlusion-aware interaction using Interaction module
-	local areaRect = { x = absX, y = absY, w = width, h = height }
-	local hovered = Interaction.IsHovered(win, areaRect)
-	local isDown = hovered and input.IsButtonDown(MOUSE_LEFT)
-	local clicked = Interaction.ConsumeWidgetClick(win, hovered, false)
+	-- Unified interaction processing
+	local widgetKey = win.id .. ":Button:" .. label .. ":" .. widgetIndex
+	local bounds = { x = absX, y = absY, w = width, h = height }
+	local hovered, pressed, clicked = Interaction.Process(win, widgetKey, bounds, false)
 
 	win:QueueDrawAtLayer(2, function()
 		local px, py = win.X + x, win.Y + y
 		local bgColor = Globals.Colors.Item
-		if isDown then
+		if pressed then
 			bgColor = Globals.Colors.ItemActive
 		elseif hovered then
 			bgColor = Globals.Colors.ItemHover

@@ -95,13 +95,17 @@ local function Combo(win, label, selected, options)
 	end
 	local x, y = win:AddWidget(width, height)
 	local absX, absY = win.X + x, win.Y + y
-	local hovered = Interaction.IsHovered(win, { x = absX, y = absY, w = width, h = height })
+
+	-- Unified interaction for main combo field
+	local widgetKey = key .. ":" .. win._widgetCounter
+	local bounds = { x = absX, y = absY, w = width, h = height }
+	local hovered, pressed, clicked = Interaction.Process(win, widgetKey, bounds, entry.open)
 	local listH = #options * height
 	local popupBounds = { x = absX, y = absY + height, w = width, h = listH }
-	-- Close popup on outside click using explicit mouse coords and bounds
+	-- Close popup on outside click
 	local mX, mY = table.unpack(input.GetMousePos())
-	Interaction.ClosePopupOnOutsideClick(entry, mX, mY, { x = absX, y = absY, w = width, h = height }, popupBounds, win)
-	local clicked = Interaction.ConsumeWidgetClick(win, hovered, entry.open)
+	Interaction.ClosePopupOnOutsideClick(entry, mX, mY, bounds, popupBounds, win)
+
 	if clicked then
 		if not entry.open and hovered then
 			entry.open, win._widgetBlockedRegions = true, { popupBounds }

@@ -37,38 +37,38 @@ local function Selector(win, label, selectedIndex, options)
 	local x, y = win:AddWidget(totalWidth, totalHeight)
 	local absX, absY = win.X + x, win.Y + y
 
-	local prevKey, nextKey, centerKey = key .. ":prev", key .. ":next", key .. ":center"
 	local mX, mY = table.unpack(input.GetMousePos())
 
-	local prevHover = Interaction.IsHovered(win, { x = absX, y = absY, w = btnW, h = totalHeight })
-	-- Next arrow hover region, include previous arrow width
-	local nextHover =
-		Interaction.IsHovered(win, { x = absX + btnW + sepW + fixedTextW + sepW, y = absY, w = btnW, h = totalHeight })
-
-	if prevHover and Interaction.IsPressed(prevKey) then
+	-- Unified interaction for prev arrow
+	local prevBounds = { x = absX, y = absY, w = btnW, h = totalHeight }
+	local widgetKeyPrev = key .. ":prev:" .. win._widgetCounter
+	local prevHovered, prevDown, prevClicked = Interaction.Process(win, widgetKeyPrev, prevBounds, false)
+	if prevClicked then
 		entry.selected = entry.selected - 1
 		if entry.selected < 1 then
 			entry.selected = #options
 		end
 		entry.changed = true
 	end
-	if not input.IsButtonDown(MOUSE_LEFT) then
-		Interaction.Release(prevKey)
-	end
-	if nextHover and Interaction.IsPressed(nextKey) then
+
+	-- Unified interaction for next arrow
+	local nextBounds = { x = absX + btnW + sepW + fixedTextW + sepW, y = absY, w = btnW, h = totalHeight }
+	local widgetKeyNext = key .. ":next:" .. win._widgetCounter
+	local nextHovered, nextDown, nextClicked = Interaction.Process(win, widgetKeyNext, nextBounds, false)
+	if nextClicked then
 		entry.selected = entry.selected + 1
 		if entry.selected > #options then
 			entry.selected = 1
 		end
 		entry.changed = true
 	end
-	if not input.IsButtonDown(MOUSE_LEFT) then
-		Interaction.Release(nextKey)
-	end
 
-	local textBounds = { x = absX + btnW + sepW, y = absY, w = fixedTextW, h = totalHeight }
-	if Interaction.IsHovered(win, textBounds) and Interaction.IsPressed(centerKey) then
-		if mX < textBounds.x + textBounds.w / 2 then
+	-- Unified interaction for center area
+	local centerBounds = { x = absX + btnW + sepW, y = absY, w = fixedTextW, h = totalHeight }
+	local widgetKeyCenter = key .. ":center:" .. win._widgetCounter
+	local centerHovered, centerDown, centerClicked = Interaction.Process(win, widgetKeyCenter, centerBounds, false)
+	if centerClicked then
+		if mX < centerBounds.x + centerBounds.w / 2 then
 			entry.selected = entry.selected - 1
 			if entry.selected < 1 then
 				entry.selected = #options
@@ -81,17 +81,14 @@ local function Selector(win, label, selectedIndex, options)
 		end
 		entry.changed = true
 	end
-	if not input.IsButtonDown(MOUSE_LEFT) then
-		Interaction.Release(centerKey)
-	end
 
 	win:QueueDrawAtLayer(2, function()
 		local cx, cy = win.X + x, win.Y + y
 		-- Prev arrow background and text
 		local prevBg = Globals.Colors.Item
-		if Interaction._PressState[prevKey] then
+		if prevDown then
 			prevBg = Globals.Colors.ItemActive
-		elseif prevHover then
+		elseif prevHovered then
 			prevBg = Globals.Colors.ItemHover
 		end
 		draw.Color(table.unpack(prevBg))
@@ -122,9 +119,9 @@ local function Selector(win, label, selectedIndex, options)
 		Common.DrawText(cx + btnW + sepW + (fixedTextW - dispW) / 2, cy + (totalHeight - dispH) / 2, display)
 		local nextX = cx + btnW + sepW + fixedTextW + sepW
 		local nextBg = Globals.Colors.Item
-		if Interaction._PressState[nextKey] then
+		if nextDown then
 			nextBg = Globals.Colors.ItemActive
-		elseif nextHover then
+		elseif nextHovered then
 			nextBg = Globals.Colors.ItemHover
 		end
 		draw.Color(table.unpack(nextBg))

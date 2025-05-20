@@ -88,14 +88,13 @@ local function TabControl(win, id, tabs, defaultSelection, isHeader)
 			local keyBtn = id .. ":tab:" .. item.lbl
 			local absX, absY = cursorX, startY
 			local offsetX, offsetY = absX - win.X, absY - win.Y
-			-- Interaction
-			local hover = Interaction.IsHovered(win, { x = absX, y = absY, w = item.bw, h = item.bh })
-			if hover and Interaction.IsPressed(keyBtn) then
+			-- Unified interaction for header tab
+			local widgetKey = keyBtn .. ":" .. win._widgetCounter
+			local bounds = { x = absX, y = absY, w = item.bw, h = item.bh }
+			local hover, press, click = Interaction.Process(win, widgetKey, bounds, false)
+			if click then
 				entry.selected = i
 				entry.changed = true
-			end
-			if not input.IsButtonDown(MOUSE_LEFT) then
-				Interaction.Release(keyBtn)
 			end
 			-- Hover underline for non-selected tabs (dynamic positioning)
 			if hover and not isSel then
@@ -161,15 +160,13 @@ local function TabControl(win, id, tabs, defaultSelection, isHeader)
 		local bx, by = win.cursorX, startY
 		local absX, absY = win.X + bx, win.Y + by
 
-		-- Interaction
-		local hover = Interaction.IsHovered(win, { x = absX, y = absY, w = bw, h = bh })
-		local keyBtn = id .. ":tab:" .. lbl
-		if hover and Interaction.IsPressed(keyBtn) then
+		-- Unified interaction for non-header tab
+		local widgetKey = id .. ":tab:" .. lbl .. ":" .. win._widgetCounter
+		local bounds = { x = absX, y = absY, w = bw, h = bh }
+		local hover, press, click = Interaction.Process(win, widgetKey, bounds, false)
+		if click then
 			entry.selected = i
 			entry.changed = true
-		end
-		if not input.IsButtonDown(MOUSE_LEFT) then
-			Interaction.Release(keyBtn)
 		end
 
 		-- Background (layer 1)

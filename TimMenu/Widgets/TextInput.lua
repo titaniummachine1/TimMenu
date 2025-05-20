@@ -115,25 +115,24 @@ local function TextInput(win, label, text)
 	local x, y = win:AddWidget(width, height) -- Reserve space
 	local absX, absY = win.X + x, win.Y + y
 	local bounds = { x = absX, y = absY, w = width, h = height }
-	local hovered = Interaction.IsHovered(win, bounds)
-	local changed = false
 
-	if input.IsButtonPressed(MOUSE_LEFT) then
-		if hovered then
-			if not entry.active then
-				entry.active = true
-				for k, _ in pairs(entry.debouncedKeys) do
-					entry.debouncedKeys[k] = false
-				end
-				entry.keyStates = {} -- Reset key repeat states on activation
-			end
-		elseif entry.active then
-			entry.active = false
-			for k, _ in pairs(entry.debouncedKeys) do
-				entry.debouncedKeys[k] = false
-			end
-			entry.keyStates = {} -- Reset key repeat states on deactivation
+	-- Unified mouse interaction for activation/deactivation
+	local widgetKey = win.id .. ":TextInput:" .. label .. ":" .. win._widgetCounter
+	local hovered, pressed, clicked = Interaction.Process(win, widgetKey, bounds, false)
+	local changed = false
+	if clicked and not entry.active then
+		entry.active = true
+		-- reset states on activation
+		for k in pairs(entry.debouncedKeys) do
+			entry.debouncedKeys[k] = false
 		end
+		entry.keyStates = {}
+	elseif input.IsButtonPressed(MOUSE_LEFT) and entry.active and not hovered then
+		entry.active = false
+		for k in pairs(entry.debouncedKeys) do
+			entry.debouncedKeys[k] = false
+		end
+		entry.keyStates = {}
 	end
 
 	if entry.active then

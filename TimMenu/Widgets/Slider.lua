@@ -40,6 +40,8 @@ local function Slider(win, label, value, min, max, step)
 	local widgetKey = win.id .. ":slider:" .. label
 	local hovered, down, clicked =
 		Interaction.Process(win, widgetKey, { x = absX, y = absY, w = width, h = height }, false)
+	-- Retrieve mouse position for dragging computations
+	local mX, mY = table.unpack(input.GetMousePos())
 	local dragging = sliderDragState[widgetKey] or false
 	if clicked then
 		dragging = true

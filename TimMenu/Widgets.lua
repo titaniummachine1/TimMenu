@@ -2,7 +2,6 @@
 local Button = require("TimMenu.Widgets.Button")
 local Checkbox = require("TimMenu.Widgets.Checkbox")
 local Slider = require("TimMenu.Widgets.Slider")
-local Separator = require("TimMenu.Widgets.Separator")
 local TextInput = require("TimMenu.Widgets.TextInput")
 local Dropdown = require("TimMenu.Widgets.Dropdown")
 local Combo = require("TimMenu.Widgets.Combo")
@@ -14,7 +13,6 @@ return {
 	Button = Button,
 	Checkbox = Checkbox,
 	Slider = Slider,
-	Separator = Separator,
 	TextInput = TextInput,
 	Dropdown = Dropdown,
 	Combo = Combo,

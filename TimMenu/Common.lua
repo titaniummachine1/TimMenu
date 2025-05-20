@@ -103,46 +103,7 @@ function Common.IsMouseInRect(x, y, w, h)
 	return (mX >= x) and (mX <= x + w) and (mY >= y) and (mY <= y + h)
 end
 
---- Processes and returns the interaction state for a UI element.
---- Uses TimMenuGlobal.InputState for global mouse status and
---- gui.GetValue/SetValue for per-widget persistent state across frames.
---- @param widgetUniqueId string A unique identifier for the widget instance.
---- @param areaRect table {x, y, w, h} The widget's screen area.
---- @return table InteractionState {isHovered, isPressed, isClicked, isReleased}
-function Common.ProcessInteraction(widgetUniqueId, areaRect)
-	assert(type(widgetUniqueId) == "string", "widgetUniqueId must be a string")
-	assert(type(areaRect) == "table", "areaRect must be a table")
-	assert(
-		type(areaRect.x) == "number"
-			and type(areaRect.y) == "number"
-			and type(areaRect.w) == "number"
-			and type(areaRect.h) == "number",
-		"areaRect must contain x,y,w,h numbers"
-	)
-
-	local globalInputState = TimMenuGlobal.InputState -- from Main.lua {isLeftMouseDown, wasLeftMouseDownLastFrame}
-
-	local isHovered = Common.IsMouseInRect(areaRect.x, areaRect.y, areaRect.w, areaRect.h)
-
-	-- Retrieve this widget's pressed state from the PREVIOUS frame
-	-- The default `false` is important for the first frame a widget appears.
-	local wasWidgetPressedLastFrame = gui.GetValue(widgetUniqueId .. "_TimMenu_pressed_last_frame") or false
-
-	local isWidgetPressedNow = isHovered and globalInputState.isLeftMouseDown
-
-	local isClickedNow = isWidgetPressedNow and not wasWidgetPressedLastFrame
-	local isReleasedNow = not isWidgetPressedNow and wasWidgetPressedLastFrame and isHovered -- Released while hovering
-
-	-- Store current pressed state for the NEXT frame for this specific widget
-	gui.SetValue(widgetUniqueId .. "_TimMenu_pressed_last_frame", isWidgetPressedNow)
-
-	return {
-		isHovered = isHovered,
-		isPressed = isWidgetPressedNow, -- True if mouse is down over the widget THIS frame
-		isClicked = isClickedNow, -- True if a new press started on this widget THIS frame
-		isReleased = isReleasedNow, -- True if mouse was released over this widget THIS frame (after being pressed on it)
-	}
-end
+-- ProcessInteraction removed; use Interaction.Process for unified hover/press/click logic
 
 --------------------------------------------------------------------------------
 -- Draw Wrappers
