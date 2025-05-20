@@ -62,8 +62,9 @@ function Window.new(params)
 	return self
 end
 
---- Queue a drawing function under a specified layer
+--- Queue a drawing function under a specified numeric layer
 function Window:QueueDrawAtLayer(layer, drawFunc, ...)
+	-- Only integer layer values are supported
 	DrawManager.Enqueue(self.id, layer, drawFunc, ...)
 end
 

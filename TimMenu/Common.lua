@@ -9,6 +9,7 @@ local callbacks = callbacks
 local TimMenuGlobal = TimMenuGlobal
 
 local Utils = require("TimMenu.Utils")
+local Globals = require("TimMenu.Globals") -- Import the Globals module for Colors and Style.
 
 local Common = {}
 
@@ -156,6 +157,64 @@ function Common.DrawTexturedRect(id, x1, y1, x2, y2)
 	if draw.TexturedRect then
 		draw.TexturedRect(id, math.floor(x1), math.floor(y1), math.floor(x2), math.floor(y2))
 	end
+end
+
+--------------------------------------------------------------------------------
+-- Color & Draw Queue Helpers
+--------------------------------------------------------------------------------
+--- Sets the draw color from a color table.
+---@param colorTbl table {r,g,b,a}
+function Common.SetColor(colorTbl)
+	draw.Color(table.unpack(colorTbl))
+end
+
+--- Queues a filled rectangle with optional border at specified layer.
+---@param window table Window object
+---@param layer number Draw layer
+---@param x1 number
+---@param y1 number
+---@param x2 number
+---@param y2 number
+---@param fillColor table optional, defaults to Globals.Colors.Item
+---@param borderColor table optional
+function Common.QueueRect(window, layer, x1, y1, x2, y2, fillColor, borderColor)
+	window:QueueDrawAtLayer(layer, function()
+		Common.SetColor(fillColor or Globals.Colors.Item)
+		Common.DrawFilledRect(x1, y1, x2, y2)
+		if borderColor then
+			Common.SetColor(borderColor)
+			Common.DrawOutlinedRect(x1, y1, x2, y2)
+		end
+	end)
+end
+
+--- Queues a line draw at specified layer.
+---@param window table Window object
+---@param layer number Draw layer
+---@param x1 number
+---@param y1 number
+---@param x2 number
+---@param y2 number
+---@param colorTbl table optional, defaults to Globals.Colors.Text
+function Common.QueueLine(window, layer, x1, y1, x2, y2, colorTbl)
+	window:QueueDrawAtLayer(layer, function()
+		Common.SetColor(colorTbl or Globals.Colors.Text)
+		Common.DrawLine(x1, y1, x2, y2)
+	end)
+end
+
+--- Queues a text draw at specified layer.
+---@param window table Window object
+---@param layer number
+---@param x number
+---@param y number
+---@param text string
+---@param colorTbl table optional, defaults to Globals.Colors.Text
+function Common.QueueText(window, layer, x, y, text, colorTbl)
+	window:QueueDrawAtLayer(layer, function()
+		Common.SetColor(colorTbl or Globals.Colors.Text)
+		Common.DrawText(x, y, text)
+	end)
 end
 
 --------------------------------------------------------------------------------

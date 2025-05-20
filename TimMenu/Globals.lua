@@ -104,4 +104,12 @@ Globals.Defaults.DebugHeaderX = math.ceil(Globals.Defaults.DebugHeaderX * scale)
 Globals.Defaults.DebugHeaderY = math.ceil(Globals.Defaults.DebugHeaderY * scale)
 Globals.Defaults.DebugLineSpacing = math.ceil(Globals.Defaults.DebugLineSpacing * scale)
 
+-- Draw Layers Enumeration
+Globals.Layers = {
+	WindowBackground = 0,
+	TitleBar = 1,
+	Widget = 2,
+	Popup = 3,
+}
+
 return Globals
