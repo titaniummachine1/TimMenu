@@ -6,6 +6,8 @@ local DrawHelpers = require("TimMenu.DrawHelpers")
 -- Draw helpers for combo field and popup
 local function DrawComboField(win, relX, relY, width, height, pad, label, entryOpen, hovered, arrowW, arrowH)
 	local absX, absY = win.X + relX, win.Y + relY
+	-- Ensure correct font for combo field
+	draw.SetFont(Globals.Style.Font)
 	local arrowBoxW, arrowBoxX = height, absX + width - height
 	local mainBgW = width - arrowBoxW
 	local bgColor = Globals.Colors.Item
@@ -41,6 +43,8 @@ end
 
 local function DrawComboPopupItem(win, relX, relY, width, height, pad, opt, isHovered, boxSize, isSelected)
 	local absX, absY = win.X + relX, win.Y + relY
+	-- Ensure correct font for combo popup items
+	draw.SetFont(Globals.Style.Font)
 	draw.Color(table.unpack(isHovered and Globals.Colors.ItemHover or Globals.Colors.Item))
 	Common.DrawFilledRect(absX, absY, absX + width, absY + height)
 	local bx, by = absX + pad, absY + (height / 2) - (boxSize / 2)
@@ -52,6 +56,7 @@ local function DrawComboPopupItem(win, relX, relY, width, height, pad, opt, isHo
 		Common.DrawFilledRect(bx + m, by + m, bx + boxSize - m, by + boxSize - m)
 	end
 	draw.Color(table.unpack(Globals.Colors.Text))
+	-- Use correct font to measure text
 	local _, optH = draw.GetTextSize(opt)
 	Common.DrawText(bx + boxSize + pad, absY + (height / 2) - (optH / 2), opt)
 end

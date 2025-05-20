@@ -203,7 +203,7 @@ function Common.QueueLine(window, layer, x1, y1, x2, y2, colorTbl)
 	end)
 end
 
---- Queues a text draw at specified layer
+--- Queues a text draw at specified layer using the default widget font
 ---@param window table Window object
 ---@param layer number Draw layer for text
 ---@param x number
@@ -212,6 +212,8 @@ end
 ---@param colorTbl table optional, defaults to Globals.Colors.Text
 function Common.QueueText(window, layer, x, y, text, colorTbl)
 	window:QueueDrawAtLayer(layer, function()
+		-- Ensure default font is set for each queued text
+		draw.SetFont(Globals.Style.Font)
 		Common.SetColor(colorTbl or Globals.Colors.Text)
 		Common.DrawText(x, y, text)
 	end)

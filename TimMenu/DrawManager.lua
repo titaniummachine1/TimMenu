@@ -1,4 +1,4 @@
-local DrawManager = { queue = {} }
+local DrawManager = { queue = {}, _nextSeq = 0 }
 
 --- Enqueue a draw call under a given window and layer
 ---@param windowId string the ID of the window
@@ -6,18 +6,21 @@ local DrawManager = { queue = {} }
 ---@param fn function the draw function
 ---@param ... any additional arguments for fn
 function DrawManager.Enqueue(windowId, layer, fn, ...)
+	-- assign a sequence for stable ordering among same-layer entries
+	DrawManager._nextSeq = DrawManager._nextSeq + 1
 	table.insert(DrawManager.queue, {
 		windowId = windowId,
 		layer = layer,
 		fn = fn,
 		args = { ... },
+		seq = DrawManager._nextSeq,
 	})
 end
 
 --- Flush all queued draw calls in proper back-to-front order
 ---@param zOrder table an array of window IDs in z-order (back to front)
 function DrawManager.Flush(zOrder)
-	-- Sort by window z-order then layer
+	-- Sort by window z-order then layer, then by insertion sequence to avoid z-fighting
 	table.sort(DrawManager.queue, function(a, b)
 		local za, zb
 		for i, id in ipairs(zOrder) do
@@ -31,7 +34,10 @@ function DrawManager.Flush(zOrder)
 		if za ~= zb then
 			return za < zb
 		end
-		return a.layer < b.layer
+		if a.layer ~= b.layer then
+			return a.layer < b.layer
+		end
+		return a.seq < b.seq
 	end)
 
 	-- Execute all draw functions
@@ -56,9 +62,12 @@ function DrawManager.FlushWindow(windowId)
 			table.insert(keep, entry)
 		end
 	end
-	-- Sort this window's entries by layer
+	-- Sort this window's entries by layer (with sequence tiebreak)
 	table.sort(toFlush, function(a, b)
-		return a.layer < b.layer
+		if a.layer ~= b.layer then
+			return a.layer < b.layer
+		end
+		return a.seq < b.seq
 	end)
 	-- Execute draw calls for this window
 	for _, entry in ipairs(toFlush) do

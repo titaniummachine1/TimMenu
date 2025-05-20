@@ -6,6 +6,8 @@ local DrawHelpers = require("TimMenu.DrawHelpers")
 -- Draw helpers for dropdown field and popup
 local function DrawDropdownField(win, relX, relY, width, height, pad, label, entryOpen, hovered, arrowW, arrowH)
 	local absX, absY = win.X + relX, win.Y + relY
+	-- Ensure correct font for dropdown field
+	draw.SetFont(Globals.Style.Font)
 	local arrowBoxW = height
 	local arrowBoxX = absX + width - arrowBoxW
 	local mainBgWidth = width - arrowBoxW
@@ -22,6 +24,7 @@ local function DrawDropdownField(win, relX, relY, width, height, pad, label, ent
 	draw.Color(table.unpack(Globals.Colors.WindowBorder))
 	Common.DrawOutlinedRect(absX, absY, absX + width, absY + height)
 	draw.Color(table.unpack(Globals.Colors.Text))
+	-- Use correct font to measure text
 	local _, txtH = draw.GetTextSize(label)
 	Common.DrawText(absX + pad, absY + (height - txtH) / 2, label)
 	local actualArrowW, actualArrowH = arrowW * 0.5, arrowH * 0.5
@@ -38,6 +41,8 @@ end
 
 local function DrawDropdownPopupItem(win, relX, relY, width, itemH, pad, opt, isHovered)
 	local absX, absY = win.X + relX, win.Y + relY
+	-- Ensure correct font for popup items
+	draw.SetFont(Globals.Style.Font)
 	draw.Color(table.unpack(isHovered and Globals.Colors.ItemHover or Globals.Colors.Item))
 	Common.DrawFilledRect(absX, absY, absX + width, absY + itemH)
 	draw.Color(table.unpack(Globals.Colors.Text))

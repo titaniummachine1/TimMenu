@@ -17,6 +17,40 @@ end
 
 Setup()
 
+-- Next-widget font override state
+local nextWidgetFont = nil
+
+--- Override font for the next widget only.
+---@param name string Font name (Globals.Style.FontName)
+---@param size number Font size
+---@param weight number Font weight
+function TimMenu.SetFontNext(name, size, weight)
+	nextWidgetFont = { name = name, size = size, weight = weight }
+end
+
+local function applyNextWidgetFont()
+	if nextWidgetFont then
+		local s = Globals.Style
+		local prev = { name = s.FontName, size = s.FontSize, weight = s.FontWeight }
+		s.FontName = nextWidgetFont.name
+		s.FontSize = nextWidgetFont.size
+		s.FontWeight = nextWidgetFont.weight
+		Globals.ReloadFonts()
+		nextWidgetFont = nil
+		return prev
+	end
+end
+
+local function restoreWidgetFont(prev)
+	if prev then
+		local s = Globals.Style
+		s.FontName = prev.name
+		s.FontSize = prev.size
+		s.FontWeight = prev.weight
+		Globals.ReloadFonts()
+	end
+end
+
 -- Local variable to track the window currently being defined by Begin/End
 local _currentWindow = nil
 
@@ -88,7 +122,10 @@ function TimMenu.Button(label)
 	assert(type(label) == "string", "TimMenu.Button: 'label' must be a string, got " .. type(label))
 	local win = TimMenu.GetCurrentWindow()
 	assert(win, "TimMenu.Button: no active window. Ensure TimMenu.Begin() was called before using widget functions.")
-	return Widgets.Button(win, label)
+	local prevFont = applyNextWidgetFont()
+	local clicked = Widgets.Button(win, label)
+	restoreWidgetFont(prevFont)
+	return clicked
 end
 
 --- Draws a checkbox and returns its new state.
@@ -97,7 +134,10 @@ function TimMenu.Checkbox(label, state)
 	assert(type(state) == "boolean", "TimMenu.Checkbox: 'state' must be boolean, got " .. type(state))
 	local win = TimMenu.GetCurrentWindow()
 	assert(win, "TimMenu.Checkbox: no active window. Ensure TimMenu.Begin() was called before using widget functions.")
-	return Widgets.Checkbox(win, label, state)
+	local prevFont = applyNextWidgetFont()
+	local newState, clicked = Widgets.Checkbox(win, label, state)
+	restoreWidgetFont(prevFont)
+	return newState, clicked
 end
 
 --- Draws static text in the current window.
@@ -187,7 +227,10 @@ function TimMenu.Slider(label, value, min, max, step)
 	assert(type(step) == "number", "TimMenu.Slider: 'step' must be a number, got " .. type(step))
 	local win = TimMenu.GetCurrentWindow()
 	assert(win, "TimMenu.Slider: no active window. Ensure TimMenu.Begin() was called before using widget functions.")
-	return Widgets.Slider(win, label, value, min, max, step)
+	local prevFont = applyNextWidgetFont()
+	local newValue, changed = Widgets.Slider(win, label, value, min, max, step)
+	restoreWidgetFont(prevFont)
+	return newValue, changed
 end
 
 --- Draws a horizontal separator in the current window; optional centered label.
@@ -207,7 +250,10 @@ function TimMenu.TextInput(label, text)
 	assert(type(text) == "string", "TimMenu.TextInput: 'text' must be a string, got " .. type(text))
 	local win = TimMenu.GetCurrentWindow()
 	assert(win, "TimMenu.TextInput: no active window. Ensure TimMenu.Begin() was called before using widget functions.")
-	return Widgets.TextInput(win, label, text)
+	local prevFont = applyNextWidgetFont()
+	local newText, changed = Widgets.TextInput(win, label, text)
+	restoreWidgetFont(prevFont)
+	return newText, changed
 end
 
 --- Dropdown list; returns new index and whether it changed.
@@ -222,7 +268,10 @@ function TimMenu.Dropdown(label, selectedIndex, options)
 	local win = TimMenu.GetCurrentWindow()
 	-- Assert active window context
 	assert(win, "TimMenu.Dropdown: no active window. Ensure TimMenu.Begin() was called before using widget functions.")
-	return Widgets.Dropdown(win, label, selectedIndex, options)
+	local prevFont = applyNextWidgetFont()
+	local newIdx, changed = Widgets.Dropdown(win, label, selectedIndex, options)
+	restoreWidgetFont(prevFont)
+	return newIdx, changed
 end
 
 --- Draws a multi-selection combo box; returns a table of booleans and whether changed.
@@ -235,7 +284,10 @@ function TimMenu.Combo(label, selectedTable, options)
 	assert(type(options) == "table", "TimMenu.Combo: 'options' must be a table, got " .. type(options))
 	local win = TimMenu.GetCurrentWindow()
 	assert(win, "TimMenu.Combo: no active window. Ensure TimMenu.Begin() was called before using widget functions.")
-	return Widgets.Combo(win, label, selectedTable, options)
+	local prevFont = applyNextWidgetFont()
+	local newTable, changed = Widgets.Combo(win, label, selectedTable, options)
+	restoreWidgetFont(prevFont)
+	return newTable, changed
 end
 
 --- Cyclic selector (< value >); returns new index and whether it changed.
@@ -251,7 +303,10 @@ function TimMenu.Selector(label, selectedIndex, options)
 	assert(type(options) == "table", "TimMenu.Selector: 'options' must be a table, got " .. type(options))
 	local win = TimMenu.GetCurrentWindow()
 	assert(win, "TimMenu.Selector: no active window. Ensure TimMenu.Begin() was called before using widget functions.")
-	return Widgets.Selector(win, label, selectedIndex, options)
+	local prevFont = applyNextWidgetFont()
+	local newIdx, changed = Widgets.Selector(win, label, selectedIndex, options)
+	restoreWidgetFont(prevFont)
+	return newIdx, changed
 end
 
 --- Draws a tab control row and returns the newly selected tab index.
@@ -268,7 +323,9 @@ function TimMenu.TabControl(id, tabs, defaultSelection)
 		"TimMenu.TabControl: no active window. Ensure TimMenu.Begin() was called before using widget functions."
 	)
 	-- Call core TabControl to get index and changed flag
+	local prevFont = applyNextWidgetFont()
 	local newIndex, changed = Widgets.TabControl(win, id, tabs, defaultSelection)
+	restoreWidgetFont(prevFont)
 	-- If defaultSelection was a string, return label instead of index for backward compatibility
 	if type(defaultSelection) == "string" then
 		return tabs[newIndex], changed
@@ -404,7 +461,10 @@ function TimMenu.Keybind(label, currentKey)
 	assert(type(label) == "string", "TimMenu.Keybind: 'label' must be a string, got " .. type(label))
 	local win = TimMenu.GetCurrentWindow()
 	assert(win, "TimMenu.Keybind: no active window. Ensure TimMenu.Begin() was called before using widget functions.")
-	return Widgets.Keybind(win, label, currentKey)
+	local prevFont = applyNextWidgetFont()
+	local keycode, changed = Widgets.Keybind(win, label, currentKey)
+	restoreWidgetFont(prevFont)
+	return keycode, changed
 end
 
 --- Change the normal font for widgets at runtime
