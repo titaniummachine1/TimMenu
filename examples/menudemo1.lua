@@ -10,6 +10,8 @@ local dropdownIndex1 = 1
 local comboState1 = { false, false, false }
 -- Keybind demo state
 local bindKey1 = 0
+-- Color picker demo state
+local pickerColor1 = { 255, 0, 0, 255 }
 
 -- TabControl demo state
 local tabOptions1 = { "Tab 1", "Tab 2", "Tab 3" }
@@ -67,6 +69,13 @@ local function OnDraw_Menudemo1()
 			TimMenu.Separator()
 		end
 		TimMenu.NextLine() -- Ensure content below header tabs starts on a new line.
+
+		-- Color Picker demonstration
+		pickerColor1, changedColor1 = TimMenu.ColorPicker("Pick Color", pickerColor1)
+		if changedColor1 then
+			print("[Menudemo1] Picked color: ", pickerColor1[1], pickerColor1[2], pickerColor1[3])
+		end
+		TimMenu.NextLine()
 
 		-- First row: Demonstrate multiple widgets and alignment
 		TimMenu.BeginSector("Multi-Widget Area")

@@ -118,4 +118,9 @@ Globals.Layers = {
 -- Number of layers reserved per nested layout group (e.g., sectors)
 Globals.LayersPerGroup = 10
 
+-- Preload interactive widget images (e.g., color picker circle)
+local ImgDecoder = require("TimMenu.images.imageDecoder")
+Globals.Images = Globals.Images or {}
+Globals.Images.ColorPicker = { Interactive = ImgDecoder }
+
 return Globals

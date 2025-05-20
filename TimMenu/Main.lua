@@ -493,6 +493,23 @@ function TimMenu.FontReset()
 	Globals.ReloadFonts()
 end
 
+--- Draws a color picker and returns a new color and whether it changed.
+---@param label string The label for the color picker widget.
+---@param color table {r,g,b,a} The initial RGBA color table.
+---@return table newColor The updated RGBA color.
+---@return boolean changed True if the color was changed this frame.
+function TimMenu.ColorPicker(label, color)
+	assert(type(label) == "string", "TimMenu.ColorPicker: 'label' must be a string, got " .. type(label))
+	assert(
+		type(color) == "table" and #color >= 3,
+		"TimMenu.ColorPicker: 'color' must be a table of at least three numbers, got " .. type(color)
+	)
+	local win = TimMenu.GetCurrentWindow()
+	assert(win, "TimMenu.ColorPicker: no active window. Ensure TimMenu.Begin() was called before using this widget.")
+	local newColor, changed = Widgets.ColorPicker(win, label, color)
+	return newColor, changed
+end
+
 -- expose TimMenu globally for convenience
 _G.TimMenu = TimMenu
 return TimMenu

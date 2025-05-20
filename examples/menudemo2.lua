@@ -13,6 +13,8 @@ local dropdownIndex2 = 1
 local comboState2 = { false, false, false, false }
 -- Keybind demo state
 local bindKey2 = 0
+-- Color picker demo state
+local pickerColor2 = { 0, 255, 0, 255 }
 
 local function OnDraw_Menudemo2()
 	if TimMenu.Begin("Demo Window 2 - Advanced") then
@@ -30,6 +32,11 @@ local function OnDraw_Menudemo2()
 			TimMenu.NextLine()
 			if TimMenu.Button("Run Action") then
 				print("[Menudemo2] Action executed")
+			end
+			-- Color Picker in Main tab
+			pickerColor2, changedColor2 = TimMenu.ColorPicker("Main Color", pickerColor2)
+			if changedColor2 then
+				print("[Menudemo2] New color: ", pickerColor2[1], pickerColor2[2], pickerColor2[3])
 			end
 			TimMenu.NextLine()
 			-- Keybind widget
