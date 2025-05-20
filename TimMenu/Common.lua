@@ -203,9 +203,9 @@ function Common.QueueLine(window, layer, x1, y1, x2, y2, colorTbl)
 	end)
 end
 
---- Queues a text draw at specified layer.
+--- Queues a text draw at specified layer
 ---@param window table Window object
----@param layer number
+---@param layer number Draw layer for text
 ---@param x number
 ---@param y number
 ---@param text string
@@ -214,6 +214,21 @@ function Common.QueueText(window, layer, x, y, text, colorTbl)
 	window:QueueDrawAtLayer(layer, function()
 		Common.SetColor(colorTbl or Globals.Colors.Text)
 		Common.DrawText(x, y, text)
+	end)
+end
+
+--- Queues only an outlined rectangle at specified layer, without fill.
+---@param window table Window object
+---@param layer number Draw layer
+---@param x1 number
+---@param y1 number
+---@param x2 number
+---@param y2 number
+---@param colorTbl table optional, defaults to Globals.Colors.WindowBorder
+function Common.QueueOutlinedRect(window, layer, x1, y1, x2, y2, colorTbl)
+	window:QueueDrawAtLayer(layer, function()
+		Common.SetColor(colorTbl or Globals.Colors.WindowBorder)
+		Common.DrawOutlinedRect(x1, y1, x2, y2)
 	end)
 end
 

@@ -37,7 +37,7 @@ local function Slider(win, label, value, min, max, step)
 	norm = math.min(1, math.max(0, norm))
 
 	-- Unified interaction processing
-	local widgetKey = win.id .. ":slider:" .. label
+	local widgetKey = win.id .. ":slider:" .. label .. ":" .. widgetIndex
 	local hovered, down, clicked =
 		Interaction.Process(win, widgetKey, { x = absX, y = absY, w = width, h = height }, false)
 	-- Retrieve mouse position for dragging computations
@@ -63,21 +63,32 @@ local function Slider(win, label, value, min, max, step)
 		end
 	end
 
-	-- Draw slider (layer 2): hv=hovered
-	win:QueueDrawAtLayer(2, function(hv)
-		local px, py = win.X + x, win.Y + y
-		local bg = hv and Globals.Colors.ItemHover or Globals.Colors.Item
-		draw.Color(table.unpack(bg))
-		Common.DrawFilledRect(px, py, px + width, py + height)
-		local fillCol = dragging and Globals.Colors.HighlightActive or Globals.Colors.Highlight
-		draw.Color(table.unpack(fillCol))
-		Common.DrawFilledRect(px, py, px + (width * norm), py + height)
-		draw.Color(table.unpack(Globals.Colors.WindowBorder))
-		Common.DrawOutlinedRect(px, py, px + width, py + height)
-		draw.Color(table.unpack(Globals.Colors.Text))
-		draw.SetFont(Globals.Style.Font)
-		Common.DrawText(px + (width - txtW) * 0.5, py + (height - txtH) * 0.5, labelText)
-	end, hovered)
+	-- Draw slider background at its background layer
+	local px, py = win.X + x, win.Y + y
+	local bgColor = hovered and Globals.Colors.ItemHover or Globals.Colors.Item
+	Common.QueueRect(win, Globals.Layers.WidgetBackground, px, py, px + width, py + height, bgColor)
+	-- Draw fill at its fill layer
+	local fillColor = dragging and Globals.Colors.HighlightActive or Globals.Colors.Highlight
+	Common.QueueRect(win, Globals.Layers.WidgetFill, px, py, px + (width * norm), py + height, fillColor)
+	-- Draw outline at its outline layer
+	Common.QueueOutlinedRect(
+		win,
+		Globals.Layers.WidgetOutline,
+		px,
+		py,
+		px + width,
+		py + height,
+		Globals.Colors.WindowBorder
+	)
+	-- Draw label text at its text layer
+	Common.QueueText(
+		win,
+		Globals.Layers.WidgetText,
+		px + (width - txtW) * 0.5,
+		py + (height - txtH) * 0.5,
+		labelText,
+		Globals.Colors.Text
+	)
 
 	return value, changed
 end

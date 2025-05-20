@@ -95,7 +95,16 @@ local function Dropdown(win, label, selectedIndex, options)
 
 	if clicked then
 		if not entry.open and hovered then
+			-- Open popup and block its region
 			entry.open, win._widgetBlockedRegions = true, { popupBounds }
+			-- Bring this window to front so popup renders above all
+			for i, id in ipairs(TimMenuGlobal.order) do
+				if id == win.id then
+					table.remove(TimMenuGlobal.order, i)
+					break
+				end
+			end
+			table.insert(TimMenuGlobal.order, win.id)
 		elseif entry.open then
 			if Interaction.IsHovered(win, popupBounds) then
 				local idx = math.floor((input.GetMousePos()[2] - popupBounds.y) / height) + 1
@@ -125,14 +134,14 @@ local function Dropdown(win, label, selectedIndex, options)
 	)
 	if entry.open then
 		local popupX, popupY = x, y + height
-		-- Background behind popup list
-		win:QueueDrawAtLayer(3, DrawDropdownPopupBackground, win, popupX, popupY, width, listH)
+		-- Popup background at Popup layer
+		win:QueueDrawAtLayer(Globals.Layers.Popup, DrawDropdownPopupBackground, win, popupX, popupY, width, listH)
+		-- Popup items at Popup layer
 		for i, opt in ipairs(options) do
 			local isH =
 				Interaction.IsHovered(win, { x = absX, y = absY + height + (i - 1) * height, w = width, h = height })
-			-- Individual popup items
 			win:QueueDrawAtLayer(
-				4,
+				Globals.Layers.Popup,
 				DrawDropdownPopupItem,
 				win,
 				popupX,
@@ -144,8 +153,8 @@ local function Dropdown(win, label, selectedIndex, options)
 				isH
 			)
 		end
-		-- Outline around the popup list
-		win:QueueDrawAtLayer(5, DrawDropdownPopupOutline, win, popupX, popupY, width, listH)
+		-- Popup outline at Popup layer
+		win:QueueDrawAtLayer(Globals.Layers.Popup, DrawDropdownPopupOutline, win, popupX, popupY, width, listH)
 	end
 	return entry.selected, entry.changed
 end

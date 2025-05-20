@@ -79,8 +79,6 @@ local function OnDraw_Menudemo2()
 		elseif currentTab == "Debug" then
 			TimMenu.ShowDebug()
 		end
-
-		TimMenu.End()
 	end
 end
 

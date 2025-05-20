@@ -59,7 +59,7 @@ local function OnDraw_Menudemo1()
 			TimMenu.NextLine()
 			showcaseSelectorS, _ = TimMenu.Selector("Gamma Selector", showcaseSelectorS, showcaseSelectorOptions)
 			local newTextGamma
-			newTextGamma, _ = TimMenu.TextInput("Gamma Text Input", showcaseTextT, 128)
+			newTextGamma, _ = TimMenu.TextInput("Gamma Text Input", showcaseTextT)
 			if newTextGamma ~= showcaseTextT then
 				showcaseTextT = newTextGamma
 			end
@@ -148,8 +148,6 @@ local function OnDraw_Menudemo1()
 			print("[Menudemo1] New bind key code: " .. tostring(bindKey1))
 		end
 		TimMenu.NextLine()
-
-		TimMenu.End()
 	end
 end
 

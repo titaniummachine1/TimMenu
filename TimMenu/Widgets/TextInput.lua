@@ -318,11 +318,20 @@ local function TextInput(win, label, text)
 			end
 		end
 
-		draw.Color(table.unpack(textColor))
-		Common.DrawText(textDrawX, textDrawY, finalDrawableText)
-
-		draw.Color(table.unpack(Globals.Colors.WidgetOutline))
-		Common.DrawOutlinedRect(px, py, px + width, py + height)
+		-- Schedule text input background, text, and outline via Common helpers
+		local px, py = win.X + x, win.Y + y
+		-- Background
+		local bgColor = Globals.Colors.Item
+		if entry.active then
+			bgColor = Globals.Colors.ItemActive
+		elseif hovered then
+			bgColor = Globals.Colors.ItemHover
+		end
+		Common.QueueRect(win, 2, px, py, px + width, py + height, bgColor)
+		-- Text content
+		Common.QueueText(win, 2, textDrawX, textDrawY, finalDrawableText, textColor)
+		-- Outline only
+		Common.QueueOutlinedRect(win, 2, px, py, px + width, py + height, Globals.Colors.WidgetOutline)
 	end)
 
 	return entry.text, changed

@@ -29,22 +29,29 @@ local function Button(win, label)
 	local bounds = { x = absX, y = absY, w = width, h = height }
 	local hovered, pressed, clicked = Interaction.Process(win, widgetKey, bounds, false)
 
-	win:QueueDrawAtLayer(2, function()
-		local px, py = win.X + x, win.Y + y
-		local bgColor = Globals.Colors.Item
-		if pressed then
-			bgColor = Globals.Colors.ItemActive
-		elseif hovered then
-			bgColor = Globals.Colors.ItemHover
-		end
-		draw.Color(table.unpack(bgColor))
-		Common.DrawFilledRect(px, py, px + width, py + height)
-		draw.Color(table.unpack(Globals.Colors.WindowBorder))
-		Common.DrawOutlinedRect(px, py, px + width, py + height)
-		draw.Color(table.unpack(Globals.Colors.Text))
-		draw.SetFont(Globals.Style.Font)
-		Common.DrawText(px + padding, py + padding, label)
-	end)
+	-- Schedule button rectangle and text with Common.Queue* helpers
+	local px, py = win.X + x, win.Y + y
+	local bgColor = Globals.Colors.Item
+	if pressed then
+		bgColor = Globals.Colors.ItemActive
+	elseif hovered then
+		bgColor = Globals.Colors.ItemHover
+	end
+
+	-- Draw button background at WidgetBackground
+	Common.QueueRect(win, Globals.Layers.WidgetBackground, px, py, px + width, py + height, bgColor)
+	-- Draw button outline at WidgetOutline
+	Common.QueueOutlinedRect(
+		win,
+		Globals.Layers.WidgetOutline,
+		px,
+		py,
+		px + width,
+		py + height,
+		Globals.Colors.WindowBorder
+	)
+	-- Draw button text at WidgetText
+	Common.QueueText(win, Globals.Layers.WidgetText, px + padding, py + padding, label, Globals.Colors.Text)
 
 	return clicked
 end

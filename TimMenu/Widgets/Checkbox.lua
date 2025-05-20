@@ -36,32 +36,47 @@ local function Checkbox(win, label, state)
 		state = not state
 	end
 
-	win:QueueDrawAtLayer(2, function()
-		local px, py = win.X + x, win.Y + y
-		local bgColor = Globals.Colors.Item
-		if pressed then
-			bgColor = Globals.Colors.ItemActive
-		elseif hovered then
-			bgColor = Globals.Colors.ItemHover
-		end
-		draw.Color(table.unpack(bgColor))
-		Common.DrawFilledRect(px, py, px + boxSize, py + boxSize)
-
-		-- Outline
-		draw.Color(table.unpack(Globals.Colors.WidgetOutline))
-		Common.DrawOutlinedRect(px, py, px + boxSize, py + boxSize)
-
-		-- Check mark fill
-		if state then
-			draw.Color(table.unpack(Globals.Colors.Highlight))
-			local margin = math.floor(boxSize * 0.25)
-			Common.DrawFilledRect(px + margin, py + margin, px + boxSize - margin, py + boxSize - margin)
-		end
-		-- Text label
-		draw.Color(table.unpack(Globals.Colors.Text))
-		draw.SetFont(Globals.Style.Font)
-		Common.DrawText(px + boxSize + padding, py + (boxSize // 2) - (txtH // 2), label)
-	end)
+	-- Draw checkbox background at WidgetBackground
+	local px, py = win.X + x, win.Y + y
+	local bgColor = Globals.Colors.Item
+	if pressed then
+		bgColor = Globals.Colors.ItemActive
+	elseif hovered then
+		bgColor = Globals.Colors.ItemHover
+	end
+	Common.QueueRect(win, Globals.Layers.WidgetBackground, px, py, px + boxSize, py + boxSize, bgColor)
+	-- Draw checkmark fill at WidgetFill if checked
+	if state then
+		local margin = math.floor(boxSize * 0.25)
+		Common.QueueRect(
+			win,
+			Globals.Layers.WidgetFill,
+			px + margin,
+			py + margin,
+			px + boxSize - margin,
+			py + boxSize - margin,
+			Globals.Colors.Highlight
+		)
+	end
+	-- Draw checkbox outline at WidgetOutline
+	Common.QueueOutlinedRect(
+		win,
+		Globals.Layers.WidgetOutline,
+		px,
+		py,
+		px + boxSize,
+		py + boxSize,
+		Globals.Colors.WidgetOutline
+	)
+	-- Draw label text at WidgetText
+	Common.QueueText(
+		win,
+		Globals.Layers.WidgetText,
+		px + boxSize + padding,
+		py + (boxSize // 2) - (txtH // 2),
+		label,
+		Globals.Colors.Text
+	)
 
 	return state, clicked
 end
