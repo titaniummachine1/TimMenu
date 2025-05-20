@@ -75,4 +75,26 @@ function Utils.ConsumeClick()
 	return false
 end
 
+--- Retrieve or initialize a per-window widget state by unique key.
+---@param win table Window object
+---@param key string Unique identifier for the widget instance
+---@param default any Default value or table to use if state not present
+---@return any the state stored for this key
+function Utils.GetState(win, key, default)
+	win._widgetStates = win._widgetStates or {}
+	local entry = win._widgetStates[key]
+	if entry == nil then
+		if type(default) == "table" then
+			entry = {}
+			for k, v in pairs(default) do
+				entry[k] = v
+			end
+		else
+			entry = default
+		end
+		win._widgetStates[key] = entry
+	end
+	return entry
+end
+
 return Utils

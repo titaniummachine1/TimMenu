@@ -108,11 +108,14 @@ Globals.Defaults.DebugLineSpacing = math.ceil(Globals.Defaults.DebugLineSpacing 
 Globals.Layers = {
 	WindowBackground = 0,
 	TitleBar = 1,
-	WidgetBackground = 2, -- Widget backgrounds and base fills
-	WidgetFill = 3, -- Widget progress/fill bars
-	WidgetOutline = 4, -- Widget outlines/borders
-	WidgetText = 5, -- Widget text labels
-	Popup = 6, -- Popups and overlays
+	WidgetBackground = 2,
+	WidgetFill = 3,
+	WidgetOutline = 4,
+	WidgetText = 5,
+	Popup = 6,
 }
+
+-- Number of layers reserved per nested layout group (e.g., sectors)
+Globals.LayersPerGroup = 10
 
 return Globals

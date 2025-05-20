@@ -357,6 +357,8 @@ local function _TimMenu_GlobalDraw()
 	TimMenuGlobal.InputState.isLeftMouseDown = input.IsButtonDown(MOUSE_LEFT)
 
 	local mouseX, mouseY = table.unpack(input.GetMousePos())
+	-- Cache mouse position for widgets to use the same snapshot
+	TimMenuGlobal.mouseX, TimMenuGlobal.mouseY = mouseX, mouseY
 	local focusedWindowKey = nil
 
 	-- 1. Pruning Pass: Remove windows not updated this frame

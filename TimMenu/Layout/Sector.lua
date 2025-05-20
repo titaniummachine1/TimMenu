@@ -42,7 +42,8 @@ local function _updateWindowBounds(win, sector_data, width, height, pad)
 end
 
 local function _enqueueBackgroundDraw(win, sector_data, depth, persistentWidth, persistentHeight)
-	local backgroundLayer = 0.1 + (depth - 1) * 0.01
+	-- Use integer layers: each nested sector increments background layer
+	local backgroundLayer = Globals.Layers.WidgetBackground + depth
 	DrawManager.Enqueue(win.id, backgroundLayer, function()
 		local baseBgColor = Globals.Colors.SectorBackground
 		local totalLighten = math.min(40, depth * 10)
@@ -59,7 +60,8 @@ local function _enqueueBackgroundDraw(win, sector_data, depth, persistentWidth, 
 end
 
 local function _enqueueBorderDraw(win, sector_data, depth, persistentWidth, persistentHeight)
-	local borderLayer = 2.1 + (depth - 1) * 0.01
+	-- Use integer layers: each nested sector increments outline layer
+	local borderLayer = Globals.Layers.WidgetOutline + depth
 	DrawManager.Enqueue(win.id, borderLayer, function()
 		local x0 = win.X + sector_data.startX
 		local y0 = win.Y + sector_data.startY
@@ -148,6 +150,15 @@ function Sector.Begin(win, label)
 	-- indent cursor for sector padding
 	win.cursorX = sector_data.startX + sector_data.padding
 	win.cursorY = sector_data.startY + sector_data.padding
+
+	-- Override QueueDrawAtLayer to apply per-sector layer offset
+	local depth = #win._sectorStack
+	local groupBase = depth * Globals.LayersPerGroup
+	sector_data.origQueue = win.QueueDrawAtLayer
+	win.QueueDrawAtLayer = function(self, layer, fn, ...)
+		-- offset layer by groupBase for this sector
+		return sector_data.origQueue(self, layer + groupBase, fn, ...)
+	end
 end
 
 function Sector.End(win)
@@ -167,9 +178,48 @@ function Sector.End(win)
 	local persistentSize = _updatePersistentSize(win, sector_data, currentWidth, currentHeight)
 	_updateWindowBounds(win, sector_data, persistentSize.width, persistentSize.height, pad)
 
-	-- Use persistent W/H for drawing to prevent flicker and maintain size
-	_enqueueBackgroundDraw(win, sector_data, depth, persistentSize.width, persistentSize.height)
-	_enqueueBorderDraw(win, sector_data, depth, persistentSize.width, persistentSize.height)
+	-- Enqueue sector background at relative layer 0
+	win:QueueDrawAtLayer(0, function()
+		local x0 = win.X + sector_data.startX
+		local y0 = win.Y + sector_data.startY
+		local baseBgColor = Globals.Colors.SectorBackground
+		local totalLighten = math.min(40, depth * 10)
+		local finalColor = {
+			math.min(255, baseBgColor[1] + totalLighten),
+			math.min(255, baseBgColor[2] + totalLighten),
+			math.min(255, baseBgColor[3] + totalLighten),
+			baseBgColor[4],
+		}
+		Common.SetColor(finalColor)
+		Common.DrawFilledRect(x0, y0, x0 + persistentSize.width, y0 + persistentSize.height)
+	end)
+	-- Enqueue sector border at relative layer 1
+	win:QueueDrawAtLayer(1, function()
+		local x0 = win.X + sector_data.startX
+		local y0 = win.Y + sector_data.startY
+		local w0 = persistentSize.width
+		local h0 = persistentSize.height
+		local pad0 = sector_data.padding
+		Common.SetColor(Globals.Colors.WindowBorder)
+		if type(sector_data.label) == "string" then
+			draw.SetFont(Globals.Style.Font)
+			local tw, th = draw.GetTextSize(sector_data.label)
+			local labelX = x0 + (w0 - tw) / 2
+			local lineY = y0
+			Common.DrawLine(x0, lineY, labelX - pad0, lineY)
+			Common.SetColor(Globals.Colors.Text)
+			Common.DrawText(labelX, lineY - math.floor(th / 2), sector_data.label)
+			Common.SetColor(Globals.Colors.WindowBorder)
+			Common.DrawLine(labelX + tw + pad0, lineY, x0 + w0, lineY)
+		else
+			Common.DrawLine(x0, y0, x0 + w0, y0)
+		end
+		Common.DrawLine(x0, y0 + h0, x0 + w0, y0 + h0)
+		Common.DrawLine(x0, y0, x0, y0 + h0)
+		Common.DrawLine(x0 + w0, y0, x0 + w0, y0 + h0)
+	end)
+	-- Restore original QueueDrawAtLayer
+	win.QueueDrawAtLayer = sector_data.origQueue
 
 	-- Use calculated currentWidth/Height for layout/cursor updates, but persistent for drawing.
 	_finalizeCursorAndLayout(win, sector_data, persistentSize.width, persistentSize.height, pad)

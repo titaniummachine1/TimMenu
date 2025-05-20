@@ -94,9 +94,8 @@ local function Dropdown(win, label, selectedIndex, options)
 	local hovered, pressed, clicked = Interaction.Process(win, widgetKey, bounds, entry.open)
 	local listH = #options * height
 	local popupBounds = { x = absX, y = absY + height, w = width, h = listH }
-	-- Retain existing logic for closing popup on outside click
-	local mX, mY = table.unpack(input.GetMousePos())
-	Interaction.ClosePopupOnOutsideClick(entry, mX, mY, bounds, popupBounds, win)
+	-- Close popup on outside click using cached mouse position
+	Interaction.ClosePopupOnOutsideClick(entry, TimMenuGlobal.mouseX, TimMenuGlobal.mouseY, bounds, popupBounds, win)
 
 	if clicked then
 		if not entry.open and hovered then

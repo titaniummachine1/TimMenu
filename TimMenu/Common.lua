@@ -248,6 +248,29 @@ function Common.QueueOutlinedRect(window, layer, x1, y1, x2, y2, colorTbl)
 	end)
 end
 
+--- Truncate a text string to fit within a maximum pixel width, prefixing '...' if truncated.
+---@param text string
+---@param maxWidth number
+---@return string
+function Common.TruncateText(text, maxWidth)
+	local fullW = select(1, draw.GetTextSize(text))
+	if fullW <= maxWidth then
+		return text
+	end
+	local truncated, currW = "", 0
+	for i = #text, 1, -1 do
+		local ch = text:sub(i, i)
+		local cw = select(1, draw.GetTextSize(ch))
+		if currW + cw <= maxWidth then
+			truncated = ch .. truncated
+			currW = currW + cw
+		else
+			break
+		end
+	end
+	return "..." .. truncated
+end
+
 --------------------------------------------------------------------------------
 -- Unload Callback: Clean up the module on unload.
 --------------------------------------------------------------------------------

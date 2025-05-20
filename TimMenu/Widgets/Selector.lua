@@ -37,7 +37,8 @@ local function Selector(win, label, selectedIndex, options)
 	local x, y = win:AddWidget(totalWidth, totalHeight)
 	local absX, absY = win.X + x, win.Y + y
 
-	local mX, mY = table.unpack(input.GetMousePos())
+	-- Cached mouse position for click logic
+	local mX, mY = TimMenuGlobal.mouseX, TimMenuGlobal.mouseY
 
 	-- Unified interaction for prev arrow
 	local prevBounds = { x = absX, y = absY, w = btnW, h = totalHeight }
