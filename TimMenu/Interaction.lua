@@ -85,4 +85,20 @@ end
 
 Interaction._PressState = PressState -- expose for debugging
 
+--- Processes hover, press (down), and click for a widget, respecting window and popup occlusion.
+---@param win table Window object
+---@param widgetKey string Unique identifier for the widget instance
+---@param bounds table { x:number, y:number, w:number, h:number } Widget bounds
+---@param isPopupOpen boolean True if this widget is part of an open popup
+---@return boolean hovered, boolean pressed, boolean clicked
+function Interaction.Process(win, widgetKey, bounds, isPopupOpen)
+	-- Determine hover with window and region blocking
+	local hovered = Interaction.IsHovered(win, bounds)
+	-- Press state
+	local pressed = hovered and input.IsButtonDown(MOUSE_LEFT)
+	-- One-shot click consumption
+	local clicked = Interaction.ConsumeWidgetClick(win, hovered, isPopupOpen)
+	return hovered, pressed, clicked
+end
+
 return Interaction

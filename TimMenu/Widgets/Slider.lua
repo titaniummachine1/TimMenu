@@ -36,19 +36,17 @@ local function Slider(win, label, value, min, max, step)
 	local norm = (value - min) / (max - min)
 	norm = math.min(1, math.max(0, norm))
 
-	-- Interaction logic
-	local mX, mY = table.unpack(input.GetMousePos())
-	local hovered = Interaction.IsHovered(win, { x = absX, y = absY, w = width, h = height })
-	local pressed = input.IsButtonPressed(MOUSE_LEFT)
-	local down = input.IsButtonDown(MOUSE_LEFT)
-	local key = tostring(win.id) .. ":slider:" .. label
-	local dragging = sliderDragState[key] or false
-	if hovered and pressed then
+	-- Unified interaction processing
+	local widgetKey = win.id .. ":slider:" .. label
+	local hovered, down, clicked =
+		Interaction.Process(win, widgetKey, { x = absX, y = absY, w = width, h = height }, false)
+	local dragging = sliderDragState[widgetKey] or false
+	if clicked then
 		dragging = true
 	elseif not down then
 		dragging = false
 	end
-	sliderDragState[key] = dragging
+	sliderDragState[widgetKey] = dragging
 
 	-- Compute new stepped value
 	local changed = false
@@ -63,7 +61,7 @@ local function Slider(win, label, value, min, max, step)
 		end
 	end
 
-	-- Draw slider
+	-- Draw slider (layer 2): hv=hovered
 	win:QueueDrawAtLayer(2, function(hv)
 		local px, py = win.X + x, win.Y + y
 		local bg = hv and Globals.Colors.ItemHover or Globals.Colors.Item

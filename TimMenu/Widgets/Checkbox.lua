@@ -2,10 +2,6 @@ local Globals = require("TimMenu.Globals")
 local Common = require("TimMenu.Common")
 local Interaction = require("TimMenu.Interaction")
 
-local function canInteract(win, bounds)
-	return Interaction.IsHovered(win, bounds)
-end
-
 local function Checkbox(win, label, state)
 	assert(type(win) == "table", "Checkbox: win must be a table")
 	assert(type(label) == "string", "Checkbox: label must be a string")
@@ -33,24 +29,17 @@ local function Checkbox(win, label, state)
 
 	-- Interaction bounds
 	local bounds = { x = absX, y = absY, w = width, h = height }
-	local hovered = canInteract(win, bounds)
-
-	-- Debounce using Interaction helpers
-	local key = tostring(win.id) .. ":" .. label .. ":" .. widgetIndex
-	local clicked = false
-	if hovered and Interaction.IsPressed(key) then
+	-- Unified interaction processing
+	local widgetKey = win.id .. ":Checkbox:" .. label .. ":" .. widgetIndex
+	local hovered, pressed, clicked = Interaction.Process(win, widgetKey, bounds, false)
+	if clicked then
 		state = not state
-		clicked = true
-	end
-	if not input.IsButtonDown(MOUSE_LEFT) then
-		Interaction.Release(key)
 	end
 
 	win:QueueDrawAtLayer(2, function()
 		local px, py = win.X + x, win.Y + y
 		local bgColor = Globals.Colors.Item
-		local active = hovered and input.IsButtonDown(MOUSE_LEFT)
-		if active then
+		if pressed then
 			bgColor = Globals.Colors.ItemActive
 		elseif hovered then
 			bgColor = Globals.Colors.ItemHover
