@@ -57,6 +57,7 @@ local function Selector(win, label, selectedIndex, options)
 	local nextHovered, nextDown, nextClicked = Interaction.Process(win, widgetKeyNext, nextBounds, false)
 	if nextClicked then
 		entry.selected = entry.selected + 1
+
 		if entry.selected > #options then
 			entry.selected = 1
 		end

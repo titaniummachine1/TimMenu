@@ -169,26 +169,29 @@ local function TabControl(win, id, tabs, defaultSelection, isHeader)
 			entry.changed = true
 		end
 
-		-- Background (layer 1)
-		win:QueueDrawAtLayer(1, function(px, py, w, h, sel, hv)
+		-- Background (layer 1) using relative offsets
+		win:QueueDrawAtLayer(1, function(offX, offY, w, h, sel, hv)
+			local px, py = win.X + offX, win.Y + offY
 			local bg = sel and Globals.Colors.Title or (hv and Globals.Colors.ItemHover or Globals.Colors.Item)
 			draw.Color(table.unpack(bg))
 			Common.DrawFilledRect(px, py, px + w, py + h)
-		end, absX, absY, bw, bh, entry.selected == i, hover)
+		end, bx, by, bw, bh, entry.selected == i, hover)
 
-		-- Per-button outline (layer 2)
-		win:QueueDrawAtLayer(2, function(px, py, w, h)
+		-- Per-button outline (layer 2) using relative offsets
+		win:QueueDrawAtLayer(2, function(offX, offY, w, h)
+			local px, py = win.X + offX, win.Y + offY
 			draw.Color(table.unpack(LIGHT_TAB_OUTLINE))
 			Common.DrawOutlinedRect(px, py, px + w, py + h)
-		end, absX, absY, bw, bh)
+		end, bx, by, bw, bh)
 
-		-- Text (layer 3)
-		win:QueueDrawAtLayer(3, function(px, py, txt, tw, th, sel)
+		-- Text (layer 3) using relative offsets
+		win:QueueDrawAtLayer(3, function(offX, offY, txt, tw, th, sel)
+			local px, py = win.X + offX, win.Y + offY
 			draw.SetFont(Globals.Style.FontBold)
 			local txtC = sel and Globals.Colors.Text or { 180, 180, 180, 255 }
 			draw.Color(table.unpack(txtC))
 			Common.DrawText(px + (bw - tw) / 2, py + (bh - th) / 2, txt)
-		end, absX, absY, lbl, tw, th, entry.selected == i)
+		end, bx, by, lbl, tw, th, entry.selected == i)
 
 		-- Advance cursor
 		win.cursorX = win.cursorX + bw + spacing
