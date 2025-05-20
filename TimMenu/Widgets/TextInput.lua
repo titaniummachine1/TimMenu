@@ -251,88 +251,68 @@ local function TextInput(win, label, text)
 		end
 	end
 
-	win:QueueDrawAtLayer(2, function()
-		local px, py = win.X + x, win.Y + y
-		local bg = Globals.Colors.Item
-		if entry.active then
-			bg = Globals.Colors.ItemActive
-		elseif hovered then
-			bg = Globals.Colors.ItemHover
-		end
-		draw.Color(table.unpack(bg))
-		Common.DrawFilledRect(px, py, px + width, py + height)
-		draw.SetFont(Globals.Style.Font)
-
-		local textContentForDisplay -- This will be the text part (placeholder or actual entry.text)
-		local textColor = Globals.Colors.Text
-
-		if entry.text == "" and not entry.active then
-			textContentForDisplay = label
-			textColor = { 180, 180, 180, 255 }
-		else
-			textContentForDisplay = entry.text
-		end
-
-		local textDrawX = px + pad
-		local textDrawY = py + (height - txtH) / 2
-
-		-- Truncation Logic
-		local availableWidthForText = width - (pad * 2)
-		local cursorRenderWidth = 0
-		if entry.active then
-			cursorRenderWidth, _ = draw.GetTextSize("|")
-			local wideCharExtraPadding, _ = draw.GetTextSize("O") -- Get width of a reference wide character
-			availableWidthForText = availableWidthForText - cursorRenderWidth - wideCharExtraPadding - pad -- Added extra 'pad' for good measure
-		end
-
-		local finalDrawableText = textContentForDisplay
-		local textContentWidth, _ = draw.GetTextSize(textContentForDisplay)
-
-		if textContentWidth > availableWidthForText and availableWidthForText > 0 then
-			local truncated = ""
-			local currentAccumulatedWidth = 0
-			for i = #textContentForDisplay, 1, -1 do
-				local char = string.sub(textContentForDisplay, i, i)
-				local charW, _ = draw.GetTextSize(char)
-				if currentAccumulatedWidth + charW <= availableWidthForText then
-					truncated = char .. truncated
-					currentAccumulatedWidth = currentAccumulatedWidth + charW
-				else
-					break
-				end
-			end
-			finalDrawableText = "..." .. truncated
-		end
-
-		-- Append Blinking cursor if active
-		if entry.active then
-			local lmbx = _G.globals
-			if lmbx and lmbx.RealTime then
-				if math.floor(lmbx.RealTime() * 2.5) % 2 == 0 then
-					finalDrawableText = finalDrawableText .. "|"
-				else
-					finalDrawableText = finalDrawableText .. " "
-				end
+	-- Draw the text input using queued primitives at appropriate layers
+	local px, py = absX, absY
+	-- Background color
+	local bgColor = Globals.Colors.Item
+	if entry.active then
+		bgColor = Globals.Colors.ItemActive
+	elseif hovered then
+		bgColor = Globals.Colors.ItemHover
+	end
+	-- Determine text content and color (placeholder vs actual)
+	local textContentForDisplay, textColor
+	if entry.text == "" and not entry.active then
+		textContentForDisplay = label
+		textColor = { 180, 180, 180, 255 }
+	else
+		textContentForDisplay = entry.text
+		textColor = Globals.Colors.Text
+	end
+	-- Truncate and append blinking cursor if needed
+	local availableWidthForText = width - (pad * 2)
+	if entry.active then
+		local cursorW = draw.GetTextSize("|")
+		local wideCharPadding = draw.GetTextSize("O")
+		availableWidthForText = availableWidthForText - cursorW - wideCharPadding - pad
+	end
+	-- Build final drawable text
+	local finalDrawableText = textContentForDisplay
+	local textContentWidth = draw.GetTextSize(textContentForDisplay)
+	if textContentWidth > availableWidthForText and availableWidthForText > 0 then
+		local truncated, currW = "", 0
+		for i = #textContentForDisplay, 1, -1 do
+			local ch = textContentForDisplay:sub(i, i)
+			local cw = draw.GetTextSize(ch)
+			if currW + cw <= availableWidthForText then
+				truncated = ch .. truncated
+				currW = currW + cw
 			else
-				finalDrawableText = finalDrawableText .. "|"
+				break
 			end
 		end
-
-		-- Schedule text input background, text, and outline via Common helpers
-		local px, py = win.X + x, win.Y + y
-		-- Background
-		local bgColor = Globals.Colors.Item
-		if entry.active then
-			bgColor = Globals.Colors.ItemActive
-		elseif hovered then
-			bgColor = Globals.Colors.ItemHover
+		finalDrawableText = "..." .. truncated
+	end
+	if entry.active then
+		local t = (_G.globals and _G.globals.RealTime and _G.globals.RealTime() or 0)
+		if math.floor(t * 2.5) % 2 == 0 then
+			finalDrawableText = finalDrawableText .. "|"
+		else
+			finalDrawableText = finalDrawableText .. " "
 		end
-		Common.QueueRect(win, 2, px, py, px + width, py + height, bgColor)
-		-- Text content
-		Common.QueueText(win, 2, textDrawX, textDrawY, finalDrawableText, textColor)
-		-- Outline only
-		Common.QueueOutlinedRect(win, 2, px, py, px + width, py + height, Globals.Colors.WidgetOutline)
-	end)
+	end
+	-- Queue drawing primitives
+	Common.QueueRect(win, Globals.Layers.WidgetBackground, px, py, px + width, py + height, bgColor)
+	Common.QueueText(win, Globals.Layers.WidgetText, px + pad, py + (height - txtH) / 2, finalDrawableText, textColor)
+	Common.QueueOutlinedRect(
+		win,
+		Globals.Layers.WidgetOutline,
+		px,
+		py,
+		px + width,
+		py + height,
+		Globals.Colors.WidgetOutline
+	)
 
 	return entry.text, changed
 end
