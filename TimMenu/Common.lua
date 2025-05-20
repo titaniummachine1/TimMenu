@@ -278,7 +278,7 @@ end
 local function OnUnload() -- Called when a script using TimMenu is unloaded
 	--ensure o leave mosue input enabled(api is inverted)
 	input.SetMouseInputEnabled(false)
-	engine.PlaySound("hl1/fvox/deactivated.wav") -- deactivated sound
+	--engine.PlaySound("hl1/fvox/deactivated.wav") -- deactivated sound
 	-- Prune windows from unloaded scripts
 	Utils.PruneOrphanedWindows(TimMenuGlobal.windows, TimMenuGlobal.order)
 

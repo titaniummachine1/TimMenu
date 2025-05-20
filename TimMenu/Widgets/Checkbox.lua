@@ -58,7 +58,7 @@ local function Checkbox(win, label, state)
 			Globals.Colors.Highlight
 		)
 	end
-	-- Draw checkbox outline at WidgetOutline
+	-- Draw checkbox outline with stronger WindowBorder color
 	Common.QueueOutlinedRect(
 		win,
 		Globals.Layers.WidgetOutline,
@@ -66,7 +66,7 @@ local function Checkbox(win, label, state)
 		py,
 		px + boxSize,
 		py + boxSize,
-		Globals.Colors.WidgetOutline
+		Globals.Colors.WindowBorder
 	)
 	-- Draw label text at WidgetText
 	Common.QueueText(

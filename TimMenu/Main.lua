@@ -447,7 +447,7 @@ callbacks.Unregister("Draw", "zTimMenu_GlobalDraw")
 callbacks.Register("Draw", "zTimMenu_GlobalDraw", _TimMenu_GlobalDraw)
 
 --[[ Play sound when loaded -- consider if this is still desired with centralized model ]]
-engine.PlaySound("hl1/fvox/activated.wav")
+--engine.PlaySound("hl1/fvox/activated.wav")
 
 -- Alias for backward compatibility: Textbox
 function TimMenu.Textbox(label, text)
