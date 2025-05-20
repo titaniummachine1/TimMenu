@@ -110,7 +110,8 @@ local function ColorPicker(win, label, initColor)
 	local hovered, pressed, clicked =
 		Interaction.Process(win, widgetKey, { x = absX, y = absY, w = width, h = height }, state.open)
 	local sliderHeight = Globals.Style.ItemSize
-	local popupHeight = imageData.height + padding + sliderHeight
+	-- Remove extra padding: wheel and slider adjacent
+	local popupHeight = imageData.height + sliderHeight
 	local popupBounds = { x = absX, y = absY + height, w = imageData.width, h = popupHeight }
 
 	-- Toggle popup on field click
@@ -137,7 +138,7 @@ local function ColorPicker(win, label, initColor)
 			and py >= 0
 			and px < imageData.width
 			and py < imageData.height
-			and input.IsButtonPressed(MOUSE_LEFT)
+			and input.IsButtonDown(MOUSE_LEFT)
 		then
 			local idx = (py * imageData.width + px) * 4 + 1
 			local r = string.byte(imageData.data, idx)
@@ -153,7 +154,7 @@ local function ColorPicker(win, label, initColor)
 
 		-- Alpha slider interaction
 		local sliderBounds =
-			{ x = popupBounds.x, y = popupBounds.y + imageData.height + padding, w = popupBounds.w, h = sliderHeight }
+			{ x = popupBounds.x, y = popupBounds.y + imageData.height, w = popupBounds.w, h = sliderHeight }
 		local _, sPressed = Interaction.Process(win, widgetKey .. ":alpha", sliderBounds, state.open)
 		if sPressed then
 			local mx2, _ = table.unpack(input.GetMousePos())
@@ -204,6 +205,7 @@ local function ColorPicker(win, label, initColor)
 		Globals.Colors.WindowBorder
 	)
 	local inner = state.color
+	-- Draw color preview as filled square
 	Common.QueueRect(
 		win,
 		Globals.Layers.WidgetFill,
@@ -236,14 +238,14 @@ local function ColorPicker(win, label, initColor)
 	if state.open then
 		-- Always draw popup above all sector content using a high layer
 		local popupLayer = Globals.Layers.Popup + Globals.LayersPerGroup * 100
-		-- Popup background fill
+		-- Popup background fill (includes slider area)
 		DrawManager.Enqueue(win.id, popupLayer, function()
 			Common.SetColor(Globals.Colors.Window)
 			Common.DrawFilledRect(
 				popupBounds.x,
 				popupBounds.y,
-				popupBounds.x + imageData.width,
-				popupBounds.y + imageData.height
+				popupBounds.x + popupBounds.w,
+				popupBounds.y + popupBounds.h
 			)
 		end)
 		-- Popup image
@@ -251,35 +253,36 @@ local function ColorPicker(win, label, initColor)
 			draw.Color(255, 255, 255, 255)
 			draw.TexturedRect(tex, x0, y0, x0 + w, y0 + h)
 		end, imageData.texture, popupBounds.x, popupBounds.y, imageData.width, imageData.height)
-		-- Popup outline
+		-- Popup outline (wheel + slider)
 		DrawManager.Enqueue(win.id, popupLayer, function()
 			Common.SetColor(Globals.Colors.WindowBorder)
 			Common.DrawOutlinedRect(
 				popupBounds.x,
 				popupBounds.y,
-				popupBounds.x + imageData.width,
-				popupBounds.y + imageData.height
+				popupBounds.x + popupBounds.w,
+				popupBounds.y + popupBounds.h
 			)
 		end)
 
-		-- Draw selection marker
+		-- Draw selection marker as circle
 		if state.selX and state.selY then
 			local cx = popupBounds.x + state.selX
 			local cy = popupBounds.y + state.selY
 			DrawManager.Enqueue(win.id, popupLayer + 1, function()
+				-- Border circle
 				Common.SetColor(Globals.Colors.WindowBorder)
-				Common.DrawOutlinedRect(cx - 3, cy - 3, cx + 3, cy + 3)
-				Common.SetColor({ 255, 255, 255, 150 })
-				Common.DrawFilledRect(cx - 2, cy - 2, cx + 2, cy + 2)
+				draw.OutlinedCircle(cx, cy, 5, 16)
+				-- Inner fill circle
+				draw.ColoredCircle(cx, cy, 4, 255, 255, 255, 150)
 			end)
 		end
 
 		-- Draw alpha slider
 		local sliderBounds =
-			{ x = popupBounds.x, y = popupBounds.y + imageData.height + padding, w = popupBounds.w, h = sliderHeight }
+			{ x = popupBounds.x, y = popupBounds.y + imageData.height, w = popupBounds.w, h = sliderHeight }
 		DrawManager.Enqueue(win.id, popupLayer, function()
-			-- Slider track background
-			Common.SetColor(Globals.Colors.Item)
+			-- Slider track background on popup
+			Common.SetColor(Globals.Colors.Window)
 			Common.DrawFilledRect(
 				sliderBounds.x,
 				sliderBounds.y,
