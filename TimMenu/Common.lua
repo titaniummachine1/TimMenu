@@ -178,12 +178,17 @@ end
 ---@param fillColor table optional, defaults to Globals.Colors.Item
 ---@param borderColor table optional
 function Common.QueueRect(window, layer, x1, y1, x2, y2, fillColor, borderColor)
+	-- store relative rectangle coords, compute absolute at draw time
+	local relX = x1 - window.X
+	local relY = y1 - window.Y
+	local width = x2 - x1
+	local height = y2 - y1
 	window:QueueDrawAtLayer(layer, function()
 		Common.SetColor(fillColor or Globals.Colors.Item)
-		Common.DrawFilledRect(x1, y1, x2, y2)
+		Common.DrawFilledRect(window.X + relX, window.Y + relY, window.X + relX + width, window.Y + relY + height)
 		if borderColor then
 			Common.SetColor(borderColor)
-			Common.DrawOutlinedRect(x1, y1, x2, y2)
+			Common.DrawOutlinedRect(window.X + relX, window.Y + relY, window.X + relX + width, window.Y + relY + height)
 		end
 	end)
 end
@@ -197,9 +202,11 @@ end
 ---@param y2 number
 ---@param colorTbl table optional, defaults to Globals.Colors.Text
 function Common.QueueLine(window, layer, x1, y1, x2, y2, colorTbl)
+	local relX1, relY1 = x1 - window.X, y1 - window.Y
+	local relX2, relY2 = x2 - window.X, y2 - window.Y
 	window:QueueDrawAtLayer(layer, function()
 		Common.SetColor(colorTbl or Globals.Colors.Text)
-		Common.DrawLine(x1, y1, x2, y2)
+		Common.DrawLine(window.X + relX1, window.Y + relY1, window.X + relX2, window.Y + relY2)
 	end)
 end
 
@@ -211,11 +218,14 @@ end
 ---@param text string
 ---@param colorTbl table optional, defaults to Globals.Colors.Text
 function Common.QueueText(window, layer, x, y, text, colorTbl)
+	-- store relative text position
+	local relX = x - window.X
+	local relY = y - window.Y
 	window:QueueDrawAtLayer(layer, function()
 		-- Ensure default font is set for each queued text
 		draw.SetFont(Globals.Style.Font)
 		Common.SetColor(colorTbl or Globals.Colors.Text)
-		Common.DrawText(x, y, text)
+		Common.DrawText(window.X + relX, window.Y + relY, text)
 	end)
 end
 
@@ -228,9 +238,13 @@ end
 ---@param y2 number
 ---@param colorTbl table optional, defaults to Globals.Colors.WindowBorder
 function Common.QueueOutlinedRect(window, layer, x1, y1, x2, y2, colorTbl)
+	local relX = x1 - window.X
+	local relY = y1 - window.Y
+	local width = x2 - x1
+	local height = y2 - y1
 	window:QueueDrawAtLayer(layer, function()
 		Common.SetColor(colorTbl or Globals.Colors.WindowBorder)
-		Common.DrawOutlinedRect(x1, y1, x2, y2)
+		Common.DrawOutlinedRect(window.X + relX, window.Y + relY, window.X + relX + width, window.Y + relY + height)
 	end)
 end
 
