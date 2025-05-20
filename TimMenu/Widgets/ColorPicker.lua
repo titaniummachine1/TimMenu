@@ -68,11 +68,6 @@ local function ColorPicker(win, label, initColor)
 		"ColorPicker: initColor must be a table of at least 3 numbers"
 	)
 
-	-- Unique widget key
-	win._widgetCounter = (win._widgetCounter or 0) + 1
-	local widgetIndex = win._widgetCounter
-	local widgetKey = win.id .. ":ColorPicker:" .. label .. ":" .. widgetIndex
-
 	-- Layout calculations
 	draw.SetFont(Globals.Style.Font)
 	local txtW, txtH = draw.GetTextSize(label)
@@ -88,8 +83,13 @@ local function ColorPicker(win, label, initColor)
 	local x, y = win:AddWidget(width, height)
 	local absX, absY = win.X + x, win.Y + y
 
-	-- Persistent state
-	local state = Utils.GetState(win, widgetKey, {
+	-- LSTATEKEY
+	-- Define a persistent state key separate from interaction key so state.open persists
+	local stateKey = win.id .. ":ColorPicker:" .. label
+	win._widgetCounter = (win._widgetCounter or 0) + 1
+	local widgetKey = stateKey .. ":" .. win._widgetCounter
+	-- Persistent state stored by stateKey, not widgetKey
+	local state = Utils.GetState(win, stateKey, {
 		open = false,
 		hue = 0,
 		sat = 0,
@@ -109,46 +109,67 @@ local function ColorPicker(win, label, initColor)
 	-- Field interaction
 	local hovered, pressed, clicked =
 		Interaction.Process(win, widgetKey, { x = absX, y = absY, w = width, h = height }, state.open)
-	local popupBounds = { x = absX, y = absY + height, w = imageData.width, h = imageData.height }
-	-- Close popup when clicking outside both field & popup
-	Interaction.ClosePopupOnOutsideClick(
-		state,
-		TimMenuGlobal.mouseX,
-		TimMenuGlobal.mouseY,
-		{ x = absX, y = absY, w = width, h = height },
-		popupBounds,
-		win
-	)
-	if clicked then
-		if not state.open and hovered then
-			state.open = true
-			win._widgetBlockedRegions = { popupBounds }
-			-- bring window to front so popup is topmost
-			for i, id in ipairs(TimMenuGlobal.order) do
-				if id == win.id then
-					table.remove(TimMenuGlobal.order, i)
-					break
-				end
+	local sliderHeight = Globals.Style.ItemSize
+	local popupHeight = imageData.height + padding + sliderHeight
+	local popupBounds = { x = absX, y = absY + height, w = imageData.width, h = popupHeight }
+
+	-- Toggle popup on field click
+	if clicked and hovered and not state.open then
+		state.open = true
+		win._widgetBlockedRegions = { popupBounds }
+		-- bring window to front
+		for i, id in ipairs(TimMenuGlobal.order) do
+			if id == win.id then
+				table.remove(TimMenuGlobal.order, i)
+				break
 			end
-			table.insert(TimMenuGlobal.order, win.id)
-		elseif state.open then
-			-- Pixel-based selection: sample RGBA from image data
-			if Interaction.IsHovered(win, popupBounds) then
-				local mx, my = table.unpack(input.GetMousePos())
-				local px = math.floor(mx - popupBounds.x)
-				local py = math.floor(my - popupBounds.y)
-				if px >= 0 and py >= 0 and px < imageData.width and py < imageData.height then
-					local idx = (py * imageData.width + px) * 4 + 1
-					local r = string.byte(imageData.data, idx)
-					local g = string.byte(imageData.data, idx + 1)
-					local b = string.byte(imageData.data, idx + 2)
-					local a = string.byte(imageData.data, idx + 3)
-					if a ~= 0 then
-						state.color = { r, g, b, state.color[4] }
-						changed = true
-					end
-				end
+		end
+		table.insert(TimMenuGlobal.order, win.id)
+	end
+
+	if state.open then
+		-- Pixel selection inside popup
+		local mx, my = table.unpack(input.GetMousePos())
+		local px = math.floor(mx - popupBounds.x)
+		local py = math.floor(my - popupBounds.y)
+		if
+			px >= 0
+			and py >= 0
+			and px < imageData.width
+			and py < imageData.height
+			and input.IsButtonPressed(MOUSE_LEFT)
+		then
+			local idx = (py * imageData.width + px) * 4 + 1
+			local r = string.byte(imageData.data, idx)
+			local g = string.byte(imageData.data, idx + 1)
+			local b = string.byte(imageData.data, idx + 2)
+			local a = string.byte(imageData.data, idx + 3)
+			if a ~= 0 then
+				state.color[1], state.color[2], state.color[3] = r, g, b
+				state.selX, state.selY = px, py
+				changed = true
 			end
+		end
+
+		-- Alpha slider interaction
+		local sliderBounds =
+			{ x = popupBounds.x, y = popupBounds.y + imageData.height + padding, w = popupBounds.w, h = sliderHeight }
+		local _, sPressed = Interaction.Process(win, widgetKey .. ":alpha", sliderBounds, state.open)
+		if sPressed then
+			local mx2, _ = table.unpack(input.GetMousePos())
+			local newA = math.floor(((mx2 - sliderBounds.x) / sliderBounds.w) * 255)
+			state.color[4] = math.max(0, math.min(255, newA))
+			changed = true
+		end
+
+		-- Close popup when mouse leaves both field and popup regions
+		local mx3, my3 = TimMenuGlobal.mouseX, TimMenuGlobal.mouseY
+		local inField = mx3 >= absX and mx3 <= absX + width and my3 >= absY and my3 <= absY + height
+		local inPopup = mx3 >= popupBounds.x
+			and mx3 <= popupBounds.x + popupBounds.w
+			and my3 >= popupBounds.y
+			and my3 <= popupBounds.y + popupBounds.h
+		if not inField and not inPopup then
 			state.open = false
 			win._widgetBlockedRegions = {}
 		end
@@ -238,6 +259,49 @@ local function ColorPicker(win, label, initColor)
 				popupBounds.y,
 				popupBounds.x + imageData.width,
 				popupBounds.y + imageData.height
+			)
+		end)
+
+		-- Draw selection marker
+		if state.selX and state.selY then
+			local cx = popupBounds.x + state.selX
+			local cy = popupBounds.y + state.selY
+			DrawManager.Enqueue(win.id, popupLayer + 1, function()
+				Common.SetColor(Globals.Colors.WindowBorder)
+				Common.DrawOutlinedRect(cx - 3, cy - 3, cx + 3, cy + 3)
+				Common.SetColor({ 255, 255, 255, 150 })
+				Common.DrawFilledRect(cx - 2, cy - 2, cx + 2, cy + 2)
+			end)
+		end
+
+		-- Draw alpha slider
+		local sliderBounds =
+			{ x = popupBounds.x, y = popupBounds.y + imageData.height + padding, w = popupBounds.w, h = sliderHeight }
+		DrawManager.Enqueue(win.id, popupLayer, function()
+			-- Slider track background
+			Common.SetColor(Globals.Colors.Item)
+			Common.DrawFilledRect(
+				sliderBounds.x,
+				sliderBounds.y,
+				sliderBounds.x + sliderBounds.w,
+				sliderBounds.y + sliderBounds.h
+			)
+			-- Filled portion
+			local filledW = (state.color[4] / 255) * sliderBounds.w
+			Common.SetColor(Globals.Colors.ItemActive)
+			Common.DrawFilledRect(
+				sliderBounds.x,
+				sliderBounds.y,
+				sliderBounds.x + filledW,
+				sliderBounds.y + sliderBounds.h
+			)
+			-- Slider outline
+			Common.SetColor(Globals.Colors.WindowBorder)
+			Common.DrawOutlinedRect(
+				sliderBounds.x,
+				sliderBounds.y,
+				sliderBounds.x + sliderBounds.w,
+				sliderBounds.y + sliderBounds.h
 			)
 		end)
 	end
