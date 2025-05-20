@@ -34,7 +34,7 @@ local function create_texture_from_binary(binary_data)
 		error("Failed to create texture.")
 	end
 
-	return texture, width, height
+	return texture, width, height, rgba_data
 end
 
 -- Draw a texture at a specified position
@@ -44,11 +44,12 @@ local function draw_texture(texture, x, y, width, height)
 end
 
 -- Parse the binary image and create a texture
-local texture, width, height = create_texture_from_binary(binary_image)
+local texture, width, height, rgba_data = create_texture_from_binary(binary_image)
 
 -- Return the decoded texture and its dimensions for use by widgets
 return {
 	texture = texture,
 	width = width,
 	height = height,
+	data = rgba_data,
 }

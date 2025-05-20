@@ -3,6 +3,7 @@ local Common = require("TimMenu.Common")
 local Interaction = require("TimMenu.Interaction")
 local Utils = require("TimMenu.Utils")
 local DrawManager = require("TimMenu.DrawManager")
+local DrawHelpers = require("TimMenu.DrawHelpers")
 -- Use the preloaded interactive color picker image
 local imageData = Globals.Images.ColorPicker.Interactive
 local draw = draw
@@ -77,7 +78,9 @@ local function ColorPicker(win, label, initColor)
 	local txtW, txtH = draw.GetTextSize(label)
 	local padding = Globals.Style.ItemPadding
 	local boxSize = Globals.Style.ItemSize + (padding * 2)
-	local width = boxSize + padding + txtW
+	local arrowBoxW = boxSize
+	local extraPadding = padding -- Additional padding before the arrow box
+	local width = boxSize + padding + txtW + extraPadding + arrowBoxW
 	local height = boxSize
 	if win.cursorX > Globals.Defaults.WINDOW_CONTENT_PADDING then
 		win.cursorX = win.cursorX + padding
@@ -104,18 +107,23 @@ local function ColorPicker(win, label, initColor)
 	end
 
 	-- Field interaction
-	local bounds = { x = absX, y = absY, w = boxSize, h = boxSize }
-	local hovered, pressed, clicked = Interaction.Process(win, widgetKey, bounds, state.open)
+	local hovered, pressed, clicked =
+		Interaction.Process(win, widgetKey, { x = absX, y = absY, w = width, h = height }, state.open)
+	local popupBounds = { x = absX, y = absY + height, w = imageData.width, h = imageData.height }
+	-- Close popup when clicking outside both field & popup
+	Interaction.ClosePopupOnOutsideClick(
+		state,
+		TimMenuGlobal.mouseX,
+		TimMenuGlobal.mouseY,
+		{ x = absX, y = absY, w = width, h = height },
+		popupBounds,
+		win
+	)
 	if clicked then
-		if state.open then
-			state.open = false
-			win._widgetBlockedRegions = {}
-		else
+		if not state.open and hovered then
 			state.open = true
-			-- block popup region
-			local popX, popY = absX, absY + height
-			win._widgetBlockedRegions = { { x = popX, y = popY, w = imageData.width, h = imageData.height } }
-			-- bring window to front
+			win._widgetBlockedRegions = { popupBounds }
+			-- bring window to front so popup is topmost
 			for i, id in ipairs(TimMenuGlobal.order) do
 				if id == win.id then
 					table.remove(TimMenuGlobal.order, i)
@@ -123,35 +131,26 @@ local function ColorPicker(win, label, initColor)
 				end
 			end
 			table.insert(TimMenuGlobal.order, win.id)
-		end
-	end
-
-	-- Popup interaction and selection
-	if state.open then
-		local popX, popY = absX, absY + height
-		local radius = math.min(imageData.width, imageData.height) * 0.5
-		local cx, cy = popX + radius, popY + radius
-		local mx, my = table.unpack(input.GetMousePos())
-		if
-			Utils.ConsumeClick()
-			and Interaction.IsHovered(win, { x = popX, y = popY, w = imageData.width, h = imageData.height })
-		then
-			local dx = mx - cx
-			local dy = cy - my
-			local dist = math.sqrt(dx * dx + dy * dy)
-			if dist <= radius then
-				-- compute HSV from polar coords
-				local angle = math.atan(dy, dx)
-				local hue = ((angle / (2 * math.pi)) + 1) % 1
-				local sat = math.min(1, dist / radius)
-				local r, g, b = hsvToRGB(hue, sat, 1)
-				state.color = { r, g, b, state.color[4] }
-				state.hue = hue
-				state.sat = sat
-				changed = true
-				state.open = false
-				win._widgetBlockedRegions = {}
+		elseif state.open then
+			-- Pixel-based selection: sample RGBA from image data
+			if Interaction.IsHovered(win, popupBounds) then
+				local mx, my = table.unpack(input.GetMousePos())
+				local px = math.floor(mx - popupBounds.x)
+				local py = math.floor(my - popupBounds.y)
+				if px >= 0 and py >= 0 and px < imageData.width and py < imageData.height then
+					local idx = (py * imageData.width + px) * 4 + 1
+					local r = string.byte(imageData.data, idx)
+					local g = string.byte(imageData.data, idx + 1)
+					local b = string.byte(imageData.data, idx + 2)
+					local a = string.byte(imageData.data, idx + 3)
+					if a ~= 0 then
+						state.color = { r, g, b, state.color[4] }
+						changed = true
+					end
+				end
 			end
+			state.open = false
+			win._widgetBlockedRegions = {}
 		end
 	end
 
@@ -163,8 +162,26 @@ local function ColorPicker(win, label, initColor)
 	elseif hovered then
 		bg = Globals.Colors.ItemHover
 	end
-	Common.QueueRect(win, Globals.Layers.WidgetBackground, px, py, px + boxSize, py + boxSize, bg)
-	-- inner color preview
+	local mainW = width - arrowBoxW
+	Common.QueueRect(win, Globals.Layers.WidgetBackground, px, py, px + mainW, py + height, bg)
+	Common.QueueRect(
+		win,
+		Globals.Layers.WidgetBackground,
+		px + mainW,
+		py,
+		px + width,
+		py + height,
+		Globals.Colors.ArrowBoxBg
+	)
+	Common.QueueOutlinedRect(
+		win,
+		Globals.Layers.WidgetOutline,
+		px,
+		py,
+		px + width,
+		py + height,
+		Globals.Colors.WindowBorder
+	)
 	local inner = state.color
 	Common.QueueRect(
 		win,
@@ -175,31 +192,56 @@ local function ColorPicker(win, label, initColor)
 		py + boxSize - padding,
 		inner
 	)
-	Common.QueueOutlinedRect(
-		win,
-		Globals.Layers.WidgetOutline,
-		px,
-		py,
-		px + boxSize,
-		py + boxSize,
-		Globals.Colors.WindowBorder
-	)
 	Common.QueueText(
 		win,
 		Globals.Layers.WidgetText,
 		px + boxSize + padding,
-		py + (boxSize - txtH) * 0.5,
+		py + (height - txtH) * 0.5,
 		label,
 		Globals.Colors.Text
 	)
 
-	-- Draw popup texture
+	-- Use dropdown-style arrow sizing
+	draw.SetFont(Globals.Style.Font) -- Ensure font for arrow char measurement
+	local arrowCharW, arrowCharH = draw.GetTextSize("▼")
+	local triW, triH = arrowCharW * 0.5, arrowCharH * 0.5
+	local triX = px + mainW + (arrowBoxW - triW) / 2
+	local triY = py + (height - triH) / 2
+	win:QueueDrawAtLayer(Globals.Layers.WidgetText, function()
+		DrawHelpers.DrawArrow(triX, triY, triW, triH, state.open and "up" or "down", Globals.Colors.Text)
+	end)
+
+	-- Draw popup only when open so it respects sector layer offsets
 	if state.open then
-		local popX, popY = absX, absY + height
-		DrawManager.Enqueue(win.id, Globals.Layers.Popup, function(tex, x0, y0, w, h)
+		-- Compute sector group offset so popup draws on top of sector content
+		local depth = (win._sectorStack and #win._sectorStack) or 0
+		local layerOffset = depth * Globals.LayersPerGroup
+		local popupLayer = layerOffset + Globals.Layers.Popup
+		-- Popup background fill
+		DrawManager.Enqueue(win.id, popupLayer, function()
+			Common.SetColor(Globals.Colors.Window)
+			Common.DrawFilledRect(
+				popupBounds.x,
+				popupBounds.y,
+				popupBounds.x + imageData.width,
+				popupBounds.y + imageData.height
+			)
+		end)
+		-- Popup image
+		DrawManager.Enqueue(win.id, popupLayer, function(tex, x0, y0, w, h)
 			draw.Color(255, 255, 255, 255)
 			draw.TexturedRect(tex, x0, y0, x0 + w, y0 + h)
-		end, imageData.texture, popX, popY, imageData.width, imageData.height)
+		end, imageData.texture, popupBounds.x, popupBounds.y, imageData.width, imageData.height)
+		-- Popup outline
+		DrawManager.Enqueue(win.id, popupLayer, function()
+			Common.SetColor(Globals.Colors.WindowBorder)
+			Common.DrawOutlinedRect(
+				popupBounds.x,
+				popupBounds.y,
+				popupBounds.x + imageData.width,
+				popupBounds.y + imageData.height
+			)
+		end)
 	end
 
 	return state.color, changed
