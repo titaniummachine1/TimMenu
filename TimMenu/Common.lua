@@ -176,7 +176,7 @@ end
 ---@param x2 number
 ---@param y2 number
 ---@param fillColor table optional, defaults to Globals.Colors.Item
----@param borderColor table optional
+---@param borderColor table|nil optional
 function Common.QueueRect(window, layer, x1, y1, x2, y2, fillColor, borderColor)
 	-- store relative rectangle coords, compute absolute at draw time
 	local relX = x1 - window.X

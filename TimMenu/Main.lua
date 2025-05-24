@@ -58,14 +58,25 @@ local Common = require("TimMenu.Common")
 local Globals = require("TimMenu.Globals")
 local Utils = require("TimMenu.Utils")
 local Window = require("TimMenu.Window")
-local Widgets = require("TimMenu.Widgets")
--- Explicitly require Keybind module so bundler includes it
-local _ = require("TimMenu.Widgets.Keybind")
--- Explicitly require Image module so bundler includes it
-local _ = require("TimMenu.Widgets.Image")
 local SectorWidget = require("TimMenu.Layout.Sector")
 local SeparatorLayout = require("TimMenu.Layout.Separator")
 local DrawManager = require("TimMenu.DrawManager")
+
+-- Direct widget imports (no middleman)
+local Widgets = {
+	Button = require("TimMenu.Widgets.Button"),
+	Checkbox = require("TimMenu.Widgets.Checkbox"),
+	Slider = require("TimMenu.Widgets.Slider"),
+	TextInput = require("TimMenu.Widgets.TextInput"),
+	Dropdown = require("TimMenu.Widgets.Dropdown"),
+	Combo = require("TimMenu.Widgets.Combo"),
+	Selector = require("TimMenu.Widgets.Selector"),
+	TabControl = require("TimMenu.Widgets.TabControl"),
+	Keybind = require("TimMenu.Widgets.Keybind"),
+	ColorPicker = require("TimMenu.Widgets.ColorPicker"),
+	Tooltip = require("TimMenu.Widgets.Tooltip"),
+	Image = require("TimMenu.Widgets.Image"),
+}
 
 local function getOrCreateWindow(key, title, visible)
 	local win = TimMenuGlobal.windows[key]
