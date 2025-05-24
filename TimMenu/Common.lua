@@ -1,3 +1,4 @@
+---@diagnostic disable: duplicate-set-field
 local Utils = require("TimMenu.Utils")
 local Globals = require("TimMenu.Globals")
 
@@ -241,36 +242,6 @@ end
 callbacks.Unregister("Unload", "TimMenu_Unload")
 callbacks.Register("Unload", "TimMenu_Unload", OnUnload)
 
--- Ensure all draw positions are integers
-do
-	local origFilled = draw.FilledRect
-	draw.FilledRect = function(x1, y1, x2, y2)
-		origFilled(math.floor(x1), math.floor(y1), math.floor(x2), math.floor(y2))
-	end
-
-	local origOutlined = draw.OutlinedRect
-	draw.OutlinedRect = function(x1, y1, x2, y2)
-		origOutlined(math.floor(x1), math.floor(y1), math.floor(x2), math.floor(y2))
-	end
-
-	local origLine = draw.Line
-	if origLine then
-		draw.Line = function(x1, y1, x2, y2)
-			origLine(math.floor(x1), math.floor(y1), math.floor(x2), math.floor(y2))
-		end
-	end
-
-	local origText = draw.Text
-	draw.Text = function(x, y, text)
-		origText(math.floor(x), math.floor(y), text)
-	end
-
-	local origTextured = draw.TexturedRect
-	if origTextured then
-		draw.TexturedRect = function(id, x1, y1, x2, y2)
-			origTextured(id, math.floor(x1), math.floor(y1), math.floor(x2), math.floor(y2))
-		end
-	end
-end
+-- Monkey patch draw functions to ensure all draw positions are integers-- This prevents floating point coordinates which can cause rendering issuesdo	local origFilled = draw.FilledRect	---@diagnostic disable-next-line: duplicate-set-field	draw.FilledRect = function(x1, y1, x2, y2)		origFilled(math.floor(x1), math.floor(y1), math.floor(x2), math.floor(y2))	end	local origOutlined = draw.OutlinedRect	---@diagnostic disable-next-line: duplicate-set-field	draw.OutlinedRect = function(x1, y1, x2, y2)		origOutlined(math.floor(x1), math.floor(y1), math.floor(x2), math.floor(y2))	end	local origLine = draw.Line	if origLine then		---@diagnostic disable-next-line: duplicate-set-field		draw.Line = function(x1, y1, x2, y2)			origLine(math.floor(x1), math.floor(y1), math.floor(x2), math.floor(y2))		end	end	local origText = draw.Text	---@diagnostic disable-next-line: duplicate-set-field	draw.Text = function(x, y, text)		origText(math.floor(x), math.floor(y), text)	end	local origTextured = draw.TexturedRect	if origTextured then		---@diagnostic disable-next-line: duplicate-set-field		draw.TexturedRect = function(id, x1, y1, x2, y2)			origTextured(id, math.floor(x1), math.floor(y1), math.floor(x2), math.floor(y2))		end	endend
 
 return Common

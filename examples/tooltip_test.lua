@@ -1,6 +1,10 @@
 -- Simple tooltip test example
 local TimMenu = require("TimMenu")
 
+-- State variables to properly maintain widget values
+local checkboxState = false
+local sliderValue = 50
+
 local function main()
 	if TimMenu.Begin("Tooltip Test") then
 		-- Button with tooltip
@@ -14,7 +18,7 @@ local function main()
 		TimMenu.NextLine()
 
 		-- Checkbox with tooltip
-		local checkboxState = TimMenu.Checkbox("Enable Feature", false)
+		checkboxState = TimMenu.Checkbox("Enable Feature", checkboxState)
 		TimMenu.Tooltip("Toggle this checkbox to enable or disable the feature")
 
 		TimMenu.NextLine()
@@ -26,10 +30,9 @@ local function main()
 		TimMenu.NextLine()
 
 		-- Slider with tooltip
-		local sliderValue = TimMenu.Slider("Volume", 50, 0, 100, 1)
+		sliderValue = TimMenu.Slider("Volume", sliderValue, 0, 100, 1)
 		TimMenu.Tooltip("Adjust the volume level from 0 to 100")
 	end
-	TimMenu.End()
 end
 
 -- Register the callback
