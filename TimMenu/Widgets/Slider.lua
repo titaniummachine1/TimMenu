@@ -66,7 +66,6 @@ local function Slider(win, label, currentValue, minValue, maxValue, stepValue)
 
 	-- Compute new stepped value
 	local newValue = currentValue
-	local changed = false
 	if dragging then
 		local t = math.min(1, math.max(0, (mX - absX) / width))
 		local raw = minValue + ((maxValue - minValue) * t)
@@ -74,7 +73,6 @@ local function Slider(win, label, currentValue, minValue, maxValue, stepValue)
 		stepped = math.min(maxValue, math.max(minValue, stepped))
 		if stepped ~= currentValue then
 			newValue = stepped
-			changed = true
 			-- Update label text with new value
 			labelText = label .. ": " .. tostring(newValue)
 			txtW, txtH = draw.GetTextSize(labelText)
@@ -126,7 +124,7 @@ local function Slider(win, label, currentValue, minValue, maxValue, stepValue)
 		Globals.Colors.Text
 	)
 
-	return newValue, changed
+	return newValue
 end
 
 return Slider

@@ -154,7 +154,6 @@ local function TextInput(win, label, text)
 					local char = MapKeyCodeToChar(keyCode, isShiftDown)
 					if char then
 						entry.text = entry.text .. char
-						changed = true
 					end
 					state.firstDownTime = currentTime
 					state.lastRepeatTime = currentTime
@@ -166,7 +165,6 @@ local function TextInput(win, label, text)
 					local char = MapKeyCodeToChar(keyCode, isShiftDown)
 					if char then
 						entry.text = entry.text .. char
-						changed = true
 					end
 					state.lastRepeatTime = currentTime
 				end
@@ -187,7 +185,6 @@ local function TextInput(win, label, text)
 			if not bkspState.firstDownTime then -- Backspace just pressed
 				if #entry.text > 0 then
 					entry.text = string.sub(entry.text, 1, -2)
-					changed = true
 				end
 				bkspState.firstDownTime = currentTime
 				bkspState.lastRepeatTime = currentTime
@@ -198,7 +195,6 @@ local function TextInput(win, label, text)
 			then -- Backspace held
 				if #entry.text > 0 then
 					entry.text = string.sub(entry.text, 1, -2)
-					changed = true
 				end
 				bkspState.lastRepeatTime = currentTime
 			end
@@ -316,7 +312,7 @@ local function TextInput(win, label, text)
 		Globals.Colors.WidgetOutline
 	)
 
-	return entry.text, changed
+	return entry.text
 end
 
 return TextInput

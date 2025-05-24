@@ -12,10 +12,8 @@ local function Keybind(win, label, currentKey)
 	local key = tostring(win.id) .. ":keybind:" .. label
 	local entry = win._keybinds[key]
 	if not entry then
-		entry = { keycode = currentKey or 0, listening = false, changed = false, waitingRelease = false }
+		entry = { keycode = currentKey or 0, listening = false, waitingRelease = false }
 		win._keybinds[key] = entry
-	else
-		entry.changed = false
 	end
 
 	-- Determine displayed label
@@ -64,7 +62,6 @@ local function Keybind(win, label, currentKey)
 			for code = 1, 255 do
 				if input.IsButtonPressed(code) then
 					entry.keycode = code
-					entry.changed = true
 					entry.listening = false
 					break
 				end
@@ -106,7 +103,7 @@ local function Keybind(win, label, currentKey)
 		Common.DrawText(px + pad, py + pad, fullLabel)
 	end)
 
-	return entry.keycode, entry.changed
+	return entry.keycode
 end
 
 return Keybind

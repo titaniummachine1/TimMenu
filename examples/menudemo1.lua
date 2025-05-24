@@ -35,7 +35,7 @@ local showcaseButtonClicks = 0
 local function OnDraw_Menudemo1()
 	if TimMenu.Begin("Demo Window 1") then
 		-- NEW Showcase Header TabControl
-		showcaseSelectedTab, _ = TimMenu.TabControl("ShowcaseHeaderTabs", showcaseTabNames, showcaseSelectedTab, true)
+		showcaseSelectedTab = TimMenu.TabControl("ShowcaseHeaderTabs", showcaseTabNames, showcaseSelectedTab, true)
 
 		if showcaseSelectedTab == 1 then
 			TimMenu.Text("Widgets in Showcase Alpha:")
@@ -48,40 +48,35 @@ local function OnDraw_Menudemo1()
 			end
 			TimMenu.Tooltip("Click me to increment the counter!")
 			TimMenu.NextLine()
-			showcaseSliderP, _ = TimMenu.Slider("Alpha Slider", showcaseSliderP, 0, 200, 5)
+			showcaseSliderP = TimMenu.Slider("Alpha Slider", showcaseSliderP, 0, 200, 5)
 			TimMenu.Tooltip("Drag this slider to adjust the value between 0 and 200")
 			TimMenu.Text("Button Clicks: " .. showcaseButtonClicks)
 			TimMenu.Separator()
 		elseif showcaseSelectedTab == 2 then
 			TimMenu.Text("Demonstrating more widgets in Beta:")
 			TimMenu.NextLine()
-			showcaseKeyK, _ = TimMenu.Keybind("Beta Keybind", showcaseKeyK)
+			showcaseKeyK = TimMenu.Keybind("Beta Keybind", showcaseKeyK)
 			TimMenu.Tooltip("Click to bind a key, then press any key to capture it")
-			showcaseDropdownD, _ = TimMenu.Dropdown("Beta Dropdown", showcaseDropdownD, showcaseDropdownOptions)
+			showcaseDropdownD = TimMenu.Dropdown("Beta Dropdown", showcaseDropdownD, showcaseDropdownOptions)
 			TimMenu.Tooltip("Click to open dropdown and select an option")
-			showcaseComboC, _ = TimMenu.Combo("Beta Combo", showcaseComboC, showcaseComboOptions)
+			showcaseComboC = TimMenu.Combo("Beta Combo", showcaseComboC, showcaseComboOptions)
 			TimMenu.Tooltip("Multi-selection box - toggle multiple options")
 			TimMenu.Separator()
 		elseif showcaseSelectedTab == 3 then
 			TimMenu.Text("Input and Selection in Gamma:")
 			TimMenu.NextLine()
-			showcaseSelectorS, _ = TimMenu.Selector("Gamma Selector", showcaseSelectorS, showcaseSelectorOptions)
-			local newTextGamma
-			newTextGamma, _ = TimMenu.TextInput("Gamma Text Input", showcaseTextT)
-			if newTextGamma ~= showcaseTextT then
-				showcaseTextT = newTextGamma
+			showcaseSelectorS = TimMenu.Selector("Gamma Selector", showcaseSelectorS, showcaseSelectorOptions)
+			showcaseTextT = TimMenu.TextInput("Gamma Text Input", showcaseTextT)
+			if TimMenu.Button("Gamma Action Button") then
+				print("[Menudemo1] Gamma action button clicked!")
 			end
-			TimMenu.Button("Gamma Action Button")
 			TimMenu.Separator()
 		end
 		TimMenu.NextLine() -- Ensure content below header tabs starts on a new line.
 
 		-- Color Picker demonstration
-		pickerColor1, changedColor1 = TimMenu.ColorPicker("Pick Color", pickerColor1)
+		pickerColor1 = TimMenu.ColorPicker("Pick Color", pickerColor1)
 		TimMenu.Tooltip("Click the color box to open the color picker")
-		if changedColor1 then
-			print("[Menudemo1] Picked color: ", pickerColor1[1], pickerColor1[2], pickerColor1[3])
-		end
 		TimMenu.NextLine()
 
 		-- First row: Demonstrate multiple widgets and alignment
@@ -95,7 +90,7 @@ local function OnDraw_Menudemo1()
 
 		TimMenu.BeginSector("Single Button")
 		if TimMenu.Button("Button in B") then
-			print("[Menudemo1] Button B clicked!XD")
+			print("[Menudemo1] Button B clicked!")
 		end
 		TimMenu.EndSector()
 		TimMenu.NextLine() -- End of the first row of sectors
@@ -105,20 +100,17 @@ local function OnDraw_Menudemo1()
 		TimMenu.Text("Inside Outer Container")
 		TimMenu.NextLine()
 		TimMenu.BeginSector("Nested Slider Area")
-		sliderVal1, changed1 = TimMenu.Slider("Slider in Nested Area", sliderVal1, 0, 100, 5)
+		sliderVal1 = TimMenu.Slider("Slider in Nested Area", sliderVal1, 0, 100, 5)
 		TimMenu.Tooltip("This slider is nested inside a sector container")
-		if changed1 then
-			print("[Menudemo1] Slider value -> " .. sliderVal1)
+		if TimMenu.Button("Action Button 1") then
+			print("[Menudemo1] Action Button 1 clicked!")
 		end
-		if TimMenu.Button("Button in B") then
-			print("[Menudemo1] Button B clicked!XD")
-		end
-		if TimMenu.Button("Button in B") then
-			print("[Menudemo1] Button B clicked!XD")
+		if TimMenu.Button("Action Button 2") then
+			print("[Menudemo1] Action Button 2 clicked!")
 		end
 		TimMenu.NextLine()
-		if TimMenu.Button("Button in B") then
-			print("[Menudemo1] Button B clicked!XD")
+		if TimMenu.Button("Action Button 3") then
+			print("[Menudemo1] Action Button 3 clicked!")
 		end
 
 		TimMenu.EndSector()
@@ -132,41 +124,27 @@ local function OnDraw_Menudemo1()
 		TimMenu.NextLine()
 
 		-- Selector example using the dedicated widget (outside sectors)
-		selectedIndex1, changed1 = TimMenu.Selector("Options Selector", selectedIndex1, options1)
+		selectedIndex1 = TimMenu.Selector("Options Selector", selectedIndex1, options1)
 		TimMenu.Tooltip("Use < > arrows or click left/right halves to cycle through options")
-		if changed1 then
-			print("[Menudemo1] Selector changed to index: ", selectedIndex1)
-		end
 
 		TimMenu.NextLine()
 		-- Dropdown example using the dedicated widget
-		dropdownIndex1, changed1 = TimMenu.Dropdown("Dropdown in Demo1", dropdownIndex1, options1)
+		dropdownIndex1 = TimMenu.Dropdown("Dropdown in Demo1", dropdownIndex1, options1)
 		TimMenu.Tooltip("Click to open dropdown and select an option")
-		if changed1 then
-			print("[Menudemo1] Dropdown selected: " .. options1[dropdownIndex1])
-		end
 		TimMenu.NextLine()
 
-		comboState1, changed1 = TimMenu.Combo("Combo in Demo1", comboState1, options1)
+		comboState1 = TimMenu.Combo("Combo in Demo1", comboState1, options1)
 		TimMenu.Tooltip("Multi-selection box - toggle multiple options")
-		if changed1 then
-			print("[Menudemo1] Combo selections:")
-		end
 		TimMenu.NextLine()
 
 		TimMenu.Spacing(20) -- Add extra vertical space (custom amount)
 		TimMenu.Text("Another line after custom spacing.")
 
 		-- Tab control example
-		selectedTab1, changed1 = TimMenu.TabControl("demo1_tabs", tabOptions1, selectedTab1)
-		if changed1 then
-			print("[Menudemo1] Tab changed to: " .. tabOptions1[selectedTab1])
-		end
+		selectedTab1 = TimMenu.TabControl("demo1_tabs", tabOptions1, selectedTab1)
+
 		-- Keybind widget
-		bindKey1, changed1 = TimMenu.Keybind("Demo1 Bind", bindKey1)
-		if changed1 then
-			print("[Menudemo1] New bind key code: " .. tostring(bindKey1))
-		end
+		bindKey1 = TimMenu.Keybind("Demo1 Bind", bindKey1)
 
 		TimMenu.NextLine()
 	end

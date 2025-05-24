@@ -63,9 +63,8 @@ local function Dropdown(win, label, selectedIndex, options)
 	local key = tostring(win.id) .. ":dropdown:" .. label
 	local entry = win._dropdowns[key]
 	if not entry then
-		entry = { selected = selectedIndex or 1, open = false, changed = false }
+		entry = { selected = selectedIndex or 1, open = false }
 	end
-	entry.changed = false
 	if selectedIndex and selectedIndex ~= entry.selected then
 		entry.selected = selectedIndex
 	end
@@ -114,7 +113,6 @@ local function Dropdown(win, label, selectedIndex, options)
 				local idx = math.floor((input.GetMousePos()[2] - popupBounds.y) / height) + 1
 				if idx >= 1 and idx <= #options then
 					entry.selected = idx
-					entry.changed = true
 				end
 			else
 				entry.open = false
@@ -174,7 +172,7 @@ local function Dropdown(win, label, selectedIndex, options)
 		win:QueueDrawAtLayer(popupLayer, DrawDropdownPopupOutline, win, popupX, popupY, width, listH)
 	end
 
-	return entry.selected, entry.changed
+	return entry.selected
 end
 
 return Dropdown

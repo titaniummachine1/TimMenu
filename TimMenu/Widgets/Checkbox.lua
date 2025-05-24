@@ -46,7 +46,7 @@ local function Checkbox(win, label, currentState)
 	-- Draw label text
 	Draw.WidgetText(win, ctx.absX + boxSize + padding, ctx.absY + padding, label)
 
-	return newState, clicked
+	return newState
 end
 
 return Checkbox

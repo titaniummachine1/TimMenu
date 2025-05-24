@@ -92,7 +92,6 @@ local function ColorPicker(win, label, initColor)
 		initialized = false,
 		color = { initColor[1], initColor[2], initColor[3], initColor[4] or 255 },
 	})
-	local changed = false
 
 	-- Initialize hue/saturation from initial color
 	if not state.initialized then
@@ -150,7 +149,6 @@ local function ColorPicker(win, label, initColor)
 			if a ~= 0 then
 				state.color[1], state.color[2], state.color[3] = r, g, b
 				state.selX, state.selY = px, py
-				changed = true
 			end
 		end
 
@@ -162,7 +160,6 @@ local function ColorPicker(win, label, initColor)
 			local mx2, _ = table.unpack(input.GetMousePos())
 			local newA = math.floor(((mx2 - sliderBounds.x) / sliderBounds.w) * 255)
 			state.color[4] = math.max(0, math.min(255, newA))
-			changed = true
 		end
 
 		-- Close popup when mouse leaves both field and popup regions
@@ -308,9 +305,22 @@ local function ColorPicker(win, label, initColor)
 				sliderBounds.y + sliderBounds.h
 			)
 		end)
+
+		-- Alpha slider text
+		local alphaText = "Alpha: " .. tostring(state.color[4])
+		DrawManager.Enqueue(win.id, popupLayer + 1, function()
+			draw.SetFont(Globals.Style.Font)
+			local textW, textH = draw.GetTextSize(alphaText)
+			Common.SetColor(Globals.Colors.Text)
+			Common.DrawText(
+				sliderBounds.x + (sliderBounds.w - textW) / 2,
+				sliderBounds.y + (sliderBounds.h - textH) / 2,
+				alphaText
+			)
+		end)
 	end
 
-	return state.color, changed
+	return state.color
 end
 
 return ColorPicker

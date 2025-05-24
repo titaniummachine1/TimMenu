@@ -44,9 +44,9 @@ local function TabControl(win, id, tabs, defaultSelection, isHeader)
 	local key = tostring(win.id) .. ":tabctrl:" .. id
 	local entry = win._tabControls[key]
 	if not entry then
-		entry = { selected = resolveDefault(), changed = false }
+		entry = { selected = resolveDefault() }
 	else
-		entry.changed = false
+		entry.selected = resolveDefault()
 	end
 	win._tabControls[key] = entry
 
@@ -94,7 +94,6 @@ local function TabControl(win, id, tabs, defaultSelection, isHeader)
 			local hover, press, click = Interaction.Process(win, widgetKey, bounds, false)
 			if click then
 				entry.selected = i
-				entry.changed = true
 			end
 			-- Hover underline for non-selected tabs (dynamic positioning)
 			if hover and not isSel then
@@ -124,7 +123,7 @@ local function TabControl(win, id, tabs, defaultSelection, isHeader)
 			end
 			cursorX = cursorX + item.bw + spacing
 		end
-		return entry.selected, entry.changed
+		return entry.selected
 	end
 
 	-- Non-header TabControl: regular widget behavior
@@ -163,7 +162,6 @@ local function TabControl(win, id, tabs, defaultSelection, isHeader)
 		local hover, press, click = Interaction.Process(win, widgetKey, bounds, false)
 		if click then
 			entry.selected = i
-			entry.changed = true
 		end
 
 		-- Background (layer 1) using relative offsets
@@ -199,7 +197,7 @@ local function TabControl(win, id, tabs, defaultSelection, isHeader)
 	win.cursorY = startY + lineH + pad
 	win.cursorX = contentPad
 	win.lineHeight = 0
-	return entry.selected, entry.changed
+	return entry.selected
 end
 
 return TabControl

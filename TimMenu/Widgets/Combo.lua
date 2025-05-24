@@ -74,12 +74,10 @@ local function Combo(win, label, selected, options)
 	local key = tostring(win.id) .. ":combo:" .. label
 	local entry = win._combos[key]
 	if not entry then
-		entry = { selected = {}, open = false, changed = false }
+		entry = { selected = {}, open = false }
 		for i = 1, #options do
 			entry.selected[i] = selected[i] == true
 		end
-	else
-		entry.changed = false
 	end
 	win._combos[key] = entry
 
@@ -126,7 +124,6 @@ local function Combo(win, label, selected, options)
 				local idx = math.floor((input.GetMousePos()[2] - popupBounds.y) / height) + 1
 				if idx >= 1 and idx <= #options then
 					entry.selected[idx] = not entry.selected[idx]
-					entry.changed = true
 				end
 			else
 				entry.open = false
@@ -174,7 +171,7 @@ local function Combo(win, label, selected, options)
 		win:QueueDrawAtLayer(popupLayer, DrawComboPopupOutline, win, px, py, width, listH)
 	end
 
-	return entry.selected, entry.changed
+	return entry.selected
 end
 
 return Combo

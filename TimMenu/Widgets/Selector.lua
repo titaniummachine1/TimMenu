@@ -13,9 +13,8 @@ local function Selector(win, label, selectedIndex, options)
 	local key = tostring(win.id) .. ":selector:" .. safeLabel
 	local entry = win._selectors[key]
 	if not entry then
-		entry = { selected = selectedIndex or 1, changed = false }
+		entry = { selected = selectedIndex or 1 }
 	else
-		entry.changed = false
 		if selectedIndex and selectedIndex ~= entry.selected then
 			entry.selected = selectedIndex
 		end
@@ -49,7 +48,6 @@ local function Selector(win, label, selectedIndex, options)
 		if entry.selected < 1 then
 			entry.selected = #options
 		end
-		entry.changed = true
 	end
 
 	-- Unified interaction for next arrow
@@ -62,7 +60,6 @@ local function Selector(win, label, selectedIndex, options)
 		if entry.selected > #options then
 			entry.selected = 1
 		end
-		entry.changed = true
 	end
 
 	-- Unified interaction for center area
@@ -81,7 +78,6 @@ local function Selector(win, label, selectedIndex, options)
 				entry.selected = 1
 			end
 		end
-		entry.changed = true
 	end
 
 	win:QueueDrawAtLayer(2, function()
@@ -134,7 +130,7 @@ local function Selector(win, label, selectedIndex, options)
 		Common.DrawOutlinedRect(cx, cy, cx + totalWidth, cy + totalHeight)
 	end)
 
-	return entry.selected, entry.changed
+	return entry.selected
 end
 
 return Selector
