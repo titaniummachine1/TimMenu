@@ -1,3 +1,5 @@
+local WidgetBase = require("TimMenu.WidgetBase")
+local Draw = require("TimMenu.Draw")
 local Globals = require("TimMenu.Globals")
 local Common = require("TimMenu.Common")
 local Interaction = require("TimMenu.Interaction")

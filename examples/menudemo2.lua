@@ -48,11 +48,13 @@ local function OnDraw_Menudemo2()
 			end
 		elseif currentTab == "Audio" then
 			sliderVal2, changed2 = TimMenu.Slider("Volume", sliderVal2, 0, 100, 5)
+			TimMenu.Tooltip("Adjust the audio volume from 0 to 100")
 			if changed2 then
 				print("[Menudemo2] Volume -> " .. sliderVal2)
 			end
 			TimMenu.NextLine()
 			balanceVal2, changed3 = TimMenu.Slider("Balance", balanceVal2, -50, 50, 1)
+			TimMenu.Tooltip("Adjust audio balance: negative = left, positive = right")
 			if changed3 then
 				print("[Menudemo2] Balance -> " .. balanceVal2)
 			end
@@ -61,7 +63,7 @@ local function OnDraw_Menudemo2()
 			TimMenu.NextLine()
 
 			-- Selector example using the dedicated widget
-			selectedOption2, changedOption = TimMenu.Selector(nil, selectedOption2, options2)
+			selectedOption2, changedOption = TimMenu.Selector("Option Selector", selectedOption2, options2)
 			if changedOption then
 				print("[Menudemo2] Selector selected: " .. options2[selectedOption2])
 			end

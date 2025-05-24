@@ -41,20 +41,26 @@ local function OnDraw_Menudemo1()
 			TimMenu.Text("Widgets in Showcase Alpha:")
 			TimMenu.NextLine()
 			showcaseCbX = TimMenu.Checkbox("Alpha Checkbox", showcaseCbX)
+			TimMenu.Tooltip("Toggle this checkbox to test the widget functionality")
 			TimMenu.SameLine()
 			if TimMenu.Button("Alpha Button") then
 				showcaseButtonClicks = showcaseButtonClicks + 1
 			end
+			TimMenu.Tooltip("Click me to increment the counter!")
 			TimMenu.NextLine()
 			showcaseSliderP, _ = TimMenu.Slider("Alpha Slider", showcaseSliderP, 0, 200, 5)
+			TimMenu.Tooltip("Drag this slider to adjust the value between 0 and 200")
 			TimMenu.Text("Button Clicks: " .. showcaseButtonClicks)
 			TimMenu.Separator()
 		elseif showcaseSelectedTab == 2 then
 			TimMenu.Text("Demonstrating more widgets in Beta:")
 			TimMenu.NextLine()
 			showcaseKeyK, _ = TimMenu.Keybind("Beta Keybind", showcaseKeyK)
+			TimMenu.Tooltip("Click to bind a key, then press any key to capture it")
 			showcaseDropdownD, _ = TimMenu.Dropdown("Beta Dropdown", showcaseDropdownD, showcaseDropdownOptions)
+			TimMenu.Tooltip("Click to open dropdown and select an option")
 			showcaseComboC, _ = TimMenu.Combo("Beta Combo", showcaseComboC, showcaseComboOptions)
+			TimMenu.Tooltip("Multi-selection box - toggle multiple options")
 			TimMenu.Separator()
 		elseif showcaseSelectedTab == 3 then
 			TimMenu.Text("Input and Selection in Gamma:")
@@ -70,11 +76,7 @@ local function OnDraw_Menudemo1()
 		end
 		TimMenu.NextLine() -- Ensure content below header tabs starts on a new line.
 
-		-- Color Picker demonstration
-		pickerColor1, changedColor1 = TimMenu.ColorPicker("Pick Color", pickerColor1)
-		if changedColor1 then
-			print("[Menudemo1] Picked color: ", pickerColor1[1], pickerColor1[2], pickerColor1[3])
-		end
+		-- Color Picker demonstration		pickerColor1, changedColor1 = TimMenu.ColorPicker("Pick Color", pickerColor1)		TimMenu.Tooltip("Click the color box to open the color picker")		if changedColor1 then			print("[Menudemo1] Picked color: ", pickerColor1[1], pickerColor1[2], pickerColor1[3])		end
 		TimMenu.NextLine()
 
 		-- First row: Demonstrate multiple widgets and alignment
@@ -99,6 +101,7 @@ local function OnDraw_Menudemo1()
 		TimMenu.NextLine()
 		TimMenu.BeginSector("Nested Slider Area")
 		sliderVal1, changed1 = TimMenu.Slider("Slider in Nested Area", sliderVal1, 0, 100, 5)
+		TimMenu.Tooltip("This slider is nested inside a sector container")
 		if changed1 then
 			print("[Menudemo1] Slider value -> " .. sliderVal1)
 		end
@@ -123,11 +126,7 @@ local function OnDraw_Menudemo1()
 		TimMenu.Separator()
 		TimMenu.NextLine()
 
-		-- Selector example using the dedicated widget (outside sectors)
-		selectedIndex1, changed1 = TimMenu.Selector(nil, selectedIndex1, options1)
-		if changed1 then
-			print("[Menudemo1] Selector changed to index: ", selectedIndex1)
-		end
+		-- Selector example using the dedicated widget (outside sectors)		selectedIndex1, changed1 = TimMenu.Selector("Options Selector", selectedIndex1, options1)		TimMenu.Tooltip("Use < > arrows or click left/right halves to cycle through options")		if changed1 then			print("[Menudemo1] Selector changed to index: ", selectedIndex1)		end
 
 		TimMenu.NextLine()
 		-- Dropdown example using the dedicated widget
