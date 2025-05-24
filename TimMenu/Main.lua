@@ -1,14 +1,10 @@
 local TimMenu = {}
 
--- Alias Lmaobox globals
-local lmbx = globals
-
--- Simplified global state
 local function Setup()
 	TimMenuGlobal = {
-		windows = {}, -- Stores window objects, keyed by ID
-		order = {}, -- Array of window IDs, defining Z-order (last = topmost)
-		InputState = { -- ADDED: To manage mouse button state across frames
+		windows = {},
+		order = {},
+		InputState = {
 			isLeftMouseDown = false,
 			wasLeftMouseDownLastFrame = false,
 		},
@@ -17,13 +13,8 @@ end
 
 Setup()
 
--- Next-widget font override state
 local nextWidgetFont = nil
 
---- Override font for the next widget only.
----@param name string Font name (Globals.Style.FontName)
----@param size number Font size
----@param weight number Font weight
 function TimMenu.SetFontNext(name, size, weight)
 	nextWidgetFont = { name = name, size = size, weight = weight }
 end
@@ -51,7 +42,6 @@ local function restoreWidgetFont(prev)
 	end
 end
 
--- Local variable to track the window currently being defined by Begin/End
 local _currentWindow = nil
 
 local Common = require("TimMenu.Common")
@@ -61,60 +51,35 @@ local Window = require("TimMenu.Window")
 local SectorWidget = require("TimMenu.Layout.Sector")
 local SeparatorLayout = require("TimMenu.Layout.Separator")
 local DrawManager = require("TimMenu.DrawManager")
-
--- Direct widget imports (no middleman)
-local Widgets = {
-	Button = require("TimMenu.Widgets.Button"),
-	Checkbox = require("TimMenu.Widgets.Checkbox"),
-	Slider = require("TimMenu.Widgets.Slider"),
-	TextInput = require("TimMenu.Widgets.TextInput"),
-	Dropdown = require("TimMenu.Widgets.Dropdown"),
-	Combo = require("TimMenu.Widgets.Combo"),
-	Selector = require("TimMenu.Widgets.Selector"),
-	TabControl = require("TimMenu.Widgets.TabControl"),
-	Keybind = require("TimMenu.Widgets.Keybind"),
-	ColorPicker = require("TimMenu.Widgets.ColorPicker"),
-	Tooltip = require("TimMenu.Widgets.Tooltip"),
-	Image = require("TimMenu.Widgets.Image"),
-}
+local Widgets = require("TimMenu.Widgets")
 
 local function getOrCreateWindow(key, title, visible)
 	local win = TimMenuGlobal.windows[key]
 	if not win then
 		win = Window.new({ title = title, id = key, visible = visible })
 		TimMenuGlobal.windows[key] = win
-		table.insert(TimMenuGlobal.order, key) -- Add to end (top) by default
+		table.insert(TimMenuGlobal.order, key)
 	else
-		win.visible = visible -- Update visibility if it already exists
+		win.visible = visible
 	end
 	return win
 end
 
 function TimMenu.Begin(title, visible, id)
-	assert(type(title) == "string", "TimMenu.Begin requires a string title")
-	-- Auto-reset fonts to defaults at the start of this frame
 	TimMenu.FontReset()
 	visible = (visible == nil) and true or visible
-	if type(visible) == "string" then -- Handle shorthand TimMenu.Begin("Title", "id")
+	if type(visible) == "string" then
 		id, visible = visible, true
 	end
 	local key = (id or title)
 
 	local win = getOrCreateWindow(key, title, visible)
-	win:update() -- This will now mark it as touched this frame
+	win:update()
 
-	_currentWindow = win -- Set for widget calls
-
-	-- Reset window's internal layout cursor for this frame's widgets
+	_currentWindow = win
 	win:resetCursor()
-
-	-- Clear per-frame widget counter for unique widget IDs
 	win._widgetCounter = 0
-
-	-- Clear any previously recorded sectors for this window each frame
 	win._sectorStack = {}
-
-	-- Clear widget bounds for tooltip processing
 	win._widgetBounds = {}
 
 	if not win.visible or (gui.GetValue("clean screenshots") == 1 and engine.IsTakingScreenshot()) then
@@ -125,66 +90,57 @@ function TimMenu.Begin(title, visible, id)
 end
 
 function TimMenu.End()
-	-- This is now a no-op. Drawing and main logic are handled by _TimMenu_GlobalDraw.
-	_currentWindow = nil -- Clear current window context
+	_currentWindow = nil
 end
 
 function TimMenu.GetCurrentWindow()
 	return _currentWindow
 end
 
---- Calls the Widgets.Button API on the current window.
 function TimMenu.Button(label)
-	assert(type(label) == "string", "TimMenu.Button: 'label' must be a string, got " .. type(label))
 	local win = TimMenu.GetCurrentWindow()
-	assert(win, "TimMenu.Button: no active window. Ensure TimMenu.Begin() was called before using widget functions.")
+	if not win then
+		return false
+	end
 	local prevFont = applyNextWidgetFont()
 	local clicked = Widgets.Button(win, label)
 	restoreWidgetFont(prevFont)
 	return clicked
 end
 
---- Draws a checkbox and returns its new state.
 function TimMenu.Checkbox(label, state)
-	assert(type(label) == "string", "TimMenu.Checkbox: 'label' must be a string, got " .. type(label))
-	assert(type(state) == "boolean", "TimMenu.Checkbox: 'state' must be boolean, got " .. type(state))
 	local win = TimMenu.GetCurrentWindow()
-	assert(win, "TimMenu.Checkbox: no active window. Ensure TimMenu.Begin() was called before using widget functions.")
+	if not win then
+		return state, false
+	end
 	local prevFont = applyNextWidgetFont()
 	local newState, clicked = Widgets.Checkbox(win, label, state)
 	restoreWidgetFont(prevFont)
 	return newState, clicked
 end
 
---- Draws static text in the current window.
---- @param text string The string to display.
 function TimMenu.Text(text)
-	assert(type(text) == "string", "TimMenu.Text: 'text' must be a string, got " .. type(text))
 	local win = TimMenu.GetCurrentWindow()
-	assert(win, "TimMenu.Text: no active window. Ensure TimMenu.Begin() was called before drawing text.")
+	if not win then
+		return
+	end
 
-	-- Increment widget counter for tooltip support
 	win._widgetCounter = (win._widgetCounter or 0) + 1
 	local widgetIndex = win._widgetCounter
 
-	-- Measure text
 	draw.SetFont(Globals.Style.Font)
 	local w, h = draw.GetTextSize(text)
-	-- Reserve space in layout
 	local x, y = win:AddWidget(w, h)
 	local absX, absY = win.X + x, win.Y + y
 
-	-- Store widget bounds for tooltip detection
 	local bounds = { x = absX, y = absY, w = w, h = h }
 	Widgets.Tooltip.StoreWidgetBounds(win, widgetIndex, bounds)
 
-	-- Queue drawing at base layer using Common.QueueText
 	Common.QueueText(win, 1, absX, absY, text, Globals.Colors.Text)
 end
 
---- Displays debug information.
 function TimMenu.ShowDebug()
-	local currentFrame = lmbx.FrameCount()
+	local currentFrame = globals.FrameCount()
 	draw.SetFont(Globals.Style.Font)
 	Common.SetColor(Globals.Colors.Text)
 	local headerX, headerY = Globals.Defaults.DebugHeaderX, Globals.Defaults.DebugHeaderY
@@ -197,7 +153,6 @@ function TimMenu.ShowDebug()
 	Common.DrawText(headerX, headerY, "Active Windows (" .. windowCount .. "):")
 
 	local yOffset = headerY + lineSpacing
-	-- Iterate in Z-order for debug display
 	for i = 1, #TimMenuGlobal.order do
 		local key = TimMenuGlobal.order[i]
 		local win = TimMenuGlobal.windows[key]
@@ -213,15 +168,13 @@ function TimMenu.ShowDebug()
 	end
 end
 
---- Moves the cursor to the next line in the current window, respecting sectors.
 function TimMenu.NextLine(spacing)
 	local win = TimMenu.GetCurrentWindow()
 	if win then
-		win:NextLine(spacing) -- Pass optional spacing to window method
+		win:NextLine(spacing)
 	end
 end
 
---- Advances the cursor horizontally to place the next widget on the same line.
 function TimMenu.SameLine(spacing)
 	local win = TimMenu.GetCurrentWindow()
 	if win then
@@ -229,7 +182,6 @@ function TimMenu.SameLine(spacing)
 	end
 end
 
---- Adds vertical spacing without resetting the horizontal cursor position.
 function TimMenu.Spacing(verticalSpacing)
 	local win = TimMenu.GetCurrentWindow()
 	if win then
@@ -237,155 +189,112 @@ function TimMenu.Spacing(verticalSpacing)
 	end
 end
 
---- Draws a slider and returns the new value and whether it changed.
 function TimMenu.Slider(label, value, min, max, step)
-	assert(type(label) == "string", "TimMenu.Slider: 'label' must be a string, got " .. type(label))
-	assert(type(value) == "number", "TimMenu.Slider: 'value' must be a number, got " .. type(value))
-	assert(type(min) == "number", "TimMenu.Slider: 'min' must be a number, got " .. type(min))
-	assert(type(max) == "number", "TimMenu.Slider: 'max' must be a number, got " .. type(max))
-	assert(type(step) == "number", "TimMenu.Slider: 'step' must be a number, got " .. type(step))
 	local win = TimMenu.GetCurrentWindow()
-	assert(win, "TimMenu.Slider: no active window. Ensure TimMenu.Begin() was called before using widget functions.")
+	if not win then
+		return value, false
+	end
 	local prevFont = applyNextWidgetFont()
 	local newValue, changed = Widgets.Slider(win, label, value, min, max, step)
 	restoreWidgetFont(prevFont)
 	return newValue, changed
 end
 
---- Draws a horizontal separator in the current window; optional centered label.
 function TimMenu.Separator(label)
-	assert(
-		label == nil or type(label) == "string",
-		"TimMenu.Separator: 'label' must be a string or nil, got " .. type(label)
-	)
 	local win = TimMenu.GetCurrentWindow()
-	assert(win, "TimMenu.Separator: no active window. Ensure TimMenu.Begin() was called before using widget functions.")
+	if not win then
+		return
+	end
 	return SeparatorLayout.Draw(win, label)
 end
 
---- Single-line text input; returns new string and whether it changed.
 function TimMenu.TextInput(label, text)
-	assert(type(label) == "string", "TimMenu.TextInput: 'label' must be a string, got " .. type(label))
-	assert(type(text) == "string", "TimMenu.TextInput: 'text' must be a string, got " .. type(text))
 	local win = TimMenu.GetCurrentWindow()
-	assert(win, "TimMenu.TextInput: no active window. Ensure TimMenu.Begin() was called before using widget functions.")
+	if not win then
+		return text, false
+	end
 	local prevFont = applyNextWidgetFont()
 	local newText, changed = Widgets.TextInput(win, label, text)
 	restoreWidgetFont(prevFont)
 	return newText, changed
 end
 
---- Dropdown list; returns new index and whether it changed.
 function TimMenu.Dropdown(label, selectedIndex, options)
-	-- Assert argument types
-	assert(type(label) == "string", "TimMenu.Dropdown: 'label' must be a string, got " .. type(label))
-	assert(
-		type(selectedIndex) == "number",
-		"TimMenu.Dropdown: 'selectedIndex' must be a number, got " .. type(selectedIndex)
-	)
-	assert(type(options) == "table", "TimMenu.Dropdown: 'options' must be a table, got " .. type(options))
 	local win = TimMenu.GetCurrentWindow()
-	-- Assert active window context
-	assert(win, "TimMenu.Dropdown: no active window. Ensure TimMenu.Begin() was called before using widget functions.")
+	if not win then
+		return selectedIndex, false
+	end
 	local prevFont = applyNextWidgetFont()
 	local newIdx, changed = Widgets.Dropdown(win, label, selectedIndex, options)
 	restoreWidgetFont(prevFont)
 	return newIdx, changed
 end
 
---- Draws a multi-selection combo box; returns a table of booleans and whether changed.
 function TimMenu.Combo(label, selectedTable, options)
-	assert(type(label) == "string", "TimMenu.Combo: 'label' must be a string, got " .. type(label))
-	assert(
-		type(selectedTable) == "table",
-		"TimMenu.Combo: 'selectedTable' must be a table, got " .. type(selectedTable)
-	)
-	assert(type(options) == "table", "TimMenu.Combo: 'options' must be a table, got " .. type(options))
 	local win = TimMenu.GetCurrentWindow()
-	assert(win, "TimMenu.Combo: no active window. Ensure TimMenu.Begin() was called before using widget functions.")
+	if not win then
+		return selectedTable, false
+	end
 	local prevFont = applyNextWidgetFont()
 	local newTable, changed = Widgets.Combo(win, label, selectedTable, options)
 	restoreWidgetFont(prevFont)
 	return newTable, changed
 end
 
---- Cyclic selector (< value >); returns new index and whether it changed.
 function TimMenu.Selector(label, selectedIndex, options)
-	assert(
-		label == nil or type(label) == "string",
-		"TimMenu.Selector: 'label' must be a string or nil, got " .. type(label)
-	)
-	assert(
-		type(selectedIndex) == "number",
-		"TimMenu.Selector: 'selectedIndex' must be a number, got " .. type(selectedIndex)
-	)
-	assert(type(options) == "table", "TimMenu.Selector: 'options' must be a table, got " .. type(options))
 	local win = TimMenu.GetCurrentWindow()
-	assert(win, "TimMenu.Selector: no active window. Ensure TimMenu.Begin() was called before using widget functions.")
+	if not win then
+		return selectedIndex, false
+	end
 	local prevFont = applyNextWidgetFont()
 	local newIdx, changed = Widgets.Selector(win, label, selectedIndex, options)
 	restoreWidgetFont(prevFont)
 	return newIdx, changed
 end
 
---- Draws a tab control row and returns the newly selected tab index.
----@param id string A unique identifier for this specific tab control instance.
----@param tabs table A list of strings for the tab labels.
----@param defaultSelection integer|string The default selection (index or label).
----@return integer|string newSelection The index or label of the tab that is now selected.
----@return boolean changed Whether the selection changed this frame.
 function TimMenu.TabControl(id, tabs, defaultSelection)
-	assert(type(id) == "string", "TimMenu.TabControl: 'id' must be a string, got " .. type(id))
-	assert(type(tabs) == "table", "TimMenu.TabControl: 'tabs' must be a table, got " .. type(tabs))
 	local win = TimMenu.GetCurrentWindow()
-	assert(
-		win,
-		"TimMenu.TabControl: no active window. Ensure TimMenu.Begin() was called before using widget functions."
-	)
-	-- Call core TabControl to get index and changed flag
+	if not win then
+		if type(defaultSelection) == "string" then
+			return tabs[1] or "", false
+		else
+			return 1, false
+		end
+	end
 	local prevFont = applyNextWidgetFont()
 	local newIndex, changed = Widgets.TabControl(win, id, tabs, defaultSelection)
 	restoreWidgetFont(prevFont)
-	-- If defaultSelection was a string, return label instead of index for backward compatibility
 	if type(defaultSelection) == "string" then
 		return tabs[newIndex], changed
 	end
-	-- Otherwise, return numeric index
 	return newIndex, changed
 end
 
---- Begins a visual sector grouping; widgets until EndSector are enclosed.
----@param label string optional title for the sector
 function TimMenu.BeginSector(label)
 	local win = TimMenu.GetCurrentWindow()
 	if not win then
 		return
 	end
-	SectorWidget.Begin(win, label) -- Delegated to SectorWidget
+	SectorWidget.Begin(win, label)
 end
 
---- Ends the most recently begun sector, drawing its background and border and restoring layout.
 function TimMenu.EndSector()
 	local win = TimMenu.GetCurrentWindow()
-	if not win or not win._sectorStack or #win._sectorStack == 0 then -- Keep basic check here
+	if not win or not win._sectorStack or #win._sectorStack == 0 then
 		return
 	end
-	SectorWidget.End(win) -- Delegated to SectorWidget
+	SectorWidget.End(win)
 end
 
--- Named function for the global draw callback
 local reRegistered = false
 local function _TimMenu_GlobalDraw()
-	-- Update global input state ONCE per frame, before any interaction processing
 	TimMenuGlobal.InputState.wasLeftMouseDownLastFrame = TimMenuGlobal.InputState.isLeftMouseDown
 	TimMenuGlobal.InputState.isLeftMouseDown = input.IsButtonDown(MOUSE_LEFT)
 
 	local mouseX, mouseY = table.unpack(input.GetMousePos())
-	-- Cache mouse position for widgets to use the same snapshot
 	TimMenuGlobal.mouseX, TimMenuGlobal.mouseY = mouseX, mouseY
 	local focusedWindowKey = nil
 
-	-- 1. Pruning Pass: Remove windows not updated this frame
 	local currentFrame = globals.FrameCount()
 	local keysToRemove = {}
 	for key, win in pairs(TimMenuGlobal.windows) do
@@ -403,18 +312,15 @@ local function _TimMenu_GlobalDraw()
 		end
 	end
 
-	-- 2. Determine Focused Window (topmost under mouse)
-	-- Iterate from top of z-order (end of table) downwards
 	for i = #TimMenuGlobal.order, 1, -1 do
 		local key = TimMenuGlobal.order[i]
 		local win = TimMenuGlobal.windows[key]
 		if win and win.visible and win:_HitTest(mouseX, mouseY) then
 			focusedWindowKey = key
-			break -- Found the topmost, stop searching
+			break
 		end
 	end
 
-	-- 3. Interaction Logic Pass (iterate all windows, but only focused one interacts fully)
 	for i = 1, #TimMenuGlobal.order do
 		local key = TimMenuGlobal.order[i]
 		local win = TimMenuGlobal.windows[key]
@@ -429,10 +335,8 @@ local function _TimMenu_GlobalDraw()
 				input.IsButtonReleased(MOUSE_LEFT)
 			)
 
-			-- Click-to-front and start drag
 			if isFocused and input.IsButtonPressed(MOUSE_LEFT) then
-				-- Bring to front
-				if TimMenuGlobal.order[#TimMenuGlobal.order] ~= key then -- if not already at front
+				if TimMenuGlobal.order[#TimMenuGlobal.order] ~= key then
 					for j, v_key in ipairs(TimMenuGlobal.order) do
 						if v_key == key then
 							table.remove(TimMenuGlobal.order, j)
@@ -441,23 +345,19 @@ local function _TimMenu_GlobalDraw()
 					end
 					table.insert(TimMenuGlobal.order, key)
 				end
-				-- Start dragging if click was in title bar (logic inside _UpdateLogic)
 			end
 		end
 	end
 
-	-- 4. Draw Pass (per-window widget flush)
 	for i = 1, #TimMenuGlobal.order do
 		local key = TimMenuGlobal.order[i]
 		local win = TimMenuGlobal.windows[key]
 		if win and win.visible then
 			win:_Draw()
-			-- Flush only this window's widget draw calls, in layer order
 			DrawManager.FlushWindow(key)
 		end
 	end
 
-	-- 5. Tooltip Pass (render tooltips on top)
 	for i = 1, #TimMenuGlobal.order do
 		local key = TimMenuGlobal.order[i]
 		local win = TimMenuGlobal.windows[key]
@@ -466,7 +366,6 @@ local function _TimMenu_GlobalDraw()
 		end
 	end
 
-	-- One-time re-registration to ensure this draw callback runs after user callbacks
 	if not reRegistered then
 		callbacks.Unregister("Draw", "zTimMenu_GlobalDraw")
 		callbacks.Register("Draw", "zTimMenu_GlobalDraw", _TimMenu_GlobalDraw)
@@ -474,31 +373,25 @@ local function _TimMenu_GlobalDraw()
 	end
 end
 
--- Ensure old callback is removed, then register this after user callbacks (name changed to be last alphabetically)
 callbacks.Unregister("Draw", "TimMenu_GlobalDraw")
 callbacks.Unregister("Draw", "zTimMenu_GlobalDraw")
 callbacks.Register("Draw", "zTimMenu_GlobalDraw", _TimMenu_GlobalDraw)
 
---[[ Play sound when loaded -- consider if this is still desired with centralized model ]]
---engine.PlaySound("hl1/fvox/activated.wav")
-
--- Alias for backward compatibility: Textbox
 function TimMenu.Textbox(label, text)
 	return TimMenu.TextInput(label, text)
 end
 
---- Runs a keybinding widget; returns new key code and whether changed.
 function TimMenu.Keybind(label, currentKey)
-	assert(type(label) == "string", "TimMenu.Keybind: 'label' must be a string, got " .. type(label))
 	local win = TimMenu.GetCurrentWindow()
-	assert(win, "TimMenu.Keybind: no active window. Ensure TimMenu.Begin() was called before using widget functions.")
+	if not win then
+		return currentKey, false
+	end
 	local prevFont = applyNextWidgetFont()
 	local keycode, changed = Widgets.Keybind(win, label, currentKey)
 	restoreWidgetFont(prevFont)
 	return keycode, changed
 end
 
---- Change the normal font for widgets at runtime
 function TimMenu.FontSet(name, size, weight)
 	Globals.Style.FontName = name
 	Globals.Style.FontSize = size
@@ -506,7 +399,6 @@ function TimMenu.FontSet(name, size, weight)
 	Globals.ReloadFonts()
 end
 
---- Change the bold font for widgets at runtime (e.g. TabControl)
 function TimMenu.FontSetBold(name, size, weight)
 	Globals.Style.FontBoldName = name
 	Globals.Style.FontBoldSize = size
@@ -514,7 +406,6 @@ function TimMenu.FontSetBold(name, size, weight)
 	Globals.ReloadFonts()
 end
 
---- Reset fonts to the defaults loaded at startup
 function TimMenu.FontReset()
 	local d = Globals.DefaultFontSettings
 	Globals.Style.FontName = d.FontName
@@ -526,32 +417,22 @@ function TimMenu.FontReset()
 	Globals.ReloadFonts()
 end
 
---- Draws a color picker and returns a new color and whether it changed.
----@param label string The label for the color picker widget.
----@param color table {r,g,b,a} The initial RGBA color table.
----@return table newColor The updated RGBA color.
----@return boolean changed True if the color was changed this frame.
 function TimMenu.ColorPicker(label, color)
-	assert(type(label) == "string", "TimMenu.ColorPicker: 'label' must be a string, got " .. type(label))
-	assert(
-		type(color) == "table" and #color >= 3,
-		"TimMenu.ColorPicker: 'color' must be a table of at least three numbers, got " .. type(color)
-	)
 	local win = TimMenu.GetCurrentWindow()
-	assert(win, "TimMenu.ColorPicker: no active window. Ensure TimMenu.Begin() was called before using this widget.")
+	if not win then
+		return color, false
+	end
 	local newColor, changed = Widgets.ColorPicker(win, label, color)
 	return newColor, changed
 end
 
---- Attaches a tooltip to the last added widget.
----@param text string The tooltip text description.
 function TimMenu.Tooltip(text)
-	assert(type(text) == "string", "TimMenu.Tooltip: 'text' must be a string, got " .. type(text))
 	local win = TimMenu.GetCurrentWindow()
-	assert(win, "TimMenu.Tooltip: no active window. Ensure TimMenu.Begin() was called before using widget functions.")
+	if not win then
+		return
+	end
 	Widgets.Tooltip.AttachToLastWidget(win, text)
 end
 
--- expose TimMenu globally for convenience
 _G.TimMenu = TimMenu
 return TimMenu

@@ -76,7 +76,12 @@ local function OnDraw_Menudemo1()
 		end
 		TimMenu.NextLine() -- Ensure content below header tabs starts on a new line.
 
-		-- Color Picker demonstration		pickerColor1, changedColor1 = TimMenu.ColorPicker("Pick Color", pickerColor1)		TimMenu.Tooltip("Click the color box to open the color picker")		if changedColor1 then			print("[Menudemo1] Picked color: ", pickerColor1[1], pickerColor1[2], pickerColor1[3])		end
+		-- Color Picker demonstration
+		pickerColor1, changedColor1 = TimMenu.ColorPicker("Pick Color", pickerColor1)
+		TimMenu.Tooltip("Click the color box to open the color picker")
+		if changedColor1 then
+			print("[Menudemo1] Picked color: ", pickerColor1[1], pickerColor1[2], pickerColor1[3])
+		end
 		TimMenu.NextLine()
 
 		-- First row: Demonstrate multiple widgets and alignment
@@ -126,17 +131,24 @@ local function OnDraw_Menudemo1()
 		TimMenu.Separator()
 		TimMenu.NextLine()
 
-		-- Selector example using the dedicated widget (outside sectors)		selectedIndex1, changed1 = TimMenu.Selector("Options Selector", selectedIndex1, options1)		TimMenu.Tooltip("Use < > arrows or click left/right halves to cycle through options")		if changed1 then			print("[Menudemo1] Selector changed to index: ", selectedIndex1)		end
+		-- Selector example using the dedicated widget (outside sectors)
+		selectedIndex1, changed1 = TimMenu.Selector("Options Selector", selectedIndex1, options1)
+		TimMenu.Tooltip("Use < > arrows or click left/right halves to cycle through options")
+		if changed1 then
+			print("[Menudemo1] Selector changed to index: ", selectedIndex1)
+		end
 
 		TimMenu.NextLine()
 		-- Dropdown example using the dedicated widget
 		dropdownIndex1, changed1 = TimMenu.Dropdown("Dropdown in Demo1", dropdownIndex1, options1)
+		TimMenu.Tooltip("Click to open dropdown and select an option")
 		if changed1 then
 			print("[Menudemo1] Dropdown selected: " .. options1[dropdownIndex1])
 		end
 		TimMenu.NextLine()
 
 		comboState1, changed1 = TimMenu.Combo("Combo in Demo1", comboState1, options1)
+		TimMenu.Tooltip("Multi-selection box - toggle multiple options")
 		if changed1 then
 			print("[Menudemo1] Combo selections:")
 		end

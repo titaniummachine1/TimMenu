@@ -14,21 +14,20 @@ Globals.Colors = {
 	FrameBorder = { 0, 0, 0, 200 },
 	SectorBackground = { 30, 30, 30, 255 },
 	Border = { 0, 0, 0, 200 },
-	TabSelectedUnderline = { 255, 255, 255, 255 }, -- Default to white, adjust as needed
-	WidgetOutline = { 100, 100, 100, 77 }, -- Based on WindowBorder with custom alpha
-	ArrowBoxBg = { 55, 100, 215, 255 }, -- Background for the dropdown/combo arrow box
+	TabSelectedUnderline = { 255, 255, 255, 255 },
+	WidgetOutline = { 100, 100, 100, 77 },
+	ArrowBoxBg = { 55, 100, 215, 255 },
 }
 
 -- Style settings
 Globals.Style = {
-	-- Font configuration (user can change and call Globals.ReloadFonts)
 	FontName = "Verdana",
 	FontSize = 14,
 	FontWeight = 700,
 	FontBoldName = "Arial Black",
 	FontBoldSize = 17,
 	FontBoldWeight = 400,
-	ItemPadding = 7, -- Increased from 5 to 7 for potentially wider tab label font
+	ItemPadding = 7,
 	ItemMargin = 5,
 	ItemSize = 10,
 	EnableWindowBorder = true,
@@ -38,9 +37,9 @@ Globals.Style = {
 	SliderBorder = false,
 	Border = false,
 	Popup = false,
-	Alignment = "left", -- or "center"
-	Scale = 1.2, -- Scaling factor for UI elements (1 = 100%)
-	TabBackground = true, -- Enable background fill for tabs; disable via this flag if needed
+	Alignment = "left",
+	Scale = 1.2,
+	TabBackground = true,
 }
 
 Globals.Defaults = {
@@ -48,16 +47,16 @@ Globals.Defaults = {
 	DEFAULT_Y = 100,
 	DEFAULT_W = 300,
 	DEFAULT_H = 200,
-	SLIDER_WIDTH = 250, -- Default slider width from ImMenu
+	SLIDER_WIDTH = 250,
 	TITLE_BAR_HEIGHT = 30,
 	WINDOW_CONTENT_PADDING = 10,
-	ITEM_SPACING = 8, -- Increased from 5 to 8 for better header tab spacing
+	ITEM_SPACING = 8,
 	DebugHeaderX = 20,
 	DebugHeaderY = 20,
 	DebugLineSpacing = 20,
 }
 
--- Font cache to avoid recreating fonts every tick
+-- Font management
 local fontCache = {}
 local function GetOrCreateFont(name, size, weight)
 	local key = name .. ":" .. size .. ":" .. weight
@@ -67,7 +66,6 @@ local function GetOrCreateFont(name, size, weight)
 	return fontCache[key]
 end
 
--- Setup scalable fonts based on Style.Font* and Scale with caching
 local function SetupFonts()
 	local scale = Globals.Style.Scale or 1
 	local fSize = math.ceil(Globals.Style.FontSize * scale)
@@ -90,16 +88,17 @@ Globals.DefaultFontSettings = {
 
 -- Scale style metrics
 local scale = Globals.Style.Scale or 1
-Globals.Style.ItemPadding = math.ceil(Globals.Style.ItemPadding * scale) -- This will apply scaling to the new base value
+Globals.Style.ItemPadding = math.ceil(Globals.Style.ItemPadding * scale)
 Globals.Style.ItemMargin = math.ceil(Globals.Style.ItemMargin * scale)
 Globals.Style.ItemSize = math.ceil(Globals.Style.ItemSize * scale)
+
 -- Scale default dimensions
 Globals.Defaults.DEFAULT_W = math.ceil(Globals.Defaults.DEFAULT_W * scale)
 Globals.Defaults.DEFAULT_H = math.ceil(Globals.Defaults.DEFAULT_H * scale)
 Globals.Defaults.SLIDER_WIDTH = math.ceil(Globals.Defaults.SLIDER_WIDTH * scale)
 Globals.Defaults.TITLE_BAR_HEIGHT = math.ceil(Globals.Defaults.TITLE_BAR_HEIGHT * scale)
 Globals.Defaults.WINDOW_CONTENT_PADDING = math.ceil(Globals.Defaults.WINDOW_CONTENT_PADDING * scale)
-Globals.Defaults.ITEM_SPACING = math.ceil(Globals.Defaults.ITEM_SPACING * scale) -- Will apply scaling to the new base value
+Globals.Defaults.ITEM_SPACING = math.ceil(Globals.Defaults.ITEM_SPACING * scale)
 Globals.Defaults.DebugHeaderX = math.ceil(Globals.Defaults.DebugHeaderX * scale)
 Globals.Defaults.DebugHeaderY = math.ceil(Globals.Defaults.DebugHeaderY * scale)
 Globals.Defaults.DebugLineSpacing = math.ceil(Globals.Defaults.DebugLineSpacing * scale)
@@ -115,10 +114,12 @@ Globals.Layers = {
 	Popup = 6,
 }
 
--- Number of layers reserved per nested layout group (e.g., sectors)
 Globals.LayersPerGroup = 10
 
--- Preload interactive widget images (e.g., color picker circle)
+-- Popup layer that's always on top (above all sectors)
+Globals.POPUP_LAYER_BASE = 1000
+
+-- Preload interactive widget images
 local ImgDecoder = require("TimMenu.images.imageDecoder")
 Globals.Images = Globals.Images or {}
 Globals.Images.ColorPicker = { Interactive = ImgDecoder }

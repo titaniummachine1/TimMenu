@@ -6,7 +6,6 @@ local DrawHelpers = require("TimMenu.DrawHelpers")
 -- Draw helpers for combo field and popup
 local function DrawComboField(win, relX, relY, width, height, pad, label, entryOpen, hovered, arrowW, arrowH)
 	local absX, absY = win.X + relX, win.Y + relY
-	-- Ensure correct font for combo field
 	draw.SetFont(Globals.Style.Font)
 	local arrowBoxW, arrowBoxX = height, absX + width - height
 	local mainBgW = width - arrowBoxW
@@ -43,7 +42,6 @@ end
 
 local function DrawComboPopupItem(win, relX, relY, width, height, pad, opt, isHovered, boxSize, isSelected)
 	local absX, absY = win.X + relX, win.Y + relY
-	-- Ensure correct font for combo popup items
 	draw.SetFont(Globals.Style.Font)
 	Common.SetColor(isHovered and Globals.Colors.ItemHover or Globals.Colors.Item)
 	Common.DrawFilledRect(absX, absY, absX + width, absY + height)
@@ -56,7 +54,6 @@ local function DrawComboPopupItem(win, relX, relY, width, height, pad, opt, isHo
 		Common.DrawFilledRect(bx + m, by + m, bx + boxSize - m, by + boxSize - m)
 	end
 	Common.SetColor(Globals.Colors.Text)
-	-- Use correct font to measure text
 	local _, optH = draw.GetTextSize(opt)
 	Common.DrawText(bx + boxSize + pad, absY + (height / 2) - (optH / 2), opt)
 end
@@ -107,13 +104,15 @@ local function Combo(win, label, selected, options)
 	local hovered, pressed, clicked = Interaction.Process(win, widgetKey, bounds, entry.open)
 	local listH = #options * height
 	local popupBounds = { x = absX, y = absY + height, w = width, h = listH }
+
 	-- Close popup on outside click using cached mouse position
 	Interaction.ClosePopupOnOutsideClick(entry, TimMenuGlobal.mouseX, TimMenuGlobal.mouseY, bounds, popupBounds, win)
 
 	if clicked then
 		if not entry.open and hovered then
 			-- Open combo popup and block region
-			entry.open, win._widgetBlockedRegions = true, { popupBounds }
+			entry.open = true
+			win._widgetBlockedRegions = { popupBounds }
 			-- Bring window to front
 			for i, id in ipairs(TimMenuGlobal.order) do
 				if id == win.id then
@@ -130,21 +129,33 @@ local function Combo(win, label, selected, options)
 					entry.changed = true
 				end
 			else
-				entry.open, win._widgetBlockedRegions = false, {}
+				entry.open = false
+				win._widgetBlockedRegions = {}
 			end
 		end
 	end
+
+	-- Draw main combo field
 	win:QueueDrawAtLayer(2, DrawComboField, win, x, y, width, height, pad, label, entry.open, hovered, arrowW, arrowH)
+
+	-- Draw popup if open - use dedicated popup layer that's always on top
 	if entry.open then
 		local px, py = x, y + height
-		-- Popup background at Popup layer
-		win:QueueDrawAtLayer(Globals.Layers.Popup, DrawComboPopupBackground, win, px, py, width, listH)
-		-- Popup items at Popup layer
+		local popupLayer = Globals.POPUP_LAYER_BASE
+
+		-- Popup background
+		win:QueueDrawAtLayer(popupLayer, DrawComboPopupBackground, win, px, py, width, listH)
+
+		-- Popup items
 		for i, opt in ipairs(options) do
-			local isH =
-				Interaction.IsHovered(win, { x = absX, y = absY + height + (i - 1) * height, w = width, h = height })
+			local isH = Interaction.IsHovered(win, {
+				x = absX,
+				y = absY + height + (i - 1) * height,
+				w = width,
+				h = height,
+			})
 			win:QueueDrawAtLayer(
-				Globals.Layers.Popup,
+				popupLayer,
 				DrawComboPopupItem,
 				win,
 				px,
@@ -158,9 +169,11 @@ local function Combo(win, label, selected, options)
 				entry.selected[i]
 			)
 		end
-		-- Popup outline at Popup layer
-		win:QueueDrawAtLayer(Globals.Layers.Popup, DrawComboPopupOutline, win, px, py, width, listH)
+
+		-- Popup outline
+		win:QueueDrawAtLayer(popupLayer, DrawComboPopupOutline, win, px, py, width, listH)
 	end
+
 	return entry.selected, entry.changed
 end
 

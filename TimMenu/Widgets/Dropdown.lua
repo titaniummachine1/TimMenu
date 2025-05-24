@@ -7,7 +7,6 @@ local DrawHelpers = require("TimMenu.DrawHelpers")
 -- Draw helpers for dropdown field and popup
 local function DrawDropdownField(win, relX, relY, width, height, pad, label, entryOpen, hovered, arrowW, arrowH)
 	local absX, absY = win.X + relX, win.Y + relY
-	-- Ensure correct font for dropdown field
 	draw.SetFont(Globals.Style.Font)
 	local arrowBoxW = height
 	local arrowBoxX = absX + width - arrowBoxW
@@ -25,7 +24,6 @@ local function DrawDropdownField(win, relX, relY, width, height, pad, label, ent
 	Common.SetColor(Globals.Colors.WindowBorder)
 	Common.DrawOutlinedRect(absX, absY, absX + width, absY + height)
 	Common.SetColor(Globals.Colors.Text)
-	-- Use correct font to measure text
 	local _, txtH = draw.GetTextSize(label)
 	Common.DrawText(absX + pad, absY + (height - txtH) / 2, label)
 	local actualArrowW, actualArrowH = arrowW * 0.5, arrowH * 0.5
@@ -42,7 +40,6 @@ end
 
 local function DrawDropdownPopupItem(win, relX, relY, width, itemH, pad, opt, isHovered)
 	local absX, absY = win.X + relX, win.Y + relY
-	-- Ensure correct font for popup items
 	draw.SetFont(Globals.Style.Font)
 	Common.SetColor(isHovered and Globals.Colors.ItemHover or Globals.Colors.Item)
 	Common.DrawFilledRect(absX, absY, absX + width, absY + itemH)
@@ -95,13 +92,15 @@ local function Dropdown(win, label, selectedIndex, options)
 	local hovered, pressed, clicked = Interaction.Process(win, widgetKey, bounds, entry.open)
 	local listH = #options * height
 	local popupBounds = { x = absX, y = absY + height, w = width, h = listH }
+
 	-- Close popup on outside click using cached mouse position
 	Interaction.ClosePopupOnOutsideClick(entry, TimMenuGlobal.mouseX, TimMenuGlobal.mouseY, bounds, popupBounds, win)
 
 	if clicked then
 		if not entry.open and hovered then
 			-- Open popup and block its region
-			entry.open, win._widgetBlockedRegions = true, { popupBounds }
+			entry.open = true
+			win._widgetBlockedRegions = { popupBounds }
 			-- Bring this window to front so popup renders above all
 			for i, id in ipairs(TimMenuGlobal.order) do
 				if id == win.id then
@@ -114,14 +113,17 @@ local function Dropdown(win, label, selectedIndex, options)
 			if Interaction.IsHovered(win, popupBounds) then
 				local idx = math.floor((input.GetMousePos()[2] - popupBounds.y) / height) + 1
 				if idx >= 1 and idx <= #options then
-					entry.selected, entry.changed = idx, true
+					entry.selected = idx
+					entry.changed = true
 				end
 			else
-				entry.open, win._widgetBlockedRegions = false, {}
+				entry.open = false
+				win._widgetBlockedRegions = {}
 			end
 		end
 	end
 
+	-- Draw main dropdown field
 	win:QueueDrawAtLayer(
 		2,
 		DrawDropdownField,
@@ -137,16 +139,25 @@ local function Dropdown(win, label, selectedIndex, options)
 		arrowW,
 		arrowH
 	)
+
+	-- Draw popup if open - use dedicated popup layer that's always on top
 	if entry.open then
 		local popupX, popupY = x, y + height
-		-- Popup background at Popup layer
-		win:QueueDrawAtLayer(Globals.Layers.Popup, DrawDropdownPopupBackground, win, popupX, popupY, width, listH)
-		-- Popup items at Popup layer
+		local popupLayer = Globals.POPUP_LAYER_BASE
+
+		-- Popup background
+		win:QueueDrawAtLayer(popupLayer, DrawDropdownPopupBackground, win, popupX, popupY, width, listH)
+
+		-- Popup items
 		for i, opt in ipairs(options) do
-			local isH =
-				Interaction.IsHovered(win, { x = absX, y = absY + height + (i - 1) * height, w = width, h = height })
+			local isH = Interaction.IsHovered(win, {
+				x = absX,
+				y = absY + height + (i - 1) * height,
+				w = width,
+				h = height,
+			})
 			win:QueueDrawAtLayer(
-				Globals.Layers.Popup,
+				popupLayer,
 				DrawDropdownPopupItem,
 				win,
 				popupX,
@@ -158,9 +169,11 @@ local function Dropdown(win, label, selectedIndex, options)
 				isH
 			)
 		end
-		-- Popup outline at Popup layer
-		win:QueueDrawAtLayer(Globals.Layers.Popup, DrawDropdownPopupOutline, win, popupX, popupY, width, listH)
+
+		-- Popup outline
+		win:QueueDrawAtLayer(popupLayer, DrawDropdownPopupOutline, win, popupX, popupY, width, listH)
 	end
+
 	return entry.selected, entry.changed
 end
 
