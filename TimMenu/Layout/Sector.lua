@@ -90,8 +90,11 @@ local function _enqueueBorderDraw(win, sector_data, depth, persistentWidth, pers
 end
 
 local function _finalizeCursorAndLayout(win, sector_data, width, height, pad)
+	-- Add 50% more vertical spacing between sectors
+	local sectorSpacing = math.ceil(Globals.Defaults.ITEM_SPACING * 1.5)
+
 	win.cursorX = sector_data.startX + width + pad
-	win.cursorY = sector_data.startY
+	win.cursorY = sector_data.startY + height + sectorSpacing
 	win.lineHeight = math.max(win.lineHeight or 0, height)
 
 	if #win._sectorStack > 0 then
