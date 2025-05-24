@@ -45,10 +45,8 @@ local function OnDraw()
         end
         TimMenu.NextLine()
 
-        sliderValue, changed = TimMenu.Slider("Value", sliderValue, 0, 100, 1)
-        if changed then
-            print("Slider:", sliderValue)
-        end
+        sliderValue = TimMenu.Slider("Value", sliderValue, 0, 100, 1)
+        print("Current slider value:", sliderValue)
 
     end
 end
@@ -72,15 +70,24 @@ callbacks.Register("Draw", "ExampleDraw", OnDraw)
 
 ### Basic Widgets
 
+**All widgets now use simplified single-return APIs:**
+
 - Text: `TimMenu.Text(text)`
-- Button: `clicked = TimMenu.Button(label [, selected])`
-- Checkbox: `newState = TimMenu.Checkbox(label, state)`
-- TextInput: `newText, changed = TimMenu.TextInput(label, text)`
-- Slider: `newValue, changed = TimMenu.Slider(label, value, min, max, step)`
-- Selector: `newIndex, changed = TimMenu.Selector(label, selectedIndex, options)`
-- Dropdown: `newIndex, changed = TimMenu.Dropdown(label, selectedIndex, options)`
-- Combo: `newIndex, changed = TimMenu.Combo(label, selectedIndex, options)`
-- TabControl: `newIndex = TimMenu.TabControl(id, tabs, currentTabIndex)`
+- Button: `clicked = TimMenu.Button(label)`
+- Checkbox: `checked = TimMenu.Checkbox(label, checked)`
+- TextInput: `text = TimMenu.TextInput(label, text)`
+- Slider: `value = TimMenu.Slider(label, value, min, max, step)`
+- Selector: `selectedIndex = TimMenu.Selector(label, selectedIndex, options)`
+- Dropdown: `selectedIndex = TimMenu.Dropdown(label, selectedIndex, options)`
+- Combo: `selectedItems = TimMenu.Combo(label, selectedItems, options)`
+- TabControl: `selectedTab = TimMenu.TabControl(id, tabs, selectedTab)`
+- Keybind: `keyCode = TimMenu.Keybind(label, keyCode)`
+- ColorPicker: `color = TimMenu.ColorPicker(label, color)`
+
+### Advanced Widgets
+
+- Image: `hovered, pressed, clicked = TimMenu.Image(texture, width, height, [raw_data])`
+- Tooltip: `TimMenu.Tooltip(text)` - Shows tooltip for the last widget
 
 ### Customization
 
@@ -91,10 +98,69 @@ TimMenu.Globals.Colors.Window = {40, 40, 40, 255}
 TimMenu.Globals.Style.ItemPadding = 8
 ```
 
+## Widget Usage Examples
+
+### Simple State Management
+
+```lua
+-- Each widget modifies and returns its value directly
+local volume = 50
+local enabled = true
+local selectedOption = 1
+local options = {"Low", "Medium", "High"}
+
+local function OnDraw()
+    if TimMenu.Begin("Settings") then
+        enabled = TimMenu.Checkbox("Enable Audio", enabled)
+
+        if enabled then
+            volume = TimMenu.Slider("Volume", volume, 0, 100, 5)
+            selectedOption = TimMenu.Dropdown("Quality", selectedOption, options)
+        end
+    end
+end
+```
+
+### Color Picker Example
+
+```lua
+local backgroundColor = {30, 30, 30, 255}  -- RGBA
+
+local function OnDraw()
+    if TimMenu.Begin("Color Settings") then
+        backgroundColor = TimMenu.ColorPicker("Background Color", backgroundColor)
+        TimMenu.Text(string.format("RGB: %d, %d, %d, %d",
+            backgroundColor[1], backgroundColor[2], backgroundColor[3], backgroundColor[4]))
+    end
+end
+```
+
+### Multi-Selection with Combo
+
+```lua
+local features = {"Feature A", "Feature B", "Feature C"}
+local enabledFeatures = {true, false, true}  -- Which features are enabled
+
+local function OnDraw()
+    if TimMenu.Begin("Feature Selection") then
+        enabledFeatures = TimMenu.Combo("Enabled Features", enabledFeatures, features)
+
+        -- Show which features are enabled
+        for i, feature in ipairs(features) do
+            if enabledFeatures[i] then
+                TimMenu.Text("✓ " .. feature .. " is enabled")
+            end
+        end
+    end
+end
+```
+
 ## Tips
 
 - Use `BeginSector`/`EndSector` to group widgets in bordered panels.
-- sectors can be easly stacked horizontaly and verticaly
+- Sectors can be easily stacked horizontally and vertically
+- All widgets return their current value - no need to track "changed" flags
+- Values are automatically maintained between frames by the widget system
 
 ## Sector Grouping
 
@@ -107,12 +173,20 @@ if TimMenu.Begin("Example Window") then
     -- Start a grouped panel
     TimMenu.BeginSector("Settings")
     -- Place widgets inside the sector
-    local volume, changed = TimMenu.Slider("Volume", 50, 0, 100, 1)
+    local volume = TimMenu.Slider("Volume", 50, 0, 100, 1)
     TimMenu.EndSector()
 end
 ```
 
 ## Changelog
+
+### Simplified Widget APIs (Latest)
+
+- **BREAKING CHANGE**: All widgets now return single values instead of value + changed pairs
+- Simplified API: `value = Widget("Label", value)` instead of `value, changed = Widget("Label", value)`
+- Removed confusing "changed" flags - just use the returned values directly
+- Updated all example code to use the new simplified patterns
+- Much cleaner and more intuitive widget usage
 
 ### Fixed Keybind Widget Lag
 
