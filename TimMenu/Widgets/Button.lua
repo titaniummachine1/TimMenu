@@ -1,6 +1,7 @@
 local Globals = require("TimMenu.Globals")
 local Common = require("TimMenu.Common")
 local Interaction = require("TimMenu.Interaction")
+local Tooltip = require("TimMenu.Widgets.Tooltip")
 
 local function Button(win, label)
 	assert(type(win) == "table", "Button: win must be a table")
@@ -29,6 +30,9 @@ local function Button(win, label)
 	local bounds = { x = absX, y = absY, w = width, h = height }
 	local hovered, pressed, clicked = Interaction.Process(win, widgetKey, bounds, false)
 
+	-- Store widget bounds for tooltip detection
+	Tooltip.StoreWidgetBounds(win, widgetIndex, bounds)
+
 	-- Schedule button rectangle and text with Common.Queue* helpers
 	local px, py = win.X + x, win.Y + y
 	local bgColor = Globals.Colors.Item
@@ -39,7 +43,7 @@ local function Button(win, label)
 	end
 
 	-- Draw button background at WidgetBackground
-	Common.QueueRect(win, Globals.Layers.WidgetBackground, px, py, px + width, py + height, bgColor)
+	Common.QueueRect(win, Globals.Layers.WidgetBackground, px, py, px + width, py + height, bgColor, nil)
 	-- Draw button outline at WidgetOutline
 	Common.QueueOutlinedRect(
 		win,

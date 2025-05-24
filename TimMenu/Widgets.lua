@@ -9,7 +9,7 @@ local Selector = require("TimMenu.Widgets.Selector")
 local TabControl = require("TimMenu.Widgets.TabControl")
 local Keybind = require("TimMenu.Widgets.Keybind")
 local ColorPicker = require("TimMenu.Widgets.ColorPicker")
-
+local Tooltip = require("TimMenu.Widgets.Tooltip")
 return {
 	Button = Button,
 	Checkbox = Checkbox,
@@ -21,4 +21,5 @@ return {
 	TabControl = TabControl,
 	Keybind = Keybind,
 	ColorPicker = ColorPicker,
+	Tooltip = Tooltip,
 }

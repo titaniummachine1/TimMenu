@@ -39,6 +39,8 @@ local function OnDraw_Menudemo2()
 				print("[Menudemo2] New color: ", pickerColor2[1], pickerColor2[2], pickerColor2[3])
 			end
 			TimMenu.NextLine()
+
+			TimMenu.NextLine()
 			-- Keybind widget
 			bindKey2, changed2 = TimMenu.Keybind("Demo2 Bind", bindKey2)
 			if changed2 then

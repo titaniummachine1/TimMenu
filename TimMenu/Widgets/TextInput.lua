@@ -302,7 +302,7 @@ local function TextInput(win, label, text)
 		end
 	end
 	-- Queue drawing primitives
-	Common.QueueRect(win, Globals.Layers.WidgetBackground, px, py, px + width, py + height, bgColor)
+	Common.QueueRect(win, Globals.Layers.WidgetBackground, px, py, px + width, py + height, bgColor, nil)
 	Common.QueueText(win, Globals.Layers.WidgetText, px + pad, py + (height - txtH) / 2, finalDrawableText, textColor)
 	Common.QueueOutlinedRect(
 		win,

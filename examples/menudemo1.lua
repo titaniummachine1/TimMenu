@@ -156,6 +156,7 @@ local function OnDraw_Menudemo1()
 		if changed1 then
 			print("[Menudemo1] New bind key code: " .. tostring(bindKey1))
 		end
+
 		TimMenu.NextLine()
 	end
 end

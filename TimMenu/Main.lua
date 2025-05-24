@@ -61,6 +61,8 @@ local Window = require("TimMenu.Window")
 local Widgets = require("TimMenu.Widgets")
 -- Explicitly require Keybind module so bundler includes it
 local _ = require("TimMenu.Widgets.Keybind")
+-- Explicitly require Image module so bundler includes it
+local _ = require("TimMenu.Widgets.Image")
 local SectorWidget = require("TimMenu.Layout.Sector")
 local SeparatorLayout = require("TimMenu.Layout.Separator")
 local DrawManager = require("TimMenu.DrawManager")
@@ -100,6 +102,9 @@ function TimMenu.Begin(title, visible, id)
 
 	-- Clear any previously recorded sectors for this window each frame
 	win._sectorStack = {}
+
+	-- Clear widget bounds for tooltip processing
+	win._widgetBounds = {}
 
 	if not win.visible or (gui.GetValue("clean screenshots") == 1 and engine.IsTakingScreenshot()) then
 		return false
@@ -146,13 +151,24 @@ function TimMenu.Text(text)
 	assert(type(text) == "string", "TimMenu.Text: 'text' must be a string, got " .. type(text))
 	local win = TimMenu.GetCurrentWindow()
 	assert(win, "TimMenu.Text: no active window. Ensure TimMenu.Begin() was called before drawing text.")
+
+	-- Increment widget counter for tooltip support
+	win._widgetCounter = (win._widgetCounter or 0) + 1
+	local widgetIndex = win._widgetCounter
+
 	-- Measure text
 	draw.SetFont(Globals.Style.Font)
 	local w, h = draw.GetTextSize(text)
 	-- Reserve space in layout
 	local x, y = win:AddWidget(w, h)
+	local absX, absY = win.X + x, win.Y + y
+
+	-- Store widget bounds for tooltip detection
+	local bounds = { x = absX, y = absY, w = w, h = h }
+	Widgets.Tooltip.StoreWidgetBounds(win, widgetIndex, bounds)
+
 	-- Queue drawing at base layer using Common.QueueText
-	Common.QueueText(win, 1, win.X + x, win.Y + y, text, Globals.Colors.Text)
+	Common.QueueText(win, 1, absX, absY, text, Globals.Colors.Text)
 end
 
 --- Displays debug information.
@@ -191,10 +207,6 @@ function TimMenu.NextLine(spacing)
 	local win = TimMenu.GetCurrentWindow()
 	if win then
 		win:NextLine(spacing) -- Pass optional spacing to window method
-		-- Apply sector indentation after moving to the new line -- This logic is now managed by SectorWidget
-		-- local depth = win._sectorStack and #win._sectorStack or 0
-		-- local pad = Globals.Defaults.WINDOW_CONTENT_PADDING
-		-- win.cursorX = pad + (depth * pad)
 	end
 end
 
@@ -308,8 +320,9 @@ end
 --- Draws a tab control row and returns the newly selected tab index.
 ---@param id string A unique identifier for this specific tab control instance.
 ---@param tabs table A list of strings for the tab labels.
----@param currentTabIndex integer The 1-based index of the currently active tab.
----@return integer newTabIndex The index of the tab that is now selected (might be the same as currentTabIndex).
+---@param defaultSelection integer|string The default selection (index or label).
+---@return integer|string newSelection The index or label of the tab that is now selected.
+---@return boolean changed Whether the selection changed this frame.
 function TimMenu.TabControl(id, tabs, defaultSelection)
 	assert(type(id) == "string", "TimMenu.TabControl: 'id' must be a string, got " .. type(id))
 	assert(type(tabs) == "table", "TimMenu.TabControl: 'tabs' must be a table, got " .. type(tabs))
@@ -433,6 +446,15 @@ local function _TimMenu_GlobalDraw()
 		end
 	end
 
+	-- 5. Tooltip Pass (render tooltips on top)
+	for i = 1, #TimMenuGlobal.order do
+		local key = TimMenuGlobal.order[i]
+		local win = TimMenuGlobal.windows[key]
+		if win and win.visible then
+			Widgets.Tooltip.ProcessWindowTooltips(win)
+		end
+	end
+
 	-- One-time re-registration to ensure this draw callback runs after user callbacks
 	if not reRegistered then
 		callbacks.Unregister("Draw", "zTimMenu_GlobalDraw")
@@ -508,6 +530,15 @@ function TimMenu.ColorPicker(label, color)
 	assert(win, "TimMenu.ColorPicker: no active window. Ensure TimMenu.Begin() was called before using this widget.")
 	local newColor, changed = Widgets.ColorPicker(win, label, color)
 	return newColor, changed
+end
+
+--- Attaches a tooltip to the last added widget.
+---@param text string The tooltip text description.
+function TimMenu.Tooltip(text)
+	assert(type(text) == "string", "TimMenu.Tooltip: 'text' must be a string, got " .. type(text))
+	local win = TimMenu.GetCurrentWindow()
+	assert(win, "TimMenu.Tooltip: no active window. Ensure TimMenu.Begin() was called before using widget functions.")
+	Widgets.Tooltip.AttachToLastWidget(win, text)
 end
 
 -- expose TimMenu globally for convenience

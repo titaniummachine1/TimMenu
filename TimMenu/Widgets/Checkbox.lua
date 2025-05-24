@@ -1,6 +1,7 @@
 local Globals = require("TimMenu.Globals")
 local Common = require("TimMenu.Common")
 local Interaction = require("TimMenu.Interaction")
+local Tooltip = require("TimMenu.Widgets.Tooltip")
 
 local function Checkbox(win, label, state)
 	assert(type(win) == "table", "Checkbox: win must be a table")
@@ -36,6 +37,9 @@ local function Checkbox(win, label, state)
 		state = not state
 	end
 
+	-- Store widget bounds for tooltip detection
+	Tooltip.StoreWidgetBounds(win, widgetIndex, bounds)
+
 	-- Draw checkbox background at WidgetBackground
 	local px, py = win.X + x, win.Y + y
 	local bgColor = Globals.Colors.Item
@@ -44,7 +48,7 @@ local function Checkbox(win, label, state)
 	elseif hovered then
 		bgColor = Globals.Colors.ItemHover
 	end
-	Common.QueueRect(win, Globals.Layers.WidgetBackground, px, py, px + boxSize, py + boxSize, bgColor)
+	Common.QueueRect(win, Globals.Layers.WidgetBackground, px, py, px + boxSize, py + boxSize, bgColor, nil)
 	-- Draw checkmark fill at WidgetFill if checked
 	if state then
 		local margin = math.floor(boxSize * 0.25)
@@ -55,7 +59,8 @@ local function Checkbox(win, label, state)
 			py + margin,
 			px + boxSize - margin,
 			py + boxSize - margin,
-			Globals.Colors.Highlight
+			Globals.Colors.Highlight,
+			nil
 		)
 	end
 	-- Draw checkbox outline with stronger WindowBorder color

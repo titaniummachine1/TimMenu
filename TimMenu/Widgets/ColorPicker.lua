@@ -185,7 +185,7 @@ local function ColorPicker(win, label, initColor)
 		bg = Globals.Colors.ItemHover
 	end
 	local mainW = width - arrowBoxW
-	Common.QueueRect(win, Globals.Layers.WidgetBackground, px, py, px + mainW, py + height, bg)
+	Common.QueueRect(win, Globals.Layers.WidgetBackground, px, py, px + mainW, py + height, bg, nil)
 	Common.QueueRect(
 		win,
 		Globals.Layers.WidgetBackground,
@@ -193,7 +193,8 @@ local function ColorPicker(win, label, initColor)
 		py,
 		px + width,
 		py + height,
-		Globals.Colors.ArrowBoxBg
+		Globals.Colors.ArrowBoxBg,
+		nil
 	)
 	Common.QueueOutlinedRect(
 		win,
@@ -213,7 +214,8 @@ local function ColorPicker(win, label, initColor)
 		py + padding,
 		px + boxSize - padding,
 		py + boxSize - padding,
-		inner
+		inner,
+		nil
 	)
 	Common.QueueText(
 		win,

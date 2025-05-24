@@ -1,6 +1,7 @@
 local Globals = require("TimMenu.Globals")
 local Common = require("TimMenu.Common")
 local Interaction = require("TimMenu.Interaction")
+local Tooltip = require("TimMenu.Widgets.Tooltip")
 
 -- Internal drag state per-slider
 local sliderDragState = {}
@@ -38,8 +39,12 @@ local function Slider(win, label, value, min, max, step)
 
 	-- Unified interaction processing
 	local widgetKey = win.id .. ":slider:" .. label .. ":" .. widgetIndex
-	local hovered, down, clicked =
-		Interaction.Process(win, widgetKey, { x = absX, y = absY, w = width, h = height }, false)
+	local bounds = { x = absX, y = absY, w = width, h = height }
+	local hovered, down, clicked = Interaction.Process(win, widgetKey, bounds, false)
+
+	-- Store widget bounds for tooltip detection
+	Tooltip.StoreWidgetBounds(win, widgetIndex, bounds)
+
 	-- Retrieve mouse position for dragging computations
 	local mX, mY = table.unpack(input.GetMousePos())
 	local dragging = sliderDragState[widgetKey] or false
@@ -66,10 +71,10 @@ local function Slider(win, label, value, min, max, step)
 	-- Draw slider background at its background layer
 	local px, py = win.X + x, win.Y + y
 	local bgColor = hovered and Globals.Colors.ItemHover or Globals.Colors.Item
-	Common.QueueRect(win, Globals.Layers.WidgetBackground, px, py, px + width, py + height, bgColor)
+	Common.QueueRect(win, Globals.Layers.WidgetBackground, px, py, px + width, py + height, bgColor, nil)
 	-- Draw fill at its fill layer
 	local fillColor = dragging and Globals.Colors.HighlightActive or Globals.Colors.Highlight
-	Common.QueueRect(win, Globals.Layers.WidgetFill, px, py, px + (width * norm), py + height, fillColor)
+	Common.QueueRect(win, Globals.Layers.WidgetFill, px, py, px + (width * norm), py + height, fillColor, nil)
 	-- Draw outline at its outline layer
 	Common.QueueOutlinedRect(
 		win,
