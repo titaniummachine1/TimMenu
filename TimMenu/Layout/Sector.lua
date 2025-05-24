@@ -90,11 +90,8 @@ local function _enqueueBorderDraw(win, sector_data, depth, persistentWidth, pers
 end
 
 local function _finalizeCursorAndLayout(win, sector_data, width, height, pad)
-	-- Add 50% more vertical spacing between sectors
-	local sectorSpacing = math.ceil(Globals.Defaults.ITEM_SPACING * 1.5)
-
 	win.cursorX = sector_data.startX + width + pad
-	win.cursorY = sector_data.startY + height + sectorSpacing
+	win.cursorY = sector_data.startY
 	win.lineHeight = math.max(win.lineHeight or 0, height)
 
 	if #win._sectorStack > 0 then
@@ -114,9 +111,10 @@ function Sector.Begin(win, label)
 	-- persistent storage for sector sizes
 	win._sectorSizes = win._sectorSizes or {}
 
-	-- capture current cursor as sector origin
-	local startX, startY = win.cursorX, win.cursorY
+	-- Increase padding inside sectors by 5 pixels vertically for better spacing
 	local pad = Globals.Defaults.WINDOW_CONTENT_PADDING
+	-- capture current cursor as sector origin (shifted down by pad)
+	local startX, startY = win.cursorX, win.cursorY + pad
 
 	-- restore previous max extents if available
 	local stored = win._sectorSizes[label]
@@ -142,8 +140,10 @@ function Sector.Begin(win, label)
 	end
 
 	win.NextLine = function(self, spacing)
-		-- Call original to handle vertical advance and line height
-		sector_data.origNext(self, spacing)
+		-- Call original with extra vertical spacing for sectors
+		local extra = 5 -- add 5px more between lines inside sector
+		local baseSpacing = spacing or Globals.Defaults.WINDOW_CONTENT_PADDING
+		sector_data.origNext(self, baseSpacing + extra)
 		-- Crucially, reset cursorX to the sector's indented start position
 		self.cursorX = sector_data.startX + sector_data.padding
 		-- track y position after line break relative to window origin
