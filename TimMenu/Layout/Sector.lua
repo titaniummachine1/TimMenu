@@ -28,10 +28,9 @@ end
 local function _updatePersistentSize(win, sector_data, width, height)
 	win._sectorSizes = win._sectorSizes or {}
 	local persistent = win._sectorSizes[sector_data.label]
-	if not persistent or width > persistent.width or height > persistent.height then
-		win._sectorSizes[sector_data.label] = { width = width, height = height }
-	end
-	return win._sectorSizes[sector_data.label] -- Return the, possibly updated, persistent size
+	-- Always update to current size to allow shrinking
+	win._sectorSizes[sector_data.label] = { width = width, height = height }
+	return win._sectorSizes[sector_data.label]
 end
 
 local function _updateWindowBounds(win, sector_data, width, height, pad)
@@ -116,13 +115,12 @@ function Sector.Begin(win, label)
 	-- capture current cursor as sector origin (shifted down by pad)
 	local startX, startY = win.cursorX, win.cursorY + pad
 
-	-- restore previous max extents if available
-	local stored = win._sectorSizes[label]
+	-- Start with current cursor position as initial extents (no stored sizes)
 	local sector_data = {
 		startX = startX,
 		startY = startY,
-		maxX = stored and (startX + stored.width - pad) or startX,
-		maxY = stored and (startY + stored.height - pad) or startY,
+		maxX = startX,
+		maxY = startY,
 		label = label,
 		padding = pad,
 		origAdd = win.AddWidget, -- Store original AddWidget

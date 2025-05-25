@@ -205,6 +205,11 @@ function Window:resetCursor()
 	self._widgetBlockedRegions = {}
 	-- Clear header tabs flag so titles center if no header tabs
 	self._hasHeaderTabs = false
+	-- Reset window size to defaults to allow shrinking
+	self.W = Globals.Defaults.DEFAULT_W
+	self.H = Globals.Defaults.DEFAULT_H
+	-- Clear sector sizes to allow sectors to shrink each frame
+	self._sectorSizes = {}
 end
 
 return Window
