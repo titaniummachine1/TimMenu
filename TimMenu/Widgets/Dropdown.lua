@@ -58,7 +58,8 @@ local function Dropdown(win, label, selectedIndex, options)
 	assert(type(win) == "table", "Dropdown: win must be a table")
 	assert(type(label) == "string", "Dropdown: label must be a string")
 	assert(type(options) == "table", "Dropdown: options must be a table")
-	win._widgetCounter = (win._widgetCounter or 0) + 1
+
+	-- State management
 	win._dropdowns = win._dropdowns or {}
 	local key = tostring(win.id) .. ":dropdown:" .. label
 	local entry = win._dropdowns[key]
@@ -79,21 +80,23 @@ local function Dropdown(win, label, selectedIndex, options)
 	local arrowBoxW = height
 	local width = txtW + pad * 2 + arrowBoxW
 
-	if win.cursorX > Globals.Defaults.WINDOW_CONTENT_PADDING then
-		win.cursorX = win.cursorX + pad
-	end
-	local x, y = win:AddWidget(width, height)
-	local absX, absY = win.X + x, win.Y + y
+	-- Use WidgetBase for setup (layout, counter, bounds, key)
+	local ctx = WidgetBase.Setup(win, "Dropdown", label, width, height)
 
 	-- Unified interaction processing for main field
-	local widgetKey = key .. ":" .. win._widgetCounter
-	local bounds = { x = absX, y = absY, w = width, h = height }
-	local hovered, pressed, clicked = Interaction.Process(win, widgetKey, bounds, entry.open)
+	local hovered, pressed, clicked = WidgetBase.ProcessInteraction(ctx, entry.open)
 	local listH = #options * height
-	local popupBounds = { x = absX, y = absY + height, w = width, h = listH }
+	local popupBounds = { x = ctx.absX, y = ctx.absY + height, w = width, h = listH }
 
 	-- Close popup on outside click using cached mouse position
-	Interaction.ClosePopupOnOutsideClick(entry, TimMenuGlobal.mouseX, TimMenuGlobal.mouseY, bounds, popupBounds, win)
+	Interaction.ClosePopupOnOutsideClick(
+		entry,
+		TimMenuGlobal.mouseX,
+		TimMenuGlobal.mouseY,
+		ctx.bounds,
+		popupBounds,
+		win
+	)
 
 	if clicked then
 		if not entry.open and hovered then
@@ -126,8 +129,8 @@ local function Dropdown(win, label, selectedIndex, options)
 		2,
 		DrawDropdownField,
 		win,
-		x,
-		y,
+		ctx.x,
+		ctx.y,
 		width,
 		height,
 		pad,
@@ -140,7 +143,7 @@ local function Dropdown(win, label, selectedIndex, options)
 
 	-- Draw popup if open - use dedicated popup layer that's always on top
 	if entry.open then
-		local popupX, popupY = x, y + height
+		local popupX, popupY = ctx.x, ctx.y + height
 		local popupLayer = Globals.POPUP_LAYER_BASE
 
 		-- Popup background
@@ -149,8 +152,8 @@ local function Dropdown(win, label, selectedIndex, options)
 		-- Popup items
 		for i, opt in ipairs(options) do
 			local isH = Interaction.IsHovered(win, {
-				x = absX,
-				y = absY + height + (i - 1) * height,
+				x = ctx.absX,
+				y = ctx.absY + height + (i - 1) * height,
 				w = width,
 				h = height,
 			})

@@ -2,6 +2,7 @@ local Globals = require("TimMenu.Globals")
 local Common = require("TimMenu.Common")
 local Interaction = require("TimMenu.Interaction")
 local DrawHelpers = require("TimMenu.DrawHelpers")
+local WidgetBase = require("TimMenu.WidgetBase")
 
 -- Draw helpers for combo field and popup
 local function DrawComboField(win, relX, relY, width, height, pad, label, entryOpen, hovered, arrowW, arrowH)
@@ -69,7 +70,8 @@ local function Combo(win, label, selected, options)
 	assert(type(label) == "string", "Combo: label must be a string")
 	assert(type(selected) == "table", "Combo: selected must be a table of booleans")
 	assert(type(options) == "table", "Combo: options must be a table")
-	win._widgetCounter = (win._widgetCounter or 0) + 1
+
+	-- State management
 	win._combos = win._combos or {}
 	local key = tostring(win.id) .. ":combo:" .. label
 	local entry = win._combos[key]
@@ -90,21 +92,24 @@ local function Combo(win, label, selected, options)
 	local height = math.max(txtH, arrowH) + pad * 2
 	local arrowBoxW = height
 	local width = txtW + pad * 2 + arrowBoxW
-	if win.cursorX > Globals.Defaults.WINDOW_CONTENT_PADDING then
-		win.cursorX = win.cursorX + pad
-	end
-	local x, y = win:AddWidget(width, height)
-	local absX, absY = win.X + x, win.Y + y
+
+	-- Use WidgetBase for setup
+	local ctx = WidgetBase.Setup(win, "Combo", label, width, height)
 
 	-- Unified interaction for main combo field
-	local widgetKey = key .. ":" .. win._widgetCounter
-	local bounds = { x = absX, y = absY, w = width, h = height }
-	local hovered, pressed, clicked = Interaction.Process(win, widgetKey, bounds, entry.open)
+	local hovered, pressed, clicked = WidgetBase.ProcessInteraction(ctx, entry.open)
 	local listH = #options * height
-	local popupBounds = { x = absX, y = absY + height, w = width, h = listH }
+	local popupBounds = { x = ctx.absX, y = ctx.absY + height, w = width, h = listH }
 
 	-- Close popup on outside click using cached mouse position
-	Interaction.ClosePopupOnOutsideClick(entry, TimMenuGlobal.mouseX, TimMenuGlobal.mouseY, bounds, popupBounds, win)
+	Interaction.ClosePopupOnOutsideClick(
+		entry,
+		TimMenuGlobal.mouseX,
+		TimMenuGlobal.mouseY,
+		ctx.bounds,
+		popupBounds,
+		win
+	)
 
 	if clicked then
 		if not entry.open and hovered then
@@ -133,11 +138,25 @@ local function Combo(win, label, selected, options)
 	end
 
 	-- Draw main combo field
-	win:QueueDrawAtLayer(2, DrawComboField, win, x, y, width, height, pad, label, entry.open, hovered, arrowW, arrowH)
+	win:QueueDrawAtLayer(
+		2,
+		DrawComboField,
+		win,
+		ctx.x,
+		ctx.y,
+		width,
+		height,
+		pad,
+		label,
+		entry.open,
+		hovered,
+		arrowW,
+		arrowH
+	)
 
 	-- Draw popup if open - use dedicated popup layer that's always on top
 	if entry.open then
-		local px, py = x, y + height
+		local px, py = ctx.x, ctx.y + height
 		local popupLayer = Globals.POPUP_LAYER_BASE
 
 		-- Popup background
@@ -146,8 +165,8 @@ local function Combo(win, label, selected, options)
 		-- Popup items
 		for i, opt in ipairs(options) do
 			local isH = Interaction.IsHovered(win, {
-				x = absX,
-				y = absY + height + (i - 1) * height,
+				x = ctx.absX,
+				y = ctx.absY + height + (i - 1) * height,
 				w = width,
 				h = height,
 			})
