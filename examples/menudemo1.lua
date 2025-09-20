@@ -148,7 +148,6 @@ local function OnDraw_Menudemo1()
 
 		TimMenu.NextLine()
 	end
-	TimMenu.End() -- Always call End() to clean up
 end
 
 -- Correct callback registration for menudemo1

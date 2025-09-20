@@ -61,7 +61,6 @@ local function OnDraw_Menudemo2()
 			TimMenu.ShowDebug()
 		end
 	end
-	TimMenu.End() -- Always call End() to clean up
 end
 
 -- Register draw callback
