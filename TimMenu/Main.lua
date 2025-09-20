@@ -44,6 +44,64 @@ end
 
 local _currentWindow = nil
 
+-- Assertion utilities for debugging
+local function assertType(value, expectedType, funcName, paramName)
+	if type(value) ~= expectedType then
+		error(string.format("[TimMenu] %s: Parameter '%s' must be %s, got %s",
+			funcName or "unknown", paramName or "unknown", expectedType, type(value)))
+	end
+end
+
+local function assertNotNil(value, funcName, paramName)
+	if value == nil then
+		error(string.format("[TimMenu] %s: Parameter '%s' cannot be nil",
+			funcName or "unknown", paramName or "unknown"))
+	end
+end
+
+local function assertValidWindow(funcName)
+	local win = _currentWindow
+	if not win then
+		error(string.format("[TimMenu] %s: No active window. Call TimMenu.Begin() first",
+			funcName or "unknown"))
+	end
+	if not win.visible then
+		error(string.format("[TimMenu] %s: Current window '%s' is not visible",
+			funcName or "unknown", win.title or "unknown"))
+	end
+end
+
+local function assertInBeginBlock(funcName)
+	if not _currentWindow then
+		error(string.format("[TimMenu] %s: Must be called between TimMenu.Begin() and TimMenu.End()",
+			funcName or "unknown"))
+	end
+end
+
+local function assertValidString(str, funcName, paramName)
+	assertNotNil(str, funcName, paramName)
+	assertType(str, "string", funcName, paramName)
+	if str == "" then
+		error(string.format("[TimMenu] %s: Parameter '%s' cannot be empty string",
+			funcName or "unknown", paramName or "unknown"))
+	end
+end
+
+local function assertValidNumber(num, funcName, paramName)
+	assertNotNil(num, funcName, paramName)
+	assertType(num, "number", funcName, paramName)
+end
+
+local function assertValidBoolean(bool, funcName, paramName)
+	assertNotNil(bool, funcName, paramName)
+	assertType(bool, "boolean", funcName, paramName)
+end
+
+local function assertValidTable(tbl, funcName, paramName)
+	assertNotNil(tbl, funcName, paramName)
+	assertType(tbl, "table", funcName, paramName)
+end
+
 local Common = require("TimMenu.Common")
 local Globals = require("TimMenu.Globals")
 local Utils = require("TimMenu.Utils")
@@ -66,30 +124,88 @@ local function getOrCreateWindow(key, title, visible)
 end
 
 function TimMenu.Begin(title, visible, id)
-	TimMenu.FontReset()
-	visible = (visible == nil) and true or visible
-	if type(visible) == "string" then
-		id, visible = visible, true
+	-- Validate parameters
+	assertValidString(title, "Begin", "title")
+
+	-- Handle the visible parameter variations
+	if visible ~= nil then
+		if type(visible) == "string" then
+			-- visible was actually the id parameter
+			id = visible
+			visible = true
+		else
+			-- visible is a boolean
+			assertValidBoolean(visible, "Begin", "visible")
+		end
 	end
+
+	-- id can be nil, but if provided must be string or number
+	if id ~= nil then
+		assertType(id, "string", "Begin", "id")
+		assertValidString(id, "Begin", "id")
+	end
+
 	local key = (id or title)
 
-	local win = getOrCreateWindow(key, title, visible)
-	win:update()
+	-- Validate global state
+	if not TimMenuGlobal then
+		error("[TimMenu] Begin: TimMenu not properly initialized. Call Setup() first")
+	end
 
+	if not TimMenuGlobal.windows then
+		error("[TimMenu] Begin: Window management not initialized")
+	end
+
+	local win = getOrCreateWindow(key, title, visible or true)
+
+	-- Reset window state for this frame
 	_currentWindow = win
 	win:resetCursor()
 	win._widgetCounter = 0
 	win._sectorStack = {}
 	win._widgetBounds = {}
 
-	if not win.visible or (gui.GetValue("clean screenshots") == 1 and engine.IsTakingScreenshot()) then
-		return false
+	-- Validate window state
+	if not win.visible then
+		error(string.format("[TimMenu] Begin: Window '%s' is not visible", title))
 	end
+
+	-- Mark window as touched only when it's actually being used
+	win:update()
 
 	return true, win
 end
 
+function TimMenu.BeginSafe(title, visible, id)
+	-- Helper function that ensures End() is always called
+	local success, result = pcall(function()
+		return TimMenu.Begin(title, visible, id)
+	end)
+
+	if success then
+		return result
+	else
+		print("[TimMenu] Error in Begin:", result)
+		return false
+	end
+end
+
+function TimMenu.EndSafe()
+	-- Helper function that ensures End() is always called safely
+	local success, result = pcall(function()
+		TimMenu.End()
+	end)
+
+	if not success then
+		print("[TimMenu] Error in End:", result)
+	end
+end
+
 function TimMenu.End()
+	assertInBeginBlock("End")
+	if not _currentWindow then
+		error("[TimMenu] End: No active window to end")
+	end
 	_currentWindow = nil
 end
 
@@ -98,10 +214,14 @@ function TimMenu.GetCurrentWindow()
 end
 
 function TimMenu.Button(label)
+	assertInBeginBlock("Button")
+	assertValidString(label, "Button", "label")
+
 	local win = TimMenu.GetCurrentWindow()
 	if not win then
-		return false
+		error("[TimMenu] Button: No active window")
 	end
+
 	local prevFont = applyNextWidgetFont()
 	local clicked = Widgets.Button(win, label)
 	restoreWidgetFont(prevFont)
@@ -109,10 +229,15 @@ function TimMenu.Button(label)
 end
 
 function TimMenu.Checkbox(label, state)
+	assertInBeginBlock("Checkbox")
+	assertValidString(label, "Checkbox", "label")
+	assertValidBoolean(state, "Checkbox", "state")
+
 	local win = TimMenu.GetCurrentWindow()
 	if not win then
-		return state, false
+		error("[TimMenu] Checkbox: No active window")
 	end
+
 	local prevFont = applyNextWidgetFont()
 	local newState, clicked = Widgets.Checkbox(win, label, state)
 	restoreWidgetFont(prevFont)
@@ -120,9 +245,12 @@ function TimMenu.Checkbox(label, state)
 end
 
 function TimMenu.Text(text)
+	assertInBeginBlock("Text")
+	assertValidString(text, "Text", "text")
+
 	local win = TimMenu.GetCurrentWindow()
 	if not win then
-		return
+		error("[TimMenu] Text: No active window")
 	end
 
 	win._widgetCounter = (win._widgetCounter or 0) + 1
@@ -169,31 +297,62 @@ function TimMenu.ShowDebug()
 end
 
 function TimMenu.NextLine(spacing)
+	assertInBeginBlock("NextLine")
+
 	local win = TimMenu.GetCurrentWindow()
 	if win then
+		if spacing ~= nil then
+			assertValidNumber(spacing, "NextLine", "spacing")
+		end
 		win:NextLine(spacing)
 	end
 end
 
 function TimMenu.SameLine(spacing)
+	assertInBeginBlock("SameLine")
+
 	local win = TimMenu.GetCurrentWindow()
 	if win then
+		if spacing ~= nil then
+			assertValidNumber(spacing, "SameLine", "spacing")
+		end
 		win:SameLine(spacing)
 	end
 end
 
 function TimMenu.Spacing(verticalSpacing)
+	assertInBeginBlock("Spacing")
+
 	local win = TimMenu.GetCurrentWindow()
 	if win then
+		if verticalSpacing ~= nil then
+			assertValidNumber(verticalSpacing, "Spacing", "verticalSpacing")
+		end
 		win:Spacing(verticalSpacing)
 	end
 end
 
 function TimMenu.Slider(label, value, min, max, step)
+	assertInBeginBlock("Slider")
+	assertValidString(label, "Slider", "label")
+	assertValidNumber(value, "Slider", "value")
+	assertValidNumber(min, "Slider", "min")
+	assertValidNumber(max, "Slider", "max")
+	assertValidNumber(step, "Slider", "step")
+
+	if min >= max then
+		error(string.format("[TimMenu] Slider: min (%s) must be less than max (%s)", min, max))
+	end
+
+	if step <= 0 then
+		error(string.format("[TimMenu] Slider: step (%s) must be positive", step))
+	end
+
 	local win = TimMenu.GetCurrentWindow()
 	if not win then
-		return value, false
+		error("[TimMenu] Slider: No active window")
 	end
+
 	local prevFont = applyNextWidgetFont()
 	local newValue, changed = Widgets.Slider(win, label, value, min, max, step)
 	restoreWidgetFont(prevFont)
@@ -201,18 +360,26 @@ function TimMenu.Slider(label, value, min, max, step)
 end
 
 function TimMenu.Separator(label)
+	assertInBeginBlock("Separator")
+
 	local win = TimMenu.GetCurrentWindow()
 	if not win then
-		return
+		error("[TimMenu] Separator: No active window")
 	end
+
 	return SeparatorLayout.Draw(win, label)
 end
 
 function TimMenu.TextInput(label, text)
+	assertInBeginBlock("TextInput")
+	assertValidString(label, "TextInput", "label")
+	assertValidString(text, "TextInput", "text")
+
 	local win = TimMenu.GetCurrentWindow()
 	if not win then
-		return text, false
+		error("[TimMenu] TextInput: No active window")
 	end
+
 	local prevFont = applyNextWidgetFont()
 	local newText, changed = Widgets.TextInput(win, label, text)
 	restoreWidgetFont(prevFont)
@@ -220,10 +387,20 @@ function TimMenu.TextInput(label, text)
 end
 
 function TimMenu.Dropdown(label, selectedIndex, options)
+	assertInBeginBlock("Dropdown")
+	assertValidString(label, "Dropdown", "label")
+	assertValidNumber(selectedIndex, "Dropdown", "selectedIndex")
+	assertValidTable(options, "Dropdown", "options")
+
+	if #options == 0 then
+		error("[TimMenu] Dropdown: options table cannot be empty")
+	end
+
 	local win = TimMenu.GetCurrentWindow()
 	if not win then
-		return selectedIndex, false
+		error("[TimMenu] Dropdown: No active window")
 	end
+
 	local prevFont = applyNextWidgetFont()
 	local newIdx, changed = Widgets.Dropdown(win, label, selectedIndex, options)
 	restoreWidgetFont(prevFont)
@@ -231,10 +408,20 @@ function TimMenu.Dropdown(label, selectedIndex, options)
 end
 
 function TimMenu.Combo(label, selectedTable, options)
+	assertInBeginBlock("Combo")
+	assertValidString(label, "Combo", "label")
+	assertValidTable(selectedTable, "Combo", "selectedTable")
+	assertValidTable(options, "Combo", "options")
+
+	if #options == 0 then
+		error("[TimMenu] Combo: options table cannot be empty")
+	end
+
 	local win = TimMenu.GetCurrentWindow()
 	if not win then
-		return selectedTable, false
+		error("[TimMenu] Combo: No active window")
 	end
+
 	local prevFont = applyNextWidgetFont()
 	local newTable, changed = Widgets.Combo(win, label, selectedTable, options)
 	restoreWidgetFont(prevFont)
@@ -242,10 +429,20 @@ function TimMenu.Combo(label, selectedTable, options)
 end
 
 function TimMenu.Selector(label, selectedIndex, options)
+	assertInBeginBlock("Selector")
+	assertValidString(label, "Selector", "label")
+	assertValidNumber(selectedIndex, "Selector", "selectedIndex")
+	assertValidTable(options, "Selector", "options")
+
+	if #options == 0 then
+		error("[TimMenu] Selector: options table cannot be empty")
+	end
+
 	local win = TimMenu.GetCurrentWindow()
 	if not win then
-		return selectedIndex, false
+		error("[TimMenu] Selector: No active window")
 	end
+
 	local prevFont = applyNextWidgetFont()
 	local newIdx, changed = Widgets.Selector(win, label, selectedIndex, options)
 	restoreWidgetFont(prevFont)
@@ -253,14 +450,19 @@ function TimMenu.Selector(label, selectedIndex, options)
 end
 
 function TimMenu.TabControl(id, tabs, defaultSelection)
+	assertInBeginBlock("TabControl")
+	assertValidString(id, "TabControl", "id")
+	assertValidTable(tabs, "TabControl", "tabs")
+
+	if #tabs == 0 then
+		error("[TimMenu] TabControl: tabs table cannot be empty")
+	end
+
 	local win = TimMenu.GetCurrentWindow()
 	if not win then
-		if type(defaultSelection) == "string" then
-			return tabs[1] or "", false
-		else
-			return 1, false
-		end
+		error("[TimMenu] TabControl: No active window")
 	end
+
 	local prevFont = applyNextWidgetFont()
 	local newIndex, changed = Widgets.TabControl(win, id, tabs, defaultSelection)
 	restoreWidgetFont(prevFont)
@@ -271,18 +473,29 @@ function TimMenu.TabControl(id, tabs, defaultSelection)
 end
 
 function TimMenu.BeginSector(label)
+	assertInBeginBlock("BeginSector")
+	assertValidString(label, "BeginSector", "label")
+
 	local win = TimMenu.GetCurrentWindow()
 	if not win then
-		return
+		error("[TimMenu] BeginSector: No active window")
 	end
+
 	SectorWidget.Begin(win, label)
 end
 
 function TimMenu.EndSector()
+	assertInBeginBlock("EndSector")
+
 	local win = TimMenu.GetCurrentWindow()
-	if not win or not win._sectorStack or #win._sectorStack == 0 then
-		return
+	if not win then
+		error("[TimMenu] EndSector: No active window")
 	end
+
+	if not win._sectorStack or #win._sectorStack == 0 then
+		error("[TimMenu] EndSector: No active sector to end. Call BeginSector() first")
+	end
+
 	SectorWidget.End(win)
 end
 
@@ -298,7 +511,7 @@ local function _TimMenu_GlobalDraw()
 	local currentFrame = globals.FrameCount()
 	local keysToRemove = {}
 	for key, win in pairs(TimMenuGlobal.windows) do
-		if not win._lastFrameTouched or (currentFrame - win._lastFrameTouched) > 1 then
+		if not win._lastFrameTouched or (currentFrame - win._lastFrameTouched) > 60 then -- 60 frames = ~1 second
 			table.insert(keysToRemove, key)
 		end
 	end

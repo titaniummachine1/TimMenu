@@ -33,6 +33,7 @@ local function main()
 		sliderValue = TimMenu.Slider("Volume", sliderValue, 0, 100, 1)
 		TimMenu.Tooltip("Adjust the volume level from 0 to 100")
 	end
+	TimMenu.End() -- Always call End() to clean up
 end
 
 -- Register the callback

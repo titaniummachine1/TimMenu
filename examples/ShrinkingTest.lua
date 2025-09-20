@@ -78,8 +78,8 @@ local function ShrinkingTest()
 		TimMenu.Text("Notice how the menu shrinks when you")
 		TimMenu.Text("disable content above!")
 
-		TimMenu.End()
 	end
+	TimMenu.End() -- Always call End() to clean up
 end
 
 -- Register the test

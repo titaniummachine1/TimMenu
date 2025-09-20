@@ -49,6 +49,7 @@ local function OnDraw()
         print("Current slider value:", sliderValue)
 
     end
+    TimMenu.End() -- Always call End() to clean up
 end
 
 callbacks.Register("Draw", "ExampleDraw", OnDraw)
@@ -59,6 +60,9 @@ callbacks.Register("Draw", "ExampleDraw", OnDraw)
 ### Window Management
 
 - Begin: `bool = TimMenu.Begin(title, [visible, [id]])`
+- BeginSafe: `bool = TimMenu.BeginSafe(title, [visible, [id]])` - Safe version with error handling
+- End: `TimMenu.End()` - Always call to clean up window state
+- EndSafe: `TimMenu.EndSafe()` - Safe version with error handling
 
 ### Layout
 
@@ -118,6 +122,7 @@ local function OnDraw()
             selectedOption = TimMenu.Dropdown("Quality", selectedOption, options)
         end
     end
+    TimMenu.End() -- Always call End() to clean up
 end
 ```
 
@@ -132,6 +137,7 @@ local function OnDraw()
         TimMenu.Text(string.format("RGB: %d, %d, %d, %d",
             backgroundColor[1], backgroundColor[2], backgroundColor[3], backgroundColor[4]))
     end
+    TimMenu.End() -- Always call End() to clean up
 end
 ```
 
@@ -152,15 +158,61 @@ local function OnDraw()
             end
         end
     end
+    TimMenu.End() -- Always call End() to clean up
 end
 ```
 
-## Tips
+## Recommended Safe Usage Pattern
 
-- Use `BeginSector`/`EndSector` to group widgets in bordered panels.
-- Sectors can be easily stacked horizontally and vertically
-- All widgets return their current value - no need to track "changed" flags
-- Values are automatically maintained between frames by the widget system
+For robust menu creation, use the safe versions of Begin/End with proper error handling:
+
+```lua
+local TimMenu = require("TimMenu")
+
+local function CreateSafeMenu()
+    if TimMenu.BeginSafe("My Safe Menu") then
+        -- Your widgets here
+        local value = TimMenu.Slider("Test Slider", 50, 0, 100, 1)
+        if TimMenu.Button("Test Button") then
+            print("Button clicked!")
+        end
+    end
+    TimMenu.EndSafe() -- Always called, even if there are errors
+end
+
+callbacks.Register("Draw", "SafeMenu", CreateSafeMenu)
+```
+
+## Error Detection and Debugging
+
+TimMenu now includes comprehensive assertions and error checking to help debug issues:
+
+### Assertion Coverage
+
+- **Parameter validation** - All functions validate input parameters with detailed error messages
+- **Window state validation** - Ensures windows are in valid states before operations
+- **Layout validation** - Catches layout issues like infinite expansion, invalid spacing
+- **Widget usage validation** - Ensures widgets are only called within Begin/End blocks
+- **Dimension validation** - Prevents windows from growing beyond reasonable limits (5000px threshold)
+- **Position validation** - Detects invalid window positions that could cause issues
+
+### Common Error Messages
+
+When assertions fail, you'll see detailed error messages like:
+```
+[TimMenu] Begin: Parameter 'title' cannot be empty string
+[TimMenu] AddWidget: Window dimensions too large W=6000, H=3000 (possible infinite expansion)
+[TimMenu] NextLine: Must be called between TimMenu.Begin() and TimMenu.End()
+[TimMenu] Slider: min (50) must be less than max (25)
+[TimMenu] Dropdown: options table cannot be empty
+```
+
+### Debugging Tips
+
+- **Enable assertions** by running in debug mode - they help catch issues early
+- **Check error messages** carefully - they tell you exactly what went wrong and where
+- **Use BeginSafe/EndSafe** for production code to handle assertion failures gracefully
+- **Monitor window dimensions** - if windows grow beyond 5000px, there's likely an infinite expansion bug
 
 ## Sector Grouping
 
@@ -176,6 +228,7 @@ if TimMenu.Begin("Example Window") then
     local volume = TimMenu.Slider("Volume", 50, 0, 100, 1)
     TimMenu.EndSector()
 end
+TimMenu.End() -- Always call End() to clean up
 ```
 
 ## Changelog
@@ -192,9 +245,16 @@ end
 
 - Keybind widget now recalculates its display label immediately after a key press and dynamically computes its draw position inside the rendering callback, eliminating frame delay when dragging windows.
 
-### Fixed TabControl Header Lag
+### Added Comprehensive Assertions and Error Detection
 
-- Header-mode tabs now calculate their offsets relative to the window's current position at draw time, preventing one-frame lag during window movement.
+- **Complete assertion coverage** - Added parameter validation, state checks, and error detection throughout the codebase
+- **Detailed error messages** - All assertion failures provide specific information about what went wrong and where
+- **Window dimension limits** - Added 5000px threshold to catch infinite expansion issues early
+- **Layout validation** - Added checks for invalid spacing, cursor positions, and widget placement
+- **Widget usage validation** - Ensures all widgets are called within proper Begin/End blocks
+- **Parameter type checking** - Validates all function parameters with descriptive error messages
+- **Safe wrapper functions** - BeginSafe() and EndSafe() provide error handling for production use
+- **Debugging documentation** - Added comprehensive debugging guide with common error patterns
 
 ## License
 

@@ -6,6 +6,30 @@ local lmbx = globals -- alias for Lmaobox API
 local Window = {}
 Window.__index = Window
 
+-- Assertion utilities for window debugging
+local function assertValidWindowDimensions(win, funcName)
+	if win.W <= 0 or win.H <= 0 then
+		error(string.format("[TimMenu] %s: Invalid window dimensions W=%d, H=%d", funcName or "unknown", win.W, win.H))
+	end
+
+	if win.W > 5000 or win.H > 5000 then
+		error(
+			string.format(
+				"[TimMenu] %s: Window dimensions too large W=%d, H=%d (possible infinite expansion)",
+				funcName or "unknown",
+				win.W,
+				win.H
+			)
+		)
+	end
+end
+
+local function assertValidPosition(win, funcName)
+	if win.X < -10000 or win.X > 10000 or win.Y < -10000 or win.Y > 10000 then
+		error(string.format("[TimMenu] %s: Invalid window position X=%d, Y=%d", funcName or "unknown", win.X, win.Y))
+	end
+end
+
 local function applyDefaults(params)
 	-- Provide a fallback for each setting if not provided
 	return {
@@ -36,6 +60,15 @@ function Window.new(params)
 	if type(params) == "string" then
 		params = { title = params }
 	end
+
+	if not params then
+		error("[TimMenu] Window.new: params cannot be nil")
+	end
+
+	if not params.title then
+		error("[TimMenu] Window.new: title is required")
+	end
+
 	params = applyDefaults(params)
 
 	-- Create our window object with simple composition
@@ -50,6 +83,11 @@ function Window.new(params)
 	self._lastFrameTouched = lmbx.FrameCount() -- Initialize touch timestamp
 	self.IsDragging = false
 	self.DragPos = { X = 0, Y = 0 }
+
+	-- Validate initial state
+	assertValidWindowDimensions(self, "Window.new")
+	assertValidPosition(self, "Window.new")
+
 	-- Set __close metamethod so it auto-cleans when used as a to-be-closed variable.
 	local mt = getmetatable(self)
 	mt.__close = Window.__close
@@ -140,6 +178,21 @@ end
 --- @param height number The widget height
 --- @return number, number The x, y coordinates for the widget
 function Window:AddWidget(width, height)
+	-- Validate parameters
+	if type(width) ~= "number" or type(height) ~= "number" then
+		error(
+			string.format(
+				"[TimMenu] AddWidget: width and height must be numbers, got %s, %s",
+				type(width),
+				type(height)
+			)
+		)
+	end
+
+	if width < 0 or height < 0 then
+		error(string.format("[TimMenu] AddWidget: width and height must be non-negative, got %d, %d", width, height))
+	end
+
 	local padding = Globals.Defaults.WINDOW_CONTENT_PADDING
 	local x = self.cursorX
 	local y = self.cursorY
@@ -149,10 +202,17 @@ function Window:AddWidget(width, height)
 		x = math.max(padding, math.floor((self.W - width) * 0.5))
 	end
 
+	-- Validate current state before expansion
+	assertValidWindowDimensions(self, "AddWidget")
+	assertValidPosition(self, "AddWidget")
+
 	-- Update window dimensions if needed
 	self.W = math.max(self.W, x + width + padding)
 	self.lineHeight = math.max(self.lineHeight, height)
 	self.H = math.max(self.H, y + self.lineHeight)
+
+	-- Check for potential infinite expansion
+	assertValidWindowDimensions(self, "AddWidget")
 
 	-- Update cursor position for the *next* widget on this line
 	self.cursorX = self.cursorX + width + Globals.Defaults.ITEM_SPACING
@@ -164,18 +224,47 @@ end
 --- Resets horizontal position and advances vertically.
 function Window:NextLine(spacing)
 	spacing = spacing or Globals.Defaults.WINDOW_CONTENT_PADDING
+
+	-- Validate spacing parameter
+	if type(spacing) ~= "number" then
+		error(string.format("[TimMenu] NextLine: spacing must be number, got %s", type(spacing)))
+	end
+
+	if spacing < 0 then
+		error(string.format("[TimMenu] NextLine: spacing must be non-negative, got %d", spacing))
+	end
+
+	-- Validate current state
+	assertValidWindowDimensions(self, "NextLine")
+
 	self.cursorY = self.cursorY + self.lineHeight + spacing
 	self.cursorX = Globals.Defaults.WINDOW_CONTENT_PADDING -- reset to left padding
 	local endOfLineY = self.cursorY -- Y position *before* resetting lineHeight
 	self.lineHeight = 0
 	-- Expand window if needed, considering the end of the previous line
 	self.H = math.max(self.H, endOfLineY)
+
+	-- Check for potential infinite expansion
+	assertValidWindowDimensions(self, "NextLine")
 end
 
 --- Advances the cursor horizontally to place the next widget on the same line.
 function Window:SameLine(spacing)
 	-- Default spacing is Globals.Defaults.ITEM_SPACING
 	spacing = spacing or Globals.Defaults.ITEM_SPACING
+
+	-- Validate spacing parameter
+	if type(spacing) ~= "number" then
+		error(string.format("[TimMenu] SameLine: spacing must be number, got %s", type(spacing)))
+	end
+
+	if spacing < 0 then
+		error(string.format("[TimMenu] SameLine: spacing must be non-negative, got %d", spacing))
+	end
+
+	-- Validate current state
+	assertValidWindowDimensions(self, "SameLine")
+
 	self.cursorX = self.cursorX + spacing -- Add specified spacing
 	-- Note: We don't add widget width here, AddWidget already does that
 	-- and advances cursorX *after* returning the position.
@@ -185,6 +274,19 @@ end
 function Window:Spacing(verticalSpacing)
 	-- Default spacing is half the content padding
 	verticalSpacing = verticalSpacing or (Globals.Defaults.WINDOW_CONTENT_PADDING / 2)
+
+	-- Validate spacing parameter
+	if type(verticalSpacing) ~= "number" then
+		error(string.format("[TimMenu] Spacing: verticalSpacing must be number, got %s", type(verticalSpacing)))
+	end
+
+	if verticalSpacing < 0 then
+		error(string.format("[TimMenu] Spacing: verticalSpacing must be non-negative, got %d", verticalSpacing))
+	end
+
+	-- Validate current state
+	assertValidWindowDimensions(self, "Spacing")
+
 	-- Use current line height + spacing to advance Y
 	self.cursorY = self.cursorY + self.lineHeight + verticalSpacing
 	self.lineHeight = 0 -- Reset line height for the *next* line that might start here
@@ -193,14 +295,31 @@ function Window:Spacing(verticalSpacing)
 		self.H = self.cursorY
 	end
 	-- Important: Do NOT reset cursorX here.
+
+	-- Check for potential infinite expansion
+	assertValidWindowDimensions(self, "Spacing")
 end
 
 --- Reset the layout cursor for widgets (called on Begin)
 function Window:resetCursor()
 	local padding = Globals.Defaults.WINDOW_CONTENT_PADDING
+
+	-- Validate padding
+	if type(padding) ~= "number" or padding < 0 then
+		error(string.format("[TimMenu] resetCursor: Invalid padding value %s", tostring(padding)))
+	end
+
+	-- Reset cursor positions
 	self.cursorX = padding
 	self.cursorY = Globals.Defaults.TITLE_BAR_HEIGHT + padding
 	self.lineHeight = 0
+
+	-- Validate new cursor positions
+	if self.cursorX < 0 or self.cursorY < 0 then
+		error(string.format("[TimMenu] resetCursor: Invalid cursor position X=%d, Y=%d",
+			self.cursorX, self.cursorY))
+	end
+
 	-- Clear any widget blocking regions at start of frame
 	self._widgetBlockedRegions = {}
 	-- Clear header tabs flag so titles center if no header tabs
@@ -210,6 +329,9 @@ function Window:resetCursor()
 	self.H = Globals.Defaults.DEFAULT_H
 	-- Clear sector sizes to allow sectors to shrink each frame
 	self._sectorSizes = {}
+
+	-- Validate reset dimensions
+	assertValidWindowDimensions(self, "resetCursor")
 end
 
 return Window
