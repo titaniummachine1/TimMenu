@@ -49,12 +49,24 @@ function Utils.GetWindowUnderMouse(order, windows, x, y, titleBarHeight)
 end
 
 local clickConsumed = false
+local wasMouseDown = false
 function Utils.ConsumeClick()
-	if input.IsButtonPressed(MOUSE_LEFT) and not clickConsumed then
+	local isDown = input.IsButtonDown(MOUSE_LEFT)
+	local justPressed = input.IsButtonPressed(MOUSE_LEFT)
+	
+	-- Detect click either via IsButtonPressed OR via transition from not-held to held
+	-- This catches clicks even when frame drops cause IsButtonPressed to miss
+	local clickDetected = justPressed or (isDown and not wasMouseDown)
+	
+	if clickDetected and not clickConsumed then
 		clickConsumed = true
+		wasMouseDown = isDown
 		return true
-	elseif not input.IsButtonDown(MOUSE_LEFT) then
+	elseif not isDown then
 		clickConsumed = false
+		wasMouseDown = false
+	else
+		wasMouseDown = isDown
 	end
 	return false
 end
