@@ -90,13 +90,16 @@ end
 
 local function _finalizeCursorAndLayout(win, sector_data, width, height, pad)
 	win.cursorX = sector_data.startX + width + pad
+	-- Keep cursorY at the top of this sector for side-by-side placement
+	-- The window's own lineHeight tracking will handle vertical wrapping
 	win.cursorY = sector_data.startY
 	win.lineHeight = math.max(win.lineHeight or 0, height)
 
 	if #win._sectorStack > 0 then
 		local parentSector = win._sectorStack[#win._sectorStack]
 		parentSector.maxX = math.max(parentSector.maxX, sector_data.startX + width)
-		parentSector.maxY = math.max(parentSector.maxY, win.cursorY + win.lineHeight)
+		-- Use actual bottom of child sector, not reset cursor position
+		parentSector.maxY = math.max(parentSector.maxY, sector_data.startY + height)
 	end
 end
 
@@ -145,8 +148,10 @@ function Sector.Begin(win, label)
 		self.cursorY = self.cursorY + self.lineHeight + baseSpacing + extra
 		-- Keep cursorX constrained to sector's indented start position
 		self.cursorX = sector_data.startX + sector_data.padding
-		-- track y position after line break relative to window origin
-		sector_data.maxY = math.max(sector_data.maxY, self.cursorY + self.lineHeight)
+		-- Don't update maxY here - let AddWidget expand bounds only when widgets are actually added
+		-- This prevents empty space when conditionals hide content after NextLine
+		-- Reset lineHeight for the new line (matches Window:NextLine behavior)
+		self.lineHeight = 0
 	end
 
 	-- indent cursor for sector padding
