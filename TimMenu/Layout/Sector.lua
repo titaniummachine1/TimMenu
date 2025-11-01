@@ -138,11 +138,12 @@ function Sector.Begin(win, label)
 	end
 
 	win.NextLine = function(self, spacing)
-		-- Call original with extra vertical spacing for sectors
+		-- Directly update cursor within sector boundaries without calling origNext
 		local extra = 5 -- add 5px more between lines inside sector
 		local baseSpacing = spacing or Globals.Defaults.WINDOW_CONTENT_PADDING
-		sector_data.origNext(self, baseSpacing + extra)
-		-- Crucially, reset cursorX to the sector's indented start position
+		-- Update cursorY manually to avoid origNext resetting cursorX to window padding
+		self.cursorY = self.cursorY + self.lineHeight + baseSpacing + extra
+		-- Keep cursorX constrained to sector's indented start position
 		self.cursorX = sector_data.startX + sector_data.padding
 		-- track y position after line break relative to window origin
 		sector_data.maxY = math.max(sector_data.maxY, self.cursorY + self.lineHeight)
