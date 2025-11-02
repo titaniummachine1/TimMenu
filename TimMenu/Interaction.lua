@@ -30,11 +30,23 @@ function Interaction.IsHovered(win, bounds)
 		return false
 	end
 
-	-- Block if inside any widget-level exclusion region (e.g. dropdown pop-ups)
+	-- Check if element is within blocked regions (popups)
+	-- If element bounds are entirely within blocked regions, allow it (popup elements)
 	if win._widgetBlockedRegions then
+		local elementInBlockedRegion = false
 		for _, region in ipairs(win._widgetBlockedRegions) do
-			if inBounds(mX, mY, region) then
-				return false
+			if bounds.x >= region.x and bounds.x + bounds.w <= region.x + region.w and
+			   bounds.y >= region.y and bounds.y + bounds.h <= region.y + region.h then
+				elementInBlockedRegion = true
+				break
+			end
+		end
+		if not elementInBlockedRegion then
+			-- Element is not within blocked regions, check if mouse is in blocked regions
+			for _, region in ipairs(win._widgetBlockedRegions) do
+				if inBounds(mX, mY, region) then
+					return false
+				end
 			end
 		end
 	end
