@@ -20,7 +20,9 @@ for i = 0, 9 do
 	local key = _G["KEY_" .. i]
 	if key then
 		local shifted = string.char(41 + i) -- )!@#$%^&*(
-		if i == 0 then shifted = ")" end
+		if i == 0 then
+			shifted = ")"
+		end
 		KeyCodeToCharTable[key] = { tostring(i), shifted }
 	end
 end
@@ -84,8 +86,11 @@ local function handleKeyRepeat(entry, keyCode, currentTime, action)
 			action()
 			state.firstDownTime = currentTime
 			state.lastRepeatTime = currentTime
-		elseif state.firstDownTime and (currentTime - state.firstDownTime > KEY_REPEAT_INITIAL_DELAY)
-			and (currentTime - state.lastRepeatTime > KEY_REPEAT_INTERVAL) then
+		elseif
+			state.firstDownTime
+			and (currentTime - state.firstDownTime > KEY_REPEAT_INITIAL_DELAY)
+			and (currentTime - state.lastRepeatTime > KEY_REPEAT_INTERVAL)
+		then
 			action()
 			state.lastRepeatTime = currentTime
 		end

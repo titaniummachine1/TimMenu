@@ -68,11 +68,27 @@ function Window:QueueDrawAtLayer(layer, drawFunc, ...)
 	DrawManager.Enqueue(self.id, layer, drawFunc, ...)
 end
 
---- Hit test: is a point inside this window (including title bar and content area)?
+--- Hit test: is a point inside this window (including title bar, content area, and popups)?
 function Window:_HitTest(x, y)
-	-- Hit test entire window area (title and content)
+	-- Basic window bounds (title and content)
 	local titleHeight = Globals.Defaults.TITLE_BAR_HEIGHT
-	return x >= self.X and x <= self.X + self.W and y >= self.Y and y <= self.Y + titleHeight + self.H
+	local basicBounds = x >= self.X and x <= self.X + self.W and y >= self.Y and y <= self.Y + titleHeight + self.H
+
+	-- If basic bounds pass, return true
+	if basicBounds then
+		return true
+	end
+
+	-- Check if point is in any widget blocked regions (popups)
+	if self._widgetBlockedRegions then
+		for _, region in ipairs(self._widgetBlockedRegions) do
+			if x >= region.x and x <= region.x + region.w and y >= region.y and y <= region.y + region.h then
+				return true
+			end
+		end
+	end
+
+	return false
 end
 
 --- Update window logic: dragging only; mark touched only in Begin()

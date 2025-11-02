@@ -29,7 +29,7 @@ function Utils.IsPointBlocked(order, windows, x, y, currentWindowKey)
 			break
 		end
 		local win = windows[key]
-		if win and win.visible and Utils.IsMouseOverWindow(win, x, y) then
+		if win and win.visible and win:_HitTest(x, y) then
 			return true
 		end
 	end
@@ -40,7 +40,7 @@ function Utils.GetWindowUnderMouse(order, windows, x, y)
 	for i = #order, 1, -1 do
 		local key = order[i]
 		local win = windows[key]
-		if win and Utils.IsMouseOverWindow(win, x, y) then
+		if win and win:_HitTest(x, y) then
 			input.SetMouseInputEnabled(false)
 			return key
 		end
