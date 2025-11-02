@@ -51,6 +51,14 @@ end
 
 local _currentWindow = nil
 
+local function withCurrentWindow(func, ...)
+	local win = TimMenu.GetCurrentWindow()
+	if not win then
+		return
+	end
+	return func(win, ...)
+end
+
 local Common = require("TimMenu.Common")
 local Globals = require("TimMenu.Globals")
 local Utils = require("TimMenu.Utils")
@@ -170,24 +178,21 @@ function TimMenu.ShowDebug()
 end
 
 function TimMenu.NextLine(spacing)
-	local win = TimMenu.GetCurrentWindow()
-	if win then
+	return withCurrentWindow(function(win, spacing)
 		win:NextLine(spacing)
-	end
+	end, spacing)
 end
 
 function TimMenu.SameLine(spacing)
-	local win = TimMenu.GetCurrentWindow()
-	if win then
+	return withCurrentWindow(function(win, spacing)
 		win:SameLine(spacing)
-	end
+	end, spacing)
 end
 
 function TimMenu.Spacing(verticalSpacing)
-	local win = TimMenu.GetCurrentWindow()
-	if win then
+	return withCurrentWindow(function(win, verticalSpacing)
 		win:Spacing(verticalSpacing)
-	end
+	end, verticalSpacing)
 end
 
 function TimMenu.Slider(label, value, min, max, step)
@@ -199,11 +204,9 @@ function TimMenu.Slider(label, value, min, max, step)
 end
 
 function TimMenu.Separator(label)
-	local win = TimMenu.GetCurrentWindow()
-	if not win then
-		return
-	end
-	return SeparatorLayout.Draw(win, label)
+	return withCurrentWindow(function(win, label)
+		return SeparatorLayout.Draw(win, label)
+	end, label)
 end
 
 function TimMenu.TextInput(label, text)
@@ -255,11 +258,9 @@ function TimMenu.TabControl(id, tabs, defaultSelection)
 end
 
 function TimMenu.BeginSector(label)
-	local win = TimMenu.GetCurrentWindow()
-	if not win then
-		return
-	end
-	SectorWidget.Begin(win, label)
+	return withCurrentWindow(function(win, label)
+		SectorWidget.Begin(win, label)
+	end, label)
 end
 
 function TimMenu.EndSector()
@@ -368,29 +369,25 @@ function TimMenu.Keybind(label, currentKey)
 	return withFontReset(Widgets.Keybind, win, label, currentKey)
 end
 
-function TimMenu.FontSet(name, size, weight)
-	Globals.Style.FontName = name
-	Globals.Style.FontSize = size
-	Globals.Style.FontWeight = weight
+local function setFontStyle(style, name, size, weight)
+	Globals.Style[style .. "Name"] = name
+	Globals.Style[style .. "Size"] = size
+	Globals.Style[style .. "Weight"] = weight
 	Globals.ReloadFonts()
 end
 
+function TimMenu.FontSet(name, size, weight)
+	setFontStyle("Font", name, size, weight)
+end
+
 function TimMenu.FontSetBold(name, size, weight)
-	Globals.Style.FontBoldName = name
-	Globals.Style.FontBoldSize = size
-	Globals.Style.FontBoldWeight = weight
-	Globals.ReloadFonts()
+	setFontStyle("FontBold", name, size, weight)
 end
 
 function TimMenu.FontReset()
 	local d = Globals.DefaultFontSettings
-	Globals.Style.FontName = d.FontName
-	Globals.Style.FontSize = d.FontSize
-	Globals.Style.FontWeight = d.FontWeight
-	Globals.Style.FontBoldName = d.FontBoldName
-	Globals.Style.FontBoldSize = d.FontBoldSize
-	Globals.Style.FontBoldWeight = d.FontBoldWeight
-	Globals.ReloadFonts()
+	setFontStyle("Font", d.FontName, d.FontSize, d.FontWeight)
+	setFontStyle("FontBold", d.FontBoldName, d.FontBoldSize, d.FontBoldWeight)
 end
 
 function TimMenu.ColorPicker(label, color)
@@ -402,11 +399,9 @@ function TimMenu.ColorPicker(label, color)
 end
 
 function TimMenu.Tooltip(text)
-	local win = TimMenu.GetCurrentWindow()
-	if not win then
-		return
-	end
-	Widgets.Tooltip.AttachToLastWidget(win, text)
+	return withCurrentWindow(function(win, text)
+		Widgets.Tooltip.AttachToLastWidget(win, text)
+	end, text)
 end
 
 _G.TimMenu = TimMenu
