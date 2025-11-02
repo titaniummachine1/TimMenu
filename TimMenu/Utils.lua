@@ -15,7 +15,7 @@ function Utils.PruneOrphanedWindows(windows, order)
 	end
 end
 
-function Utils.IsMouseOverWindow(win, mouseX, mouseY)
+function Utils.IsMouseOverWindow(win, mouseX, mouseY, titleHeight)
 	local titleHeight = require("TimMenu.Globals").Defaults.TITLE_BAR_HEIGHT
 	return mouseX >= win.X and mouseX <= win.X + win.W and mouseY >= win.Y and mouseY <= win.Y + titleHeight + win.H
 end

@@ -4,69 +4,56 @@ local Globals = require("TimMenu.Globals")
 local Common = require("TimMenu.Common")
 local Interaction = require("TimMenu.Interaction")
 
--- Helper for TextInput character mapping
-local KeyCodeToCharTable = {
-	[KEY_A] = { "a", "A" },
-	[KEY_B] = { "b", "B" },
-	[KEY_C] = { "c", "C" },
-	[KEY_D] = { "d", "D" },
-	[KEY_E] = { "e", "E" },
-	[KEY_F] = { "f", "F" },
-	[KEY_G] = { "g", "G" },
-	[KEY_H] = { "h", "H" },
-	[KEY_I] = { "i", "I" },
-	[KEY_J] = { "j", "J" },
-	[KEY_K] = { "k", "K" },
-	[KEY_L] = { "l", "L" },
-	[KEY_M] = { "m", "M" },
-	[KEY_N] = { "n", "N" },
-	[KEY_O] = { "o", "O" },
-	[KEY_P] = { "p", "P" },
-	[KEY_Q] = { "q", "Q" },
-	[KEY_R] = { "r", "R" },
-	[KEY_S] = { "s", "S" },
-	[KEY_T] = { "t", "T" },
-	[KEY_U] = { "u", "U" },
-	[KEY_V] = { "v", "V" },
-	[KEY_W] = { "w", "W" },
-	[KEY_X] = { "x", "X" },
-	[KEY_Y] = { "y", "Y" },
-	[KEY_Z] = { "z", "Z" },
+-- Simplified key mapping - generate programmatically where possible
+local KeyCodeToCharTable = {}
 
-	[KEY_0] = { "0", ")" },
-	[KEY_1] = { "1", "!" },
-	[KEY_2] = { "2", "@" },
-	[KEY_3] = { "3", "#" },
-	[KEY_4] = { "4", "$" },
-	[KEY_5] = { "5", "%" },
-	[KEY_6] = { "6", "^" },
-	[KEY_7] = { "7", "&" },
-	[KEY_8] = { "8", "*" },
-	[KEY_9] = { "9", "(" },
+-- Generate letter mappings
+for i = 0, 25 do
+	local key = _G["KEY_" .. string.char(65 + i)]
+	if key then
+		KeyCodeToCharTable[key] = { string.char(97 + i), string.char(65 + i) }
+	end
+end
 
+-- Generate number mappings
+for i = 0, 9 do
+	local key = _G["KEY_" .. i]
+	if key then
+		local shifted = string.char(41 + i) -- )!@#$%^&*(
+		if i == 0 then shifted = ")" end
+		KeyCodeToCharTable[key] = { tostring(i), shifted }
+	end
+end
+
+-- Special characters
+local specialChars = {
 	[KEY_SPACE] = { " ", " " },
 	[KEY_MINUS] = { "-", "_" },
 	[KEY_EQUAL] = { "=", "+" },
 	[KEY_LBRACKET] = { "[", "{" },
 	[KEY_RBRACKET] = { "]", "}" },
-	[KEY_BACKSLASH] = { "\\", "|" }, -- Escaped backslash
+	[KEY_BACKSLASH] = { "\\", "|" },
 	[KEY_SEMICOLON] = { ";", ":" },
-	[KEY_APOSTROPHE] = { "'", '"' }, -- Fixed: was single quote for both
+	[KEY_APOSTROPHE] = { "'", '"' },
 	[KEY_COMMA] = { ",", "<" },
 	[KEY_PERIOD] = { ".", ">" },
 	[KEY_SLASH] = { "/", "?" },
 	[KEY_BACKQUOTE] = { "`", "~" },
+}
 
-	[KEY_PAD_0] = { "0", "0" },
-	[KEY_PAD_1] = { "1", "1" },
-	[KEY_PAD_2] = { "2", "2" },
-	[KEY_PAD_3] = { "3", "3" },
-	[KEY_PAD_4] = { "4", "4" },
-	[KEY_PAD_5] = { "5", "5" },
-	[KEY_PAD_6] = { "6", "6" },
-	[KEY_PAD_7] = { "7", "7" },
-	[KEY_PAD_8] = { "8", "8" },
-	[KEY_PAD_9] = { "9", "9" },
+for key, chars in pairs(specialChars) do
+	KeyCodeToCharTable[key] = chars
+end
+
+-- Numpad mappings (same for both shift states)
+for i = 0, 9 do
+	local key = _G["KEY_PAD_" .. i]
+	if key then
+		KeyCodeToCharTable[key] = { tostring(i), tostring(i) }
+	end
+end
+
+local numpadSpecial = {
 	[KEY_PAD_DECIMAL] = { ".", "." },
 	[KEY_PAD_DIVIDE] = { "/", "/" },
 	[KEY_PAD_MULTIPLY] = { "*", "*" },
@@ -74,12 +61,40 @@ local KeyCodeToCharTable = {
 	[KEY_PAD_PLUS] = { "+", "+" },
 }
 
+for key, chars in pairs(numpadSpecial) do
+	KeyCodeToCharTable[key] = chars
+end
+
 local function MapKeyCodeToChar(keyCode, isShiftDown)
 	local entry = KeyCodeToCharTable[keyCode]
 	if entry then
 		return isShiftDown and entry[2] or entry[1]
 	end
 	return nil
+end
+
+-- Helper for key repeat logic
+local function handleKeyRepeat(entry, keyCode, currentTime, action)
+	local state = entry.keyStates[keyCode] or {}
+	local KEY_REPEAT_INITIAL_DELAY = 0.4
+	local KEY_REPEAT_INTERVAL = 0.05
+
+	if input.IsButtonDown(keyCode) then
+		if not state.firstDownTime then
+			action()
+			state.firstDownTime = currentTime
+			state.lastRepeatTime = currentTime
+		elseif state.firstDownTime and (currentTime - state.firstDownTime > KEY_REPEAT_INITIAL_DELAY)
+			and (currentTime - state.lastRepeatTime > KEY_REPEAT_INTERVAL) then
+			action()
+			state.lastRepeatTime = currentTime
+		end
+	else
+		state.firstDownTime = nil
+		state.lastRepeatTime = nil
+	end
+
+	entry.keyStates[keyCode] = state
 end
 
 local function TextInput(win, label, text)
@@ -140,113 +155,42 @@ local function TextInput(win, label, text)
 	if entry.active then
 		local lmbx_globals = _G.globals
 		local currentTime = lmbx_globals and lmbx_globals.RealTime and lmbx_globals.RealTime() or 0
-		local KEY_REPEAT_INITIAL_DELAY = 0.4 -- seconds
-		local KEY_REPEAT_INTERVAL = 0.05 -- seconds
-
 		local isShiftDown = input.IsButtonDown(KEY_LSHIFT) or input.IsButtonDown(KEY_RSHIFT)
-		entry.keyStates = entry.keyStates or {} -- Ensure keyStates table exists
 
-		-- Handle character keys from KeyCodeToCharTable with repeat
+		-- Handle character input keys with repeat
 		for keyCode, _ in pairs(KeyCodeToCharTable) do
-			local state = entry.keyStates[keyCode] or {}
-			if input.IsButtonDown(keyCode) then
-				if not state.firstDownTime then -- Key just pressed
-					local char = MapKeyCodeToChar(keyCode, isShiftDown)
-					if char then
-						entry.text = entry.text .. char
-					end
-					state.firstDownTime = currentTime
-					state.lastRepeatTime = currentTime
-				elseif
-					state.firstDownTime
-					and (currentTime - state.firstDownTime > KEY_REPEAT_INITIAL_DELAY)
-					and (currentTime - state.lastRepeatTime > KEY_REPEAT_INTERVAL)
-				then -- Key held long enough for repeat
-					local char = MapKeyCodeToChar(keyCode, isShiftDown)
-					if char then
-						entry.text = entry.text .. char
-					end
-					state.lastRepeatTime = currentTime
+			handleKeyRepeat(entry, keyCode, currentTime, function()
+				local char = MapKeyCodeToChar(keyCode, isShiftDown)
+				if char then
+					entry.text = entry.text .. char
 				end
-				-- If key is down but not yet time for repeat, state.firstDownTime is already set, no specific action here.
-			else -- Key is UP
-				if state.firstDownTime then -- If it *was* pressed (had a firstDownTime)
-					state.firstDownTime = nil
-					state.lastRepeatTime = nil
-				end
-			end
-			entry.keyStates[keyCode] = state -- Store the updated state (pressed, repeating, or reset)
+			end)
 		end
 
 		-- Handle Backspace with repeat
-		local backspaceKeyCode = KEY_BACKSPACE
-		local bkspState = entry.keyStates[backspaceKeyCode] or {}
-		if input.IsButtonDown(backspaceKeyCode) then
-			if not bkspState.firstDownTime then -- Backspace just pressed
-				if #entry.text > 0 then
-					entry.text = string.sub(entry.text, 1, -2)
-				end
-				bkspState.firstDownTime = currentTime
-				bkspState.lastRepeatTime = currentTime
-			elseif
-				bkspState.firstDownTime
-				and (currentTime - bkspState.firstDownTime > KEY_REPEAT_INITIAL_DELAY)
-				and (currentTime - bkspState.lastRepeatTime > KEY_REPEAT_INTERVAL)
-			then -- Backspace held
-				if #entry.text > 0 then
-					entry.text = string.sub(entry.text, 1, -2)
-				end
-				bkspState.lastRepeatTime = currentTime
+		handleKeyRepeat(entry, KEY_BACKSPACE, currentTime, function()
+			if #entry.text > 0 then
+				entry.text = string.sub(entry.text, 1, -2)
 			end
-		else -- Backspace is UP
-			if bkspState.firstDownTime then -- If it *was* pressed
-				bkspState.firstDownTime = nil
-				bkspState.lastRepeatTime = nil
-			end
-		end
-		entry.keyStates[backspaceKeyCode] = bkspState -- Store updated state
+		end)
 
-		-- Handle Enter, Escape (single action, no repeat using original debounce)
+		-- Handle single-action keys (Enter, Escape)
 		local singleActionKeys = { KEY_ENTER, KEY_PAD_ENTER, KEY_ESCAPE }
 		for _, keyCode in ipairs(singleActionKeys) do
-			if input.IsButtonDown(keyCode) then
-				if not entry.debouncedKeys[keyCode] then
-					if keyCode == KEY_ENTER or keyCode == KEY_PAD_ENTER or keyCode == KEY_ESCAPE then
-						entry.active = false
-						for k, _ in pairs(entry.debouncedKeys) do
-							entry.debouncedKeys[k] = false
-						end
-						entry.keyStates = {} -- Clear key repeat states
-					end
-					entry.debouncedKeys[keyCode] = true
-				else
-					if entry.debouncedKeys[keyCode] then
-						entry.debouncedKeys[keyCode] = false
-					end
-					-- If key is up and was part of keyStates, clear it (though these aren't typically in keyStates)
-					if entry.keyStates[keyCode] then
-						entry.keyStates[keyCode] = nil
-					end
+			if input.IsButtonPressed(keyCode) then
+				entry.active = false
+				for k in pairs(entry.debouncedKeys) do
+					entry.debouncedKeys[k] = false
 				end
+				entry.keyStates = {}
 			end
 		end
 	else
-		-- If not active, ensure all keys are marked as released for debounce and keyStates
-		if entry.active == false then
-			local resetAllKeyStates = false
-			for k, state in pairs(entry.keyStates) do
-				if state.firstDownTime ~= nil then -- if any key was active
-					resetAllKeyStates = true
-					break
-				end
-			end
-			if resetAllKeyStates or next(entry.debouncedKeys) ~= nil then
-				for k, _ in pairs(entry.debouncedKeys) do
-					entry.debouncedKeys[k] = false
-				end
-				entry.keyStates = {} -- Clear all key repeat states
-			end
+		-- Reset key states when not active
+		for k in pairs(entry.debouncedKeys) do
+			entry.debouncedKeys[k] = false
 		end
+		entry.keyStates = {}
 	end
 
 	-- Draw the text input using queued primitives at appropriate layers

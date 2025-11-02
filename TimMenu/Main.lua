@@ -42,6 +42,13 @@ local function restoreWidgetFont(prev)
 	end
 end
 
+local function withFontReset(func, ...)
+	local prevFont = applyNextWidgetFont()
+	local results = {func(...)}
+	restoreWidgetFont(prevFont)
+	return table.unpack(results)
+end
+
 local _currentWindow = nil
 
 local Common = require("TimMenu.Common")
@@ -102,10 +109,7 @@ function TimMenu.Button(label)
 	if not win then
 		return false
 	end
-	local prevFont = applyNextWidgetFont()
-	local clicked = Widgets.Button(win, label)
-	restoreWidgetFont(prevFont)
-	return clicked
+	return withFontReset(Widgets.Button, win, label)
 end
 
 function TimMenu.Checkbox(label, state)
@@ -113,10 +117,7 @@ function TimMenu.Checkbox(label, state)
 	if not win then
 		return state, false
 	end
-	local prevFont = applyNextWidgetFont()
-	local newState, clicked = Widgets.Checkbox(win, label, state)
-	restoreWidgetFont(prevFont)
-	return newState, clicked
+	return withFontReset(Widgets.Checkbox, win, label, state)
 end
 
 function TimMenu.Text(text)
@@ -194,10 +195,7 @@ function TimMenu.Slider(label, value, min, max, step)
 	if not win then
 		return value, false
 	end
-	local prevFont = applyNextWidgetFont()
-	local newValue, changed = Widgets.Slider(win, label, value, min, max, step)
-	restoreWidgetFont(prevFont)
-	return newValue, changed
+	return withFontReset(Widgets.Slider, win, label, value, min, max, step)
 end
 
 function TimMenu.Separator(label)
@@ -213,10 +211,7 @@ function TimMenu.TextInput(label, text)
 	if not win then
 		return text, false
 	end
-	local prevFont = applyNextWidgetFont()
-	local newText, changed = Widgets.TextInput(win, label, text)
-	restoreWidgetFont(prevFont)
-	return newText, changed
+	return withFontReset(Widgets.TextInput, win, label, text)
 end
 
 function TimMenu.Dropdown(label, selectedIndex, options)
@@ -224,10 +219,7 @@ function TimMenu.Dropdown(label, selectedIndex, options)
 	if not win then
 		return selectedIndex, false
 	end
-	local prevFont = applyNextWidgetFont()
-	local newIdx, changed = Widgets.Dropdown(win, label, selectedIndex, options)
-	restoreWidgetFont(prevFont)
-	return newIdx, changed
+	return withFontReset(Widgets.Dropdown, win, label, selectedIndex, options)
 end
 
 function TimMenu.Combo(label, selectedTable, options)
@@ -235,10 +227,7 @@ function TimMenu.Combo(label, selectedTable, options)
 	if not win then
 		return selectedTable, false
 	end
-	local prevFont = applyNextWidgetFont()
-	local newTable, changed = Widgets.Combo(win, label, selectedTable, options)
-	restoreWidgetFont(prevFont)
-	return newTable, changed
+	return withFontReset(Widgets.Combo, win, label, selectedTable, options)
 end
 
 function TimMenu.Selector(label, selectedIndex, options)
@@ -246,10 +235,7 @@ function TimMenu.Selector(label, selectedIndex, options)
 	if not win then
 		return selectedIndex, false
 	end
-	local prevFont = applyNextWidgetFont()
-	local newIdx, changed = Widgets.Selector(win, label, selectedIndex, options)
-	restoreWidgetFont(prevFont)
-	return newIdx, changed
+	return withFontReset(Widgets.Selector, win, label, selectedIndex, options)
 end
 
 function TimMenu.TabControl(id, tabs, defaultSelection)
@@ -261,9 +247,7 @@ function TimMenu.TabControl(id, tabs, defaultSelection)
 			return 1, false
 		end
 	end
-	local prevFont = applyNextWidgetFont()
-	local newIndex, changed = Widgets.TabControl(win, id, tabs, defaultSelection)
-	restoreWidgetFont(prevFont)
+	local newIndex, changed = withFontReset(Widgets.TabControl, win, id, tabs, defaultSelection)
 	if type(defaultSelection) == "string" then
 		return tabs[newIndex], changed
 	end
@@ -377,19 +361,15 @@ callbacks.Unregister("Draw", "TimMenu_GlobalDraw")
 callbacks.Unregister("Draw", "zTimMenu_GlobalDraw")
 callbacks.Register("Draw", "zTimMenu_GlobalDraw", _TimMenu_GlobalDraw)
 
-function TimMenu.Textbox(label, text)
-	return TimMenu.TextInput(label, text)
-end
+-- Textbox is deprecated, use TextInput instead
+TimMenu.Textbox = TimMenu.TextInput
 
 function TimMenu.Keybind(label, currentKey)
 	local win = TimMenu.GetCurrentWindow()
 	if not win then
 		return currentKey, false
 	end
-	local prevFont = applyNextWidgetFont()
-	local keycode, changed = Widgets.Keybind(win, label, currentKey)
-	restoreWidgetFont(prevFont)
-	return keycode, changed
+	return withFontReset(Widgets.Keybind, win, label, currentKey)
 end
 
 function TimMenu.FontSet(name, size, weight)
@@ -422,8 +402,7 @@ function TimMenu.ColorPicker(label, color)
 	if not win then
 		return color, false
 	end
-	local newColor, changed = Widgets.ColorPicker(win, label, color)
-	return newColor, changed
+	return withFontReset(Widgets.ColorPicker, win, label, color)
 end
 
 function TimMenu.Tooltip(text)

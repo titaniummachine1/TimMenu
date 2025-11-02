@@ -70,7 +70,7 @@ end
 
 --- Hit test: is a point inside this window (including title bar and content area)?
 function Window:_HitTest(x, y)
-	-- Hit test entire window area (title, content area)
+	-- Hit test entire window area (title and content)
 	local titleHeight = Globals.Defaults.TITLE_BAR_HEIGHT
 	return x >= self.X and x <= self.X + self.W and y >= self.Y and y <= self.Y + titleHeight + self.H
 end
@@ -106,7 +106,7 @@ function Window:_Draw()
 
 	-- Background
 	Common.SetColor(Globals.Colors.Window)
-	-- Background now covers title + content area (win.H already includes bottom padding)
+	-- Background covers title + content area (no extra padding)
 	Common.DrawFilledRect(self.X, self.Y + titleHeight, self.X + self.W, self.Y + titleHeight + self.H)
 
 	-- Title bar
@@ -203,9 +203,9 @@ function Window:resetCursor()
 	self._widgetBlockedRegions = {}
 	-- Clear header tabs flag so titles center if no header tabs
 	self._hasHeaderTabs = false
-	-- Reset window size to allow dynamic sizing based on content
+	-- Reset window size to defaults to allow shrinking
 	self.W = Globals.Defaults.DEFAULT_W
-	self.H = padding -- Minimum content height (initial cursor position)
+	self.H = Globals.Defaults.DEFAULT_H
 	-- Clear sector sizes to allow sectors to shrink each frame
 	self._sectorSizes = {}
 end
