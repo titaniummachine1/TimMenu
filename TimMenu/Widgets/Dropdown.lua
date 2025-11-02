@@ -88,6 +88,11 @@ local function Dropdown(win, label, selectedIndex, options)
 	local listH = #options * height
 	local popupBounds = { x = ctx.absX, y = ctx.absY + height, w = width, h = listH }
 
+	-- Maintain popup blocked regions while open
+	if entry.open then
+		win._widgetBlockedRegions = { popupBounds }
+	end
+
 	-- Close popup on outside click using cached mouse position
 	Interaction.ClosePopupOnOutsideClick(
 		entry,
@@ -100,9 +105,8 @@ local function Dropdown(win, label, selectedIndex, options)
 
 	if clicked then
 		if not entry.open and hovered then
-			-- Open popup and block its region
+			-- Open popup
 			entry.open = true
-			win._widgetBlockedRegions = { popupBounds }
 			-- Bring this window to front so popup renders above all
 			for i, id in ipairs(TimMenuGlobal.order) do
 				if id == win.id then

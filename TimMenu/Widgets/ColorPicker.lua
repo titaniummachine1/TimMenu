@@ -115,10 +115,14 @@ local function ColorPicker(win, label, initColor)
 	local bounds = { x = absX, y = absY, w = width, h = height }
 	local hovered, pressed, clicked = Interaction.Process(win, widgetKey, bounds, state.open)
 
+	-- Maintain popup blocked regions while open
+	if state.open then
+		win._widgetBlockedRegions = { popupBounds }
+	end
+
 	-- Toggle popup on field click
 	if clicked and hovered and not state.open then
 		state.open = true
-		win._widgetBlockedRegions = { popupBounds }
 		-- Bring window to front
 		for i, id in ipairs(TimMenuGlobal.order) do
 			if id == win.id then

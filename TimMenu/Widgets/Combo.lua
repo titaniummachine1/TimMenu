@@ -101,6 +101,11 @@ local function Combo(win, label, selected, options)
 	local listH = #options * height
 	local popupBounds = { x = ctx.absX, y = ctx.absY + height, w = width, h = listH }
 
+	-- Maintain popup blocked regions while open
+	if entry.open then
+		win._widgetBlockedRegions = { popupBounds }
+	end
+
 	-- Close popup on outside click using cached mouse position
 	Interaction.ClosePopupOnOutsideClick(
 		entry,
@@ -113,9 +118,8 @@ local function Combo(win, label, selected, options)
 
 	if clicked then
 		if not entry.open and hovered then
-			-- Open combo popup and block region
+			-- Open combo popup
 			entry.open = true
-			win._widgetBlockedRegions = { popupBounds }
 			-- Bring window to front
 			for i, id in ipairs(TimMenuGlobal.order) do
 				if id == win.id then
