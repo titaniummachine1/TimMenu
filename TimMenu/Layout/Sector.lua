@@ -4,20 +4,22 @@ local Common = require("TimMenu.Common") -- EndSector might need this for DrawLi
 
 local Sector = {}
 
--- Spacing between consecutive sectors (larger than internal padding for visual separation)
-local SECTOR_SPACING = Globals.Defaults.WINDOW_CONTENT_PADDING
+-- Spacing between rows of sectors (adjust this to change vertical gap)
+local ROW_VERTICAL_GAP = Globals.Defaults.WINDOW_CONTENT_PADDING
+-- Horizontal spacing after a sector completes (mirrors widget spacing)
+local HORIZONTAL_ITEM_SPACING = Globals.Defaults.ITEM_SPACING or 0
 
 --[[----------------------------------------------------------------------------
 -- Private Helper Functions for Sector.End
 ------------------------------------------------------------------------------]]
 
-local function _calculateDimensions(sector_data, pad)
-	local currentWidth = (sector_data.maxX - sector_data.startX) + pad
-	local currentHeight = (sector_data.maxY - sector_data.startY) + pad
+local function _calculateDimensions(layoutState, pad)
+	local currentWidth = (layoutState.maxX - layoutState.startX) + pad
+	local currentHeight = (layoutState.maxY - layoutState.startY) + pad
 
-	if type(sector_data.label) == "string" then
+	if type(layoutState.label) == "string" then
 		draw.SetFont(Globals.Style.Font)
-		local lw, _ = draw.GetTextSize(sector_data.label)
+		local lw, _ = draw.GetTextSize(layoutState.label)
 		local minContentWidthForLabel = lw + (pad * 2)
 		if currentWidth < minContentWidthForLabel then
 			currentWidth = minContentWidthForLabel
@@ -26,22 +28,46 @@ local function _calculateDimensions(sector_data, pad)
 	return currentWidth, currentHeight
 end
 
-local function _updatePersistentSize(win, sector_data, width, height)
-	win._sectorSizes = win._sectorSizes or {}
-	local persistent = win._sectorSizes[sector_data.label]
-	-- Always update to current size to allow shrinking
-	win._sectorSizes[sector_data.label] = { width = width, height = height }
-	return win._sectorSizes[sector_data.label]
+local function _registerRowEntry(win, layoutState, size)
+	local row = layoutState.rowContext
+	if not row then
+		_prepareRowState(win, layoutState)
+		row = layoutState.rowContext
+	end
+
+	table.insert(row.entries, size)
+
+	if size.height > row.maxHeight then
+		row.maxHeight = size.height
+		for _, entry in ipairs(row.entries) do
+			entry.height = row.maxHeight
+		end
+	else
+		size.height = row.maxHeight
+	end
+
+	return row.maxHeight
 end
 
-local function _updateWindowBounds(win, sector_data, width, height, pad)
-	local requiredW = sector_data.startX + width + pad
-	local requiredH = sector_data.startY + height + pad
+local function _updatePersistentSize(win, layoutState, width, height)
+	win._sectorSizes = win._sectorSizes or {}
+	local persistent = win._sectorSizes[layoutState.label]
+	-- Always update to current size to allow shrinking while keeping reference stable
+	persistent = persistent or {}
+	persistent.width = width
+	persistent.height = height
+	win._sectorSizes[layoutState.label] = persistent
+	return persistent
+end
+
+local function _updateWindowBounds(win, layoutState, width, height, pad)
+	local requiredW = layoutState.startX + width + pad
+	local requiredH = layoutState.startY + height + pad
 	win.W = math.max(win.W, requiredW)
 	win.H = math.max(win.H, requiredH)
 end
 
-local function _enqueueBackgroundDraw(win, sector_data, depth, persistentWidth, persistentHeight)
+local function _enqueueBackgroundDraw(win, layoutState, depth, size)
 	-- Use integer layers: each nested sector increments background layer
 	local backgroundLayer = Globals.Layers.WidgetBackground + depth
 	DrawManager.Enqueue(win.id, backgroundLayer, function()
@@ -52,32 +78,32 @@ local function _enqueueBackgroundDraw(win, sector_data, depth, persistentWidth, 
 		local finalB = math.min(255, baseBgColor[3] + totalLighten)
 		local finalColor = { finalR, finalG, finalB, baseBgColor[4] }
 
-		local x0 = win.X + sector_data.startX
-		local y0 = win.Y + sector_data.startY
+		local x0 = win.X + layoutState.startX
+		local y0 = win.Y + layoutState.startY
 		Common.SetColor(finalColor)
-		Common.DrawFilledRect(x0, y0, x0 + persistentWidth, y0 + persistentHeight)
+		Common.DrawFilledRect(x0, y0, x0 + size.width, y0 + size.height)
 	end)
 end
 
-local function _enqueueBorderDraw(win, sector_data, depth, persistentWidth, persistentHeight)
+local function _enqueueBorderDraw(win, layoutState, depth, size)
 	-- Use integer layers: each nested sector increments outline layer
 	local borderLayer = Globals.Layers.WidgetOutline + depth
 	DrawManager.Enqueue(win.id, borderLayer, function()
-		local x0 = win.X + sector_data.startX
-		local y0 = win.Y + sector_data.startY
-		local w0 = persistentWidth
-		local h0 = persistentHeight
-		local pad0 = sector_data.padding
+		local x0 = win.X + layoutState.startX
+		local y0 = win.Y + layoutState.startY
+		local w0 = size.width
+		local h0 = size.height
+		local pad0 = layoutState.padding
 
 		Common.SetColor(Globals.Colors.WindowBorder)
-		if type(sector_data.label) == "string" then
+		if type(layoutState.label) == "string" then
 			draw.SetFont(Globals.Style.Font)
-			local tw, th = draw.GetTextSize(sector_data.label)
+			local tw, th = draw.GetTextSize(layoutState.label)
 			local labelX = x0 + (w0 - tw) / 2
 			local lineY = y0
 			Common.DrawLine(x0, lineY, labelX - pad0, lineY)
 			Common.SetColor(Globals.Colors.Text)
-			Common.DrawText(labelX, lineY - math.floor(th / 2), sector_data.label)
+			Common.DrawText(labelX, lineY - math.floor(th / 2), layoutState.label)
 			Common.SetColor(Globals.Colors.WindowBorder)
 			Common.DrawLine(labelX + tw + pad0, lineY, x0 + w0, lineY)
 		else
@@ -89,18 +115,49 @@ local function _enqueueBorderDraw(win, sector_data, depth, persistentWidth, pers
 	end)
 end
 
-local function _finalizeCursorAndLayout(win, sector_data, width, height, pad)
+local function _finalizeCursorAndLayout(win, layoutState, width, rowHeight)
 	-- Treat sector as a single widget occupying the computed width/height
-	local horizontalSpacing = Globals.Defaults.ITEM_SPACING or 0
-	win.cursorX = sector_data.startX + width + horizontalSpacing
-	win.cursorY = sector_data.startY
-	win.lineHeight = math.max(sector_data.preLineHeight or 0, height)
+	win.cursorX = layoutState.startX + width + HORIZONTAL_ITEM_SPACING
+	win.cursorY = layoutState.startY
+	win.lineHeight = math.max(layoutState.preLineHeight or 0, rowHeight + ROW_VERTICAL_GAP)
 
 	if #win._sectorStack > 0 then
 		local parentSector = win._sectorStack[#win._sectorStack]
-		parentSector.maxX = math.max(parentSector.maxX, sector_data.startX + width)
-		parentSector.maxY = math.max(parentSector.maxY, sector_data.startY + height)
+		parentSector.maxX = math.max(parentSector.maxX, layoutState.startX + width)
+		parentSector.maxY = math.max(parentSector.maxY, layoutState.startY + rowHeight)
 	end
+end
+
+local function _prepareRowState(win, layoutState)
+	win._sectorRows = win._sectorRows or {}
+	local depth = #win._sectorStack
+	local rows = win._sectorRows
+	local padding = Globals.Defaults.WINDOW_CONTENT_PADDING
+
+	local row = rows[depth]
+	local startY = layoutState.startY
+	local needsReset = false
+
+	if not row then
+		needsReset = true
+	elseif math.abs(row.currentStartY - startY) > 0.5 then
+		needsReset = true
+	elseif layoutState.startX <= padding + 0.5 then
+		needsReset = true
+	end
+
+	if needsReset then
+		row = {
+			currentStartY = startY,
+			entries = {},
+			maxHeight = 0,
+		}
+		rows[depth] = row
+	else
+		row.currentStartY = startY
+	end
+
+	layoutState.rowContext = row
 end
 
 --[[----------------------------------------------------------------------------
@@ -119,7 +176,8 @@ function Sector.Begin(win, label)
 	local startX, startY = win.cursorX, win.cursorY
 
 	-- Start with current cursor position as initial extents (no stored sizes)
-	local sector_data = {
+	-- Layout data tracks cursor origin, extents, and original functions
+	local layoutState = {
 		startX = startX,
 		startY = startY,
 		maxX = startX,
@@ -129,18 +187,19 @@ function Sector.Begin(win, label)
 		origAdd = win.AddWidget, -- Store original AddWidget
 		preLineHeight = win.lineHeight,
 	}
-	table.insert(win._sectorStack, sector_data)
+	table.insert(win._sectorStack, layoutState)
+	_prepareRowState(win, layoutState)
 
 	-- Reset lineHeight for clean sector start
 	win.lineHeight = 0
 
 	-- override AddWidget & NextLine to track extents within this sector
-	sector_data.origNext = win.NextLine -- Store original NextLine
+	layoutState.origNext = win.NextLine -- Store original NextLine
 	win.AddWidget = function(self, w, h)
-		local x, y = sector_data.origAdd(self, w, h)
+		local x, y = layoutState.origAdd(self, w, h)
 		-- track widest and tallest widget positions relative to window origin
-		sector_data.maxX = math.max(sector_data.maxX, x + w)
-		sector_data.maxY = math.max(sector_data.maxY, y + h)
+		layoutState.maxX = math.max(layoutState.maxX, x + w)
+		layoutState.maxY = math.max(layoutState.maxY, y + h)
 		return x, y
 	end
 
@@ -149,22 +208,22 @@ function Sector.Begin(win, label)
 		local baseSpacing = spacing or Globals.Defaults.WINDOW_CONTENT_PADDING
 		self.cursorY = self.cursorY + self.lineHeight + baseSpacing
 		-- Keep cursor aligned to sector's left edge
-		self.cursorX = sector_data.startX + sector_data.padding
+		self.cursorX = layoutState.startX + layoutState.padding
 		-- Reset lineHeight for new line
 		self.lineHeight = 0
 	end
 
 	-- indent cursor for sector padding
-	win.cursorX = sector_data.startX + sector_data.padding
-	win.cursorY = sector_data.startY + sector_data.padding
+	win.cursorX = layoutState.startX + layoutState.padding
+	win.cursorY = layoutState.startY + layoutState.padding
 
 	-- Override QueueDrawAtLayer to apply per-sector layer offset
 	local depth = #win._sectorStack
 	local groupBase = depth * Globals.LayersPerGroup
-	sector_data.origQueue = win.QueueDrawAtLayer
+	layoutState.origQueue = win.QueueDrawAtLayer
 	win.QueueDrawAtLayer = function(self, layer, fn, ...)
 		-- offset layer by groupBase for this sector
-		return sector_data.origQueue(self, layer + groupBase, fn, ...)
+		return layoutState.origQueue(self, layer + groupBase, fn, ...)
 	end
 end
 
@@ -174,62 +233,28 @@ function Sector.End(win)
 	end
 
 	local depth = #win._sectorStack
-	local sector_data = win._sectorStack[depth]
+	local layoutState = win._sectorStack[depth]
 	table.remove(win._sectorStack)
 
-	win.AddWidget = sector_data.origAdd
-	win.NextLine = sector_data.origNext
-	local pad = sector_data.padding
+	win.AddWidget = layoutState.origAdd
+	win.NextLine = layoutState.origNext
+	local pad = layoutState.padding
 
-	local currentWidth, currentHeight = _calculateDimensions(sector_data, pad)
-	local persistentSize = _updatePersistentSize(win, sector_data, currentWidth, currentHeight)
-	_updateWindowBounds(win, sector_data, persistentSize.width, persistentSize.height, pad)
+	local currentWidth, currentHeight = _calculateDimensions(layoutState, pad)
+	local persistentSize = _updatePersistentSize(win, layoutState, currentWidth, currentHeight)
+	local rowHeight = _registerRowEntry(win, layoutState, persistentSize)
+	_updateWindowBounds(win, layoutState, persistentSize.width, persistentSize.height, pad)
 
 	-- Enqueue sector background at relative layer 0
-	win:QueueDrawAtLayer(0, function()
-		local x0 = win.X + sector_data.startX
-		local y0 = win.Y + sector_data.startY
-		local baseBgColor = Globals.Colors.SectorBackground
-		local totalLighten = math.min(40, depth * 10)
-		local finalColor = {
-			math.min(255, baseBgColor[1] + totalLighten),
-			math.min(255, baseBgColor[2] + totalLighten),
-			math.min(255, baseBgColor[3] + totalLighten),
-			baseBgColor[4],
-		}
-		Common.SetColor(finalColor)
-		Common.DrawFilledRect(x0, y0, x0 + persistentSize.width, y0 + persistentSize.height)
-	end)
+	_enqueueBackgroundDraw(win, layoutState, depth, persistentSize)
 	-- Enqueue sector border at relative layer 1
-	win:QueueDrawAtLayer(1, function()
-		local x0 = win.X + sector_data.startX
-		local y0 = win.Y + sector_data.startY
-		local w0 = persistentSize.width
-		local h0 = persistentSize.height
-		local pad0 = sector_data.padding
-		Common.SetColor(Globals.Colors.WindowBorder)
-		if type(sector_data.label) == "string" then
-			draw.SetFont(Globals.Style.Font)
-			local tw, th = draw.GetTextSize(sector_data.label)
-			local labelX = x0 + (w0 - tw) / 2
-			local lineY = y0
-			Common.DrawLine(x0, lineY, labelX - pad0, lineY)
-			Common.SetColor(Globals.Colors.Text)
-			Common.DrawText(labelX, lineY - math.floor(th / 2), sector_data.label)
-			Common.SetColor(Globals.Colors.WindowBorder)
-			Common.DrawLine(labelX + tw + pad0, lineY, x0 + w0, lineY)
-		else
-			Common.DrawLine(x0, y0, x0 + w0, y0)
-		end
-		Common.DrawLine(x0, y0 + h0, x0 + w0, y0 + h0)
-		Common.DrawLine(x0, y0, x0, y0 + h0)
-		Common.DrawLine(x0 + w0, y0, x0 + w0, y0 + h0)
-	end)
+	_enqueueBorderDraw(win, layoutState, depth, persistentSize)
+
 	-- Restore original QueueDrawAtLayer
-	win.QueueDrawAtLayer = sector_data.origQueue
+	win.QueueDrawAtLayer = layoutState.origQueue
 
 	-- Use calculated currentWidth/Height for layout/cursor updates, but persistent for drawing.
-	_finalizeCursorAndLayout(win, sector_data, persistentSize.width, persistentSize.height, pad)
+	_finalizeCursorAndLayout(win, layoutState, persistentSize.width, rowHeight)
 end
 
 return Sector

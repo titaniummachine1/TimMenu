@@ -49,11 +49,11 @@ Globals.Defaults = {
 	DEFAULT_H = 200,
 	SLIDER_WIDTH = 250,
 	TITLE_BAR_HEIGHT = 30,
-	WINDOW_CONTENT_PADDING = 10,
+	WINDOW_CONTENT_PADDING = 8,
 	ITEM_SPACING = 8,
 	DebugHeaderX = 20,
 	DebugHeaderY = 20,
-	DebugLineSpacing = 20,
+	DebugLineSpacing = 8,
 }
 
 -- Font management
