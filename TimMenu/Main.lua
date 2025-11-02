@@ -44,7 +44,7 @@ end
 
 local function withFontReset(func, ...)
 	local prevFont = applyNextWidgetFont()
-	local results = {func(...)}
+	local results = { func(...) }
 	restoreWidgetFont(prevFont)
 	return table.unpack(results)
 end
@@ -357,12 +357,7 @@ local function _TimMenu_GlobalDraw()
 	end
 end
 
-callbacks.Unregister("Draw", "TimMenu_GlobalDraw")
-callbacks.Unregister("Draw", "zTimMenu_GlobalDraw")
 callbacks.Register("Draw", "zTimMenu_GlobalDraw", _TimMenu_GlobalDraw)
-
--- Textbox is deprecated, use TextInput instead
-TimMenu.Textbox = TimMenu.TextInput
 
 function TimMenu.Keybind(label, currentKey)
 	local win = TimMenu.GetCurrentWindow()
