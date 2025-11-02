@@ -357,6 +357,7 @@ local function _TimMenu_GlobalDraw()
 	end
 end
 
+callbacks.Unregister("Draw", "zTimMenu_GlobalDraw")
 callbacks.Register("Draw", "zTimMenu_GlobalDraw", _TimMenu_GlobalDraw)
 
 function TimMenu.Keybind(label, currentKey)
