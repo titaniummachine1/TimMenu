@@ -4,7 +4,8 @@ local Common = require("TimMenu.Common") -- EndSector might need this for DrawLi
 
 local Sector = {}
 
--- Forward declaration for helper usage if needed, though likely not for static helpers
+-- Spacing between consecutive sectors (larger than internal padding for visual separation)
+local SECTOR_SPACING = Globals.Defaults.WINDOW_CONTENT_PADDING
 
 --[[----------------------------------------------------------------------------
 -- Private Helper Functions for Sector.End
@@ -89,16 +90,15 @@ local function _enqueueBorderDraw(win, sector_data, depth, persistentWidth, pers
 end
 
 local function _finalizeCursorAndLayout(win, sector_data, width, height, pad)
-	win.cursorX = sector_data.startX + width + pad
-	-- Keep cursorY at the top of this sector for side-by-side placement
-	-- The window's own lineHeight tracking will handle vertical wrapping
+	-- Treat sector as a single widget occupying the computed width/height
+	local horizontalSpacing = Globals.Defaults.ITEM_SPACING or 0
+	win.cursorX = sector_data.startX + width + horizontalSpacing
 	win.cursorY = sector_data.startY
-	win.lineHeight = math.max(win.lineHeight or 0, height)
+	win.lineHeight = math.max(sector_data.preLineHeight or 0, height)
 
 	if #win._sectorStack > 0 then
 		local parentSector = win._sectorStack[#win._sectorStack]
 		parentSector.maxX = math.max(parentSector.maxX, sector_data.startX + width)
-		-- Use actual bottom of child sector, not reset cursor position
 		parentSector.maxY = math.max(parentSector.maxY, sector_data.startY + height)
 	end
 end
@@ -113,10 +113,10 @@ function Sector.Begin(win, label)
 	-- persistent storage for sector sizes
 	win._sectorSizes = win._sectorSizes or {}
 
-	-- Increase padding inside sectors by 5 pixels vertically for better spacing
+	-- Internal padding for content inside sector borders
 	local pad = Globals.Defaults.WINDOW_CONTENT_PADDING
-	-- capture current cursor as sector origin (shifted down by pad)
-	local startX, startY = win.cursorX, win.cursorY + pad
+	-- Sector starts at current cursor position
+	local startX, startY = win.cursorX, win.cursorY
 
 	-- Start with current cursor position as initial extents (no stored sizes)
 	local sector_data = {
@@ -127,8 +127,12 @@ function Sector.Begin(win, label)
 		label = label,
 		padding = pad,
 		origAdd = win.AddWidget, -- Store original AddWidget
+		preLineHeight = win.lineHeight,
 	}
 	table.insert(win._sectorStack, sector_data)
+
+	-- Reset lineHeight for clean sector start
+	win.lineHeight = 0
 
 	-- override AddWidget & NextLine to track extents within this sector
 	sector_data.origNext = win.NextLine -- Store original NextLine
@@ -141,16 +145,12 @@ function Sector.Begin(win, label)
 	end
 
 	win.NextLine = function(self, spacing)
-		-- Directly update cursor within sector boundaries without calling origNext
-		local extra = 5 -- add 5px more between lines inside sector
+		-- Advance to next line within sector
 		local baseSpacing = spacing or Globals.Defaults.WINDOW_CONTENT_PADDING
-		-- Update cursorY manually to avoid origNext resetting cursorX to window padding
-		self.cursorY = self.cursorY + self.lineHeight + baseSpacing + extra
-		-- Keep cursorX constrained to sector's indented start position
+		self.cursorY = self.cursorY + self.lineHeight + baseSpacing
+		-- Keep cursor aligned to sector's left edge
 		self.cursorX = sector_data.startX + sector_data.padding
-		-- Don't update maxY here - let AddWidget expand bounds only when widgets are actually added
-		-- This prevents empty space when conditionals hide content after NextLine
-		-- Reset lineHeight for the new line (matches Window:NextLine behavior)
+		-- Reset lineHeight for new line
 		self.lineHeight = 0
 	end
 
