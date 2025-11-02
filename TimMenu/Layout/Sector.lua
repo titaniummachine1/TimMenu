@@ -63,8 +63,9 @@ end
 local function _updateWindowBounds(win, layoutState, width, height, pad)
 	local requiredW = layoutState.startX + width + pad
 	local requiredH = layoutState.startY + height + pad
+	local bottomPad = Globals.Defaults.WINDOW_CONTENT_PADDING
 	win.W = math.max(win.W, requiredW)
-	win.H = math.max(win.H, requiredH)
+	win.H = math.max(win.H, requiredH + bottomPad)
 end
 
 local function _enqueueBackgroundDraw(win, layoutState, depth, size)

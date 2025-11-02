@@ -68,12 +68,11 @@ function Window:QueueDrawAtLayer(layer, drawFunc, ...)
 	DrawManager.Enqueue(self.id, layer, drawFunc, ...)
 end
 
---- Hit test: is a point inside this window (including title bar and bottom padding)?
+--- Hit test: is a point inside this window (including title bar and content area)?
 function Window:_HitTest(x, y)
-	-- Hit test entire window area (title, content, and bottom padding)
+	-- Hit test entire window area (title, content area)
 	local titleHeight = Globals.Defaults.TITLE_BAR_HEIGHT
-	local bottomPad = Globals.Defaults.WINDOW_CONTENT_PADDING
-	return x >= self.X and x <= self.X + self.W and y >= self.Y and y <= self.Y + titleHeight + self.H + bottomPad
+	return x >= self.X and x <= self.X + self.W and y >= self.Y and y <= self.Y + titleHeight + self.H
 end
 
 --- Update window logic: dragging only; mark touched only in Begin()
@@ -104,12 +103,11 @@ function Window:_Draw()
 	local txtWidth, txtHeight = draw.GetTextSize(self.title)
 	-- Draw title bar at static height and center text vertically
 	local titleHeight = Globals.Defaults.TITLE_BAR_HEIGHT
-	local bottomPad = Globals.Defaults.WINDOW_CONTENT_PADDING
 
 	-- Background
 	Common.SetColor(Globals.Colors.Window)
-	-- Extend background with bottom padding
-	Common.DrawFilledRect(self.X, self.Y + titleHeight, self.X + self.W, self.Y + titleHeight + self.H + bottomPad)
+	-- Background now covers title + content area (win.H already includes bottom padding)
+	Common.DrawFilledRect(self.X, self.Y + titleHeight, self.X + self.W, self.Y + titleHeight + self.H)
 
 	-- Title bar
 	Common.SetColor(Globals.Colors.Title)
@@ -118,8 +116,8 @@ function Window:_Draw()
 	-- Border
 	if Globals.Style.EnableWindowBorder then
 		Common.SetColor(Globals.Colors.WindowBorder)
-		-- Outline around full window including title and bottom padding
-		Common.DrawOutlinedRect(self.X, self.Y, self.X + self.W, self.Y + titleHeight + self.H + bottomPad)
+		-- Outline around full window including title and content area
+		Common.DrawOutlinedRect(self.X, self.Y, self.X + self.W, self.Y + titleHeight + self.H)
 	end
 
 	-- Title text
@@ -141,6 +139,7 @@ end
 --- @return number, number The x, y coordinates for the widget
 function Window:AddWidget(width, height)
 	local padding = Globals.Defaults.WINDOW_CONTENT_PADDING
+	local bottomPad = Globals.Defaults.WINDOW_CONTENT_PADDING
 	local x = self.cursorX
 	local y = self.cursorY
 
@@ -152,7 +151,7 @@ function Window:AddWidget(width, height)
 	-- Update window dimensions if needed
 	self.W = math.max(self.W, x + width + padding)
 	self.lineHeight = math.max(self.lineHeight, height)
-	self.H = math.max(self.H, y + self.lineHeight)
+	self.H = math.max(self.H, y + self.lineHeight + bottomPad)
 
 	-- Update cursor position for the *next* widget on this line
 	self.cursorX = self.cursorX + width + Globals.Defaults.ITEM_SPACING
@@ -169,7 +168,8 @@ function Window:NextLine(spacing)
 	local endOfLineY = self.cursorY -- Y position *before* resetting lineHeight
 	self.lineHeight = 0
 	-- Expand window if needed, considering the end of the previous line
-	self.H = math.max(self.H, endOfLineY)
+	local bottomPad = Globals.Defaults.WINDOW_CONTENT_PADDING
+	self.H = math.max(self.H, endOfLineY + bottomPad)
 end
 
 --- Advances the cursor horizontally to place the next widget on the same line.
@@ -189,8 +189,9 @@ function Window:Spacing(verticalSpacing)
 	self.cursorY = self.cursorY + self.lineHeight + verticalSpacing
 	self.lineHeight = 0 -- Reset line height for the *next* line that might start here
 	-- Expand window if needed
-	if self.cursorY > self.H then
-		self.H = self.cursorY
+	local bottomPad = Globals.Defaults.WINDOW_CONTENT_PADDING
+	if self.cursorY + bottomPad > self.H then
+		self.H = self.cursorY + bottomPad
 	end
 	-- Important: Do NOT reset cursorX here.
 end
@@ -198,6 +199,7 @@ end
 --- Reset the layout cursor for widgets (called on Begin)
 function Window:resetCursor()
 	local padding = Globals.Defaults.WINDOW_CONTENT_PADDING
+	local bottomPad = Globals.Defaults.WINDOW_CONTENT_PADDING
 	self.cursorX = padding
 	self.cursorY = Globals.Defaults.TITLE_BAR_HEIGHT + padding
 	self.lineHeight = 0
@@ -207,7 +209,7 @@ function Window:resetCursor()
 	self._hasHeaderTabs = false
 	-- Reset window size to defaults to allow shrinking
 	self.W = Globals.Defaults.DEFAULT_W
-	self.H = Globals.Defaults.DEFAULT_H
+	self.H = Globals.Defaults.DEFAULT_H + bottomPad
 	-- Clear sector sizes to allow sectors to shrink each frame
 	self._sectorSizes = {}
 end

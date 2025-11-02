@@ -15,8 +15,9 @@ function Utils.PruneOrphanedWindows(windows, order)
 	end
 end
 
-function Utils.IsMouseOverWindow(win, mouseX, mouseY, titleHeight)
-	return mouseX >= win.X and mouseX <= win.X + win.W and mouseY >= win.Y and mouseY <= win.Y + win.H
+function Utils.IsMouseOverWindow(win, mouseX, mouseY)
+	local titleHeight = require("TimMenu.Globals").Defaults.TITLE_BAR_HEIGHT
+	return mouseX >= win.X and mouseX <= win.X + win.W and mouseY >= win.Y and mouseY <= win.Y + titleHeight + win.H
 end
 
 function Utils.IsPointBlocked(order, windows, x, y, currentWindowKey)
@@ -28,18 +29,18 @@ function Utils.IsPointBlocked(order, windows, x, y, currentWindowKey)
 			break
 		end
 		local win = windows[key]
-		if win and win.visible and Utils.IsMouseOverWindow(win, x, y, win.H) then
+		if win and win.visible and Utils.IsMouseOverWindow(win, x, y) then
 			return true
 		end
 	end
 	return false
 end
 
-function Utils.GetWindowUnderMouse(order, windows, x, y, titleBarHeight)
+function Utils.GetWindowUnderMouse(order, windows, x, y)
 	for i = #order, 1, -1 do
 		local key = order[i]
 		local win = windows[key]
-		if win and Utils.IsMouseOverWindow(win, x, y, titleBarHeight) then
+		if win and Utils.IsMouseOverWindow(win, x, y) then
 			input.SetMouseInputEnabled(false)
 			return key
 		end
