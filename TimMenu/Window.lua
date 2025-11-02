@@ -139,7 +139,6 @@ end
 --- @return number, number The x, y coordinates for the widget
 function Window:AddWidget(width, height)
 	local padding = Globals.Defaults.WINDOW_CONTENT_PADDING
-	local bottomPad = Globals.Defaults.WINDOW_CONTENT_PADDING
 	local x = self.cursorX
 	local y = self.cursorY
 
@@ -151,7 +150,7 @@ function Window:AddWidget(width, height)
 	-- Update window dimensions if needed
 	self.W = math.max(self.W, x + width + padding)
 	self.lineHeight = math.max(self.lineHeight, height)
-	self.H = math.max(self.H, y + self.lineHeight + bottomPad)
+	self.H = math.max(self.H, y + self.lineHeight)
 
 	-- Update cursor position for the *next* widget on this line
 	self.cursorX = self.cursorX + width + Globals.Defaults.ITEM_SPACING
@@ -168,8 +167,7 @@ function Window:NextLine(spacing)
 	local endOfLineY = self.cursorY -- Y position *before* resetting lineHeight
 	self.lineHeight = 0
 	-- Expand window if needed, considering the end of the previous line
-	local bottomPad = Globals.Defaults.WINDOW_CONTENT_PADDING
-	self.H = math.max(self.H, endOfLineY + bottomPad)
+	self.H = math.max(self.H, endOfLineY)
 end
 
 --- Advances the cursor horizontally to place the next widget on the same line.
@@ -189,9 +187,8 @@ function Window:Spacing(verticalSpacing)
 	self.cursorY = self.cursorY + self.lineHeight + verticalSpacing
 	self.lineHeight = 0 -- Reset line height for the *next* line that might start here
 	-- Expand window if needed
-	local bottomPad = Globals.Defaults.WINDOW_CONTENT_PADDING
-	if self.cursorY + bottomPad > self.H then
-		self.H = self.cursorY + bottomPad
+	if self.cursorY > self.H then
+		self.H = self.cursorY
 	end
 	-- Important: Do NOT reset cursorX here.
 end
@@ -199,7 +196,6 @@ end
 --- Reset the layout cursor for widgets (called on Begin)
 function Window:resetCursor()
 	local padding = Globals.Defaults.WINDOW_CONTENT_PADDING
-	local bottomPad = Globals.Defaults.WINDOW_CONTENT_PADDING
 	self.cursorX = padding
 	self.cursorY = Globals.Defaults.TITLE_BAR_HEIGHT + padding
 	self.lineHeight = 0
@@ -209,7 +205,7 @@ function Window:resetCursor()
 	self._hasHeaderTabs = false
 	-- Reset window size to defaults to allow shrinking
 	self.W = Globals.Defaults.DEFAULT_W
-	self.H = Globals.Defaults.DEFAULT_H + bottomPad
+	self.H = Globals.Defaults.DEFAULT_H
 	-- Clear sector sizes to allow sectors to shrink each frame
 	self._sectorSizes = {}
 end
