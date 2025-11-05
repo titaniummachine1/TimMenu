@@ -208,16 +208,4 @@ function Tooltip.AttachToLastWidget(win, text)
 	bounds.tooltip = text
 end
 
-function Tooltip.GetLastWidgetKey()
-	return nil
-end
-
-function Tooltip.GetTooltipForWidget()
-	return nil
-end
-
-function Tooltip.CleanupOrphanedData()
-	-- No-op: tooltip data now lives on window widget bounds
-end
-
 return Tooltip
