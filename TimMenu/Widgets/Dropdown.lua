@@ -43,10 +43,14 @@ local function DrawDropdownPopupItem(win, relX, relY, width, itemH, pad, opt, is
 	draw.SetFont(Globals.Style.Font)
 	local bgColor = Globals.Colors.Item
 	if isSelected then
-		bgColor = Globals.Colors.HighlightActive
+		bgColor = Globals.Colors.DropdownSelected or Globals.Colors.HighlightActive
 	end
 	if isHovered then
-		bgColor = Globals.Colors.ItemHover
+		if isSelected then
+			bgColor = Globals.Colors.DropdownSelectedHover or Globals.Colors.ItemHover
+		else
+			bgColor = Globals.Colors.ItemHover
+		end
 	end
 	Common.SetColor(bgColor)
 	Common.DrawFilledRect(absX, absY, absX + width, absY + itemH)

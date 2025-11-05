@@ -17,6 +17,8 @@ Globals.Colors = {
 	TabSelectedUnderline = { 255, 255, 255, 255 },
 	WidgetOutline = { 100, 100, 100, 77 },
 	ArrowBoxBg = { 55, 100, 215, 255 },
+	DropdownSelected = { 90, 90, 90, 255 },
+	DropdownSelectedHover = { 110, 110, 110, 255 },
 }
 
 -- Style settings
