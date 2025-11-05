@@ -5,13 +5,20 @@ local Common = require("TimMenu.Common") -- EndSector might need this for DrawLi
 local Sector = {}
 
 -- Spacing between rows of sectors (adjust this to change vertical gap)
-local ROW_VERTICAL_GAP = Globals.Defaults.WINDOW_CONTENT_PADDING
+local function getVerticalGap()
+	return Globals.Style.ItemSpacingY or Globals.Defaults.WINDOW_CONTENT_PADDING
+end
+
 -- Horizontal spacing after a sector completes (mirrors widget spacing)
-local HORIZONTAL_ITEM_SPACING = Globals.Defaults.ITEM_SPACING or 0
+local function getHorizontalGap()
+	return Globals.Style.ItemSpacingX or Globals.Defaults.ITEM_SPACING or 0
+end
 
 --[[----------------------------------------------------------------------------
 -- Private Helper Functions for Sector.End
 ------------------------------------------------------------------------------]]
+
+local _prepareRowState
 
 local function _calculateDimensions(layoutState, pad)
 	local currentWidth = (layoutState.maxX - layoutState.startX) + pad
@@ -117,9 +124,11 @@ end
 
 local function _finalizeCursorAndLayout(win, layoutState, width, rowHeight)
 	-- Treat sector as a single widget occupying the computed width/height
-	win.cursorX = layoutState.startX + width + HORIZONTAL_ITEM_SPACING
+	local horizontalSpacing = getHorizontalGap()
+	win.cursorX = layoutState.startX + width + horizontalSpacing
 	win.cursorY = layoutState.startY
-	win.lineHeight = math.max(layoutState.preLineHeight or 0, rowHeight + ROW_VERTICAL_GAP)
+	local verticalGap = getVerticalGap()
+	win.lineHeight = math.max(layoutState.preLineHeight or 0, rowHeight + verticalGap)
 
 	if #win._sectorStack > 0 then
 		local parentSector = win._sectorStack[#win._sectorStack]
@@ -128,7 +137,7 @@ local function _finalizeCursorAndLayout(win, layoutState, width, rowHeight)
 	end
 end
 
-local function _prepareRowState(win, layoutState)
+function _prepareRowState(win, layoutState)
 	win._sectorRows = win._sectorRows or {}
 	local depth = #win._sectorStack
 	local rows = win._sectorRows
@@ -205,7 +214,7 @@ function Sector.Begin(win, label)
 
 	win.NextLine = function(self, spacing)
 		-- Advance to next line within sector
-		local baseSpacing = spacing or Globals.Defaults.WINDOW_CONTENT_PADDING
+		local baseSpacing = spacing or getVerticalGap()
 		self.cursorY = self.cursorY + self.lineHeight + baseSpacing
 		-- Keep cursor aligned to sector's left edge
 		self.cursorX = layoutState.startX + layoutState.padding

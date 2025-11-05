@@ -29,6 +29,8 @@ Globals.Style = {
 	FontBoldWeight = 400,
 	ItemPadding = 7,
 	ItemMargin = 5,
+	ItemSpacingX = 8,
+	ItemSpacingY = 8,
 	ItemSize = 10,
 	EnableWindowBorder = true,
 	FrameBorder = false,
@@ -90,6 +92,8 @@ Globals.DefaultFontSettings = {
 local scale = Globals.Style.Scale or 1
 Globals.Style.ItemPadding = math.ceil(Globals.Style.ItemPadding * scale)
 Globals.Style.ItemMargin = math.ceil(Globals.Style.ItemMargin * scale)
+Globals.Style.ItemSpacingX = math.ceil((Globals.Style.ItemSpacingX or Globals.Defaults.ITEM_SPACING) * scale)
+Globals.Style.ItemSpacingY = math.ceil((Globals.Style.ItemSpacingY or Globals.Defaults.WINDOW_CONTENT_PADDING) * scale)
 Globals.Style.ItemSize = math.ceil(Globals.Style.ItemSize * scale)
 
 -- Scale default dimensions
@@ -98,7 +102,7 @@ Globals.Defaults.DEFAULT_H = math.ceil(Globals.Defaults.DEFAULT_H * scale)
 Globals.Defaults.SLIDER_WIDTH = math.ceil(Globals.Defaults.SLIDER_WIDTH * scale)
 Globals.Defaults.TITLE_BAR_HEIGHT = math.ceil(Globals.Defaults.TITLE_BAR_HEIGHT * scale)
 Globals.Defaults.WINDOW_CONTENT_PADDING = math.ceil(Globals.Defaults.WINDOW_CONTENT_PADDING * scale)
-Globals.Defaults.ITEM_SPACING = math.ceil(Globals.Defaults.ITEM_SPACING * scale)
+Globals.Defaults.ITEM_SPACING = Globals.Style.ItemSpacingX
 Globals.Defaults.DebugHeaderX = math.ceil(Globals.Defaults.DebugHeaderX * scale)
 Globals.Defaults.DebugHeaderY = math.ceil(Globals.Defaults.DebugHeaderY * scale)
 Globals.Defaults.DebugLineSpacing = math.ceil(Globals.Defaults.DebugLineSpacing * scale)

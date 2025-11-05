@@ -69,11 +69,13 @@ local function ColorPicker(win, label, initColor)
 	draw.SetFont(Globals.Style.Font)
 	local txtW, txtH = draw.GetTextSize(label)
 	local padding = Globals.Style.ItemPadding
-	local colorSize = Globals.Style.ItemSize
-	local previewSize = colorSize + (padding * 2)
-	local height = math.max(previewSize, txtH + (padding * 2))
+	local extraVerticalInset = math.ceil((Globals.Style.ItemSpacingY or padding) * 0.5)
+	local verticalInset = padding + extraVerticalInset
+	local colorSize = math.max(Globals.Style.ItemSize, txtH)
+	local height = colorSize + (verticalInset * 2)
+	local previewBlockW = colorSize + (padding * 2)
 	local arrowBoxW = height
-	local width = previewSize + padding + txtW + padding + arrowBoxW
+	local width = previewBlockW + padding + txtW + padding + arrowBoxW
 
 	local ctx = WidgetBase.Setup(win, "ColorPicker", label, width, height)
 	local absX, absY = ctx.absX, ctx.absY
@@ -183,7 +185,7 @@ local function ColorPicker(win, label, initColor)
 	end
 	local mainW = width - arrowBoxW
 	local arrowX = px + mainW
-	local colorY = py + (height - colorSize) * 0.5
+	local colorY = py + verticalInset
 	local colorX = px + padding
 	local colorX2 = colorX + colorSize
 	Common.QueueRect(win, Globals.Layers.WidgetBackground, px, py, px + mainW, py + height, bg, nil)

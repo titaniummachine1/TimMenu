@@ -169,7 +169,8 @@ function Window:AddWidget(width, height)
 	self.H = math.max(self.H, y + self.lineHeight)
 
 	-- Update cursor position for the *next* widget on this line
-	self.cursorX = self.cursorX + width + Globals.Defaults.ITEM_SPACING
+	local horizontalSpacing = Globals.Style.ItemSpacingX or Globals.Defaults.ITEM_SPACING
+	self.cursorX = self.cursorX + width + horizontalSpacing
 
 	return x, y
 end
@@ -177,7 +178,8 @@ end
 --- Provide a simple way to "new line" to place subsequent widgets below
 --- Resets horizontal position and advances vertically.
 function Window:NextLine(spacing)
-	spacing = spacing or Globals.Defaults.WINDOW_CONTENT_PADDING
+	local baseSpacing = Globals.Style.ItemSpacingY or Globals.Defaults.WINDOW_CONTENT_PADDING
+	spacing = spacing or baseSpacing
 	self.cursorY = self.cursorY + self.lineHeight + spacing
 	self.cursorX = Globals.Defaults.WINDOW_CONTENT_PADDING -- reset to left padding
 	local endOfLineY = self.cursorY -- Y position *before* resetting lineHeight
@@ -188,8 +190,8 @@ end
 
 --- Advances the cursor horizontally to place the next widget on the same line.
 function Window:SameLine(spacing)
-	-- Default spacing is Globals.Defaults.ITEM_SPACING
-	spacing = spacing or Globals.Defaults.ITEM_SPACING
+	local defaultSpacing = Globals.Style.ItemSpacingX or Globals.Defaults.ITEM_SPACING
+	spacing = spacing or defaultSpacing
 	self.cursorX = self.cursorX + spacing -- Add specified spacing
 	-- Note: We don't add widget width here, AddWidget already does that
 	-- and advances cursorX *after* returning the position.
@@ -197,8 +199,8 @@ end
 
 --- Adds vertical spacing without resetting the horizontal cursor position.
 function Window:Spacing(verticalSpacing)
-	-- Default spacing is half the content padding
-	verticalSpacing = verticalSpacing or (Globals.Defaults.WINDOW_CONTENT_PADDING / 2)
+	local baseSpacing = Globals.Style.ItemSpacingY or Globals.Defaults.WINDOW_CONTENT_PADDING
+	verticalSpacing = verticalSpacing or math.floor(baseSpacing * 0.5)
 	-- Use current line height + spacing to advance Y
 	self.cursorY = self.cursorY + self.lineHeight + verticalSpacing
 	self.lineHeight = 0 -- Reset line height for the *next* line that might start here
