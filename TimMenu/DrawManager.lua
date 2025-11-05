@@ -20,17 +20,16 @@ end
 --- Flush all queued draw calls in proper back-to-front order
 ---@param zOrder table an array of window IDs in z-order (back to front)
 function DrawManager.Flush(zOrder)
+	local orderIndex = {}
+	for i = 1, #zOrder do
+		orderIndex[zOrder[i]] = i
+	end
+	local fallbackIndex = #zOrder + 1
+
 	-- Sort by window z-order then layer, then by insertion sequence to avoid z-fighting
 	table.sort(DrawManager.queue, function(a, b)
-		local za, zb
-		for i, id in ipairs(zOrder) do
-			if id == a.windowId then
-				za = i
-			end
-			if id == b.windowId then
-				zb = i
-			end
-		end
+		local za = orderIndex[a.windowId] or fallbackIndex
+		local zb = orderIndex[b.windowId] or fallbackIndex
 		if za ~= zb then
 			return za < zb
 		end

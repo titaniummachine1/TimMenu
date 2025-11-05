@@ -80,6 +80,10 @@ end
 SetupFonts()
 Globals.ReloadFonts = SetupFonts
 
+function Globals.GetFont(name, size, weight)
+	return GetOrCreateFont(name, size, weight)
+end
+
 -- Preserve default font settings for quick reset
 Globals.DefaultFontSettings = {
 	FontName = Globals.Style.FontName,
