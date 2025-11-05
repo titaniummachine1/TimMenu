@@ -7,6 +7,23 @@ local Tooltip = {}
 -- Store tooltip data per window and widget
 local tooltipData = {}
 
+local function pointInBounds(bounds, x, y)
+	return x >= bounds.x and x <= bounds.x + bounds.w and y >= bounds.y and y <= bounds.y + bounds.h
+end
+
+local function isBlockedByPopup(win, x, y)
+	local blockedRegions = win._widgetBlockedRegions
+	if not blockedRegions then
+		return false
+	end
+	for _, region in ipairs(blockedRegions) do
+		if pointInBounds(region, x, y) then
+			return true
+		end
+	end
+	return false
+end
+
 --- Wraps text to multiple lines with a maximum line length
 ---@param text string The text to wrap
 ---@param maxLength number Maximum characters per line (default 40)
@@ -130,12 +147,13 @@ function Tooltip.ProcessWindowTooltips(win)
 			local widgetBounds = win._widgetBounds and win._widgetBounds[widgetIndex]
 			if widgetBounds then
 				-- Check if mouse is hovering this widget
-				local inBounds = mouseX >= widgetBounds.x
-					and mouseX <= widgetBounds.x + widgetBounds.w
-					and mouseY >= widgetBounds.y
-					and mouseY <= widgetBounds.y + widgetBounds.h
+				local inBounds = pointInBounds(widgetBounds, mouseX, mouseY)
 
 				if inBounds then
+					if isBlockedByPopup(win, mouseX, mouseY) then
+						-- Popup covers this point; suppress tooltip for underlying widgets
+						goto continue
+					end
 					-- Check if this widget is not blocked by a higher window
 					local Utils = require("TimMenu.Utils")
 					if not Utils.IsPointBlocked(TimMenuGlobal.order, TimMenuGlobal.windows, mouseX, mouseY, win.id) then
@@ -163,6 +181,7 @@ function Tooltip.ProcessWindowTooltips(win)
 				end
 			end
 		end
+::continue::
 	end
 end
 
