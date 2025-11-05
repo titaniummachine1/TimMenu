@@ -181,7 +181,7 @@ function Tooltip.ProcessWindowTooltips(win)
 				end
 			end
 		end
-::continue::
+		::continue::
 	end
 end
 
