@@ -7,38 +7,24 @@ local Common = {}
 -- Library Loading
 --------------------------------------------------------------------------------------
 
-local function downloadFile(url)
-	local body = http.Get(url)
-	if body and body ~= "" then
-		return body
-	else
-		error("Failed to download file from " .. url)
+local function requireLNXlib()
+	local loaded, Lib = pcall(require, "LNXlib")
+	if not loaded then
+		error("TimMenu requires LNXlib. Please install LNXlib before loading TimMenu.")
 	end
-end
 
-local latestReleaseURL = "https://github.com/lnx00/Lmaobox-Library/releases/latest/download/lnxLib.lua"
-
-local function loadLNXlib()
-	local libLoaded, Lib = pcall(require, "LNXlib")
-	if not libLoaded or not Lib.GetVersion or Lib.GetVersion() < 1.0 then
-		print("LNXlib not found or version is too old. Attempting to download the latest version...")
-
-		local lnxLibContent = downloadFile(latestReleaseURL)
-		local lnxLibFunction, loadError = load(lnxLibContent)
-		if lnxLibFunction then
-			lnxLibFunction()
-			libLoaded, Lib = pcall(require, "LNXlib")
-			if not libLoaded then
-				error("Failed to load LNXlib after downloading: " .. loadError)
-			end
-		else
-			error("Error loading lnxLib: " .. loadError)
-		end
+	if type(Lib.GetVersion) ~= "function" then
+		error("TimMenu requires LNXlib >= 1.0 (GetVersion missing). Update LNXlib before loading TimMenu.")
 	end
+
+	if Lib.GetVersion() < 1.0 then
+		error("TimMenu requires LNXlib >= 1.0. Update LNXlib before loading TimMenu.")
+	end
+
 	return Lib
 end
 
-local Lib = loadLNXlib()
+local Lib = requireLNXlib()
 
 -- Expose required functionality
 Common.Lib = Lib
