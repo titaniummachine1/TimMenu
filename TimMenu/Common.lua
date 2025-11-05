@@ -163,11 +163,11 @@ end
 ---@param y number
 ---@param text string
 ---@param colorTbl table optional, defaults to Globals.Colors.Text
-function Common.QueueText(window, layer, x, y, text, colorTbl)
+function Common.QueueText(window, layer, x, y, text, colorTbl, fontId)
 	local relX = x - window.X
 	local relY = y - window.Y
 	window:QueueDrawAtLayer(layer, function()
-		draw.SetFont(Globals.Style.Font)
+		draw.SetFont(fontId or Globals.Style.Font)
 		Common.SetColor(colorTbl or Globals.Colors.Text)
 		Common.DrawText(window.X + relX, window.Y + relY, text)
 	end)

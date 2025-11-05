@@ -13,52 +13,6 @@ end
 
 Setup()
 
-local nextWidgetFont = nil
-
-function TimMenu.SetFontNext(name, size, weight)
-	nextWidgetFont = { name = name, size = size, weight = weight }
-end
-
-local function applyNextWidgetFont()
-	if nextWidgetFont then
-		local s = Globals.Style
-		local prev = { name = s.FontName, size = s.FontSize, weight = s.FontWeight }
-		s.FontName = nextWidgetFont.name
-		s.FontSize = nextWidgetFont.size
-		s.FontWeight = nextWidgetFont.weight
-		Globals.ReloadFonts()
-		nextWidgetFont = nil
-		return prev
-	end
-end
-
-local function restoreWidgetFont(prev)
-	if prev then
-		local s = Globals.Style
-		s.FontName = prev.name
-		s.FontSize = prev.size
-		s.FontWeight = prev.weight
-		Globals.ReloadFonts()
-	end
-end
-
-local function withFontReset(func, ...)
-	local prevFont = applyNextWidgetFont()
-	local results = { func(...) }
-	restoreWidgetFont(prevFont)
-	return table.unpack(results)
-end
-
-local _currentWindow = nil
-
-local function withCurrentWindow(func, ...)
-	local win = TimMenu.GetCurrentWindow()
-	if not win then
-		return
-	end
-	return func(win, ...)
-end
-
 local Common = require("TimMenu.Common")
 local Globals = require("TimMenu.Globals")
 local Utils = require("TimMenu.Utils")
@@ -67,6 +21,37 @@ local SectorWidget = require("TimMenu.Layout.Sector")
 local SeparatorLayout = require("TimMenu.Layout.Separator")
 local DrawManager = require("TimMenu.DrawManager")
 local Widgets = require("TimMenu.Widgets")
+
+local nextWidgetFont = nil
+
+function TimMenu.SetFontNext(name, size, weight)
+	nextWidgetFont = { name = name, size = size, weight = weight }
+end
+
+local _currentWindow = nil
+
+local function applyPendingFont(win)
+	if not nextWidgetFont then
+		return
+	end
+	local fontId = Globals.GetFont(nextWidgetFont.name, nextWidgetFont.size, nextWidgetFont.weight)
+	win._fontContext.current = fontId
+	Globals.Style.Font = fontId
+	draw.SetFont(fontId)
+	nextWidgetFont = nil
+end
+
+local function getActiveFont(win)
+	return win._fontContext.current or win._fontContext.default
+end
+
+local function withCurrentWindow(func, ...)
+	local win = TimMenu.GetCurrentWindow()
+	if not win then
+		return
+	end
+	return func(win, ...)
+end
 
 local function getOrCreateWindow(key, title, visible)
 	local win = TimMenuGlobal.windows[key]
@@ -96,6 +81,11 @@ function TimMenu.Begin(title, visible, id)
 	win._widgetCounter = 0
 	win._sectorStack = {}
 	win._widgetBounds = {}
+	win._fontContext = win._fontContext or {}
+	win._fontContext.default = Globals.Style.Font
+	win._fontContext.current = win._fontContext.default
+	Globals.Style.Font = win._fontContext.current
+	draw.SetFont(win._fontContext.current)
 
 	if not win.visible or (gui.GetValue("clean screenshots") == 1 and engine.IsTakingScreenshot()) then
 		return false
@@ -117,7 +107,8 @@ function TimMenu.Button(label)
 	if not win then
 		return false
 	end
-	return withFontReset(Widgets.Button, win, label)
+	applyPendingFont(win)
+	return Widgets.Button(win, label)
 end
 
 function TimMenu.Checkbox(label, state)
@@ -125,7 +116,8 @@ function TimMenu.Checkbox(label, state)
 	if not win then
 		return state, false
 	end
-	return withFontReset(Widgets.Checkbox, win, label, state)
+	applyPendingFont(win)
+	return Widgets.Checkbox(win, label, state)
 end
 
 function TimMenu.Text(text)
@@ -137,7 +129,9 @@ function TimMenu.Text(text)
 	win._widgetCounter = (win._widgetCounter or 0) + 1
 	local widgetIndex = win._widgetCounter
 
-	draw.SetFont(Globals.Style.Font)
+	applyPendingFont(win)
+	local fontId = getActiveFont(win)
+	draw.SetFont(fontId)
 	local w, h = draw.GetTextSize(text)
 	local x, y = win:AddWidget(w, h)
 	local absX, absY = win.X + x, win.Y + y
@@ -145,7 +139,7 @@ function TimMenu.Text(text)
 	local bounds = { x = absX, y = absY, w = w, h = h }
 	Widgets.Tooltip.StoreWidgetBounds(win, widgetIndex, bounds)
 
-	Common.QueueText(win, 1, absX, absY, text, Globals.Colors.Text)
+	Common.QueueText(win, Globals.Layers.WidgetText, absX, absY, text, Globals.Colors.Text, fontId)
 end
 
 function TimMenu.ShowDebug()
@@ -200,7 +194,8 @@ function TimMenu.Slider(label, value, min, max, step)
 	if not win then
 		return value, false
 	end
-	return withFontReset(Widgets.Slider, win, label, value, min, max, step)
+	applyPendingFont(win)
+	return Widgets.Slider(win, label, value, min, max, step)
 end
 
 function TimMenu.Separator(label)
@@ -214,7 +209,8 @@ function TimMenu.TextInput(label, text)
 	if not win then
 		return text, false
 	end
-	return withFontReset(Widgets.TextInput, win, label, text)
+	applyPendingFont(win)
+	return Widgets.TextInput(win, label, text)
 end
 
 function TimMenu.Dropdown(label, selectedIndex, options)
@@ -222,7 +218,8 @@ function TimMenu.Dropdown(label, selectedIndex, options)
 	if not win then
 		return selectedIndex, false
 	end
-	return withFontReset(Widgets.Dropdown, win, label, selectedIndex, options)
+	applyPendingFont(win)
+	return Widgets.Dropdown(win, label, selectedIndex, options)
 end
 
 function TimMenu.Combo(label, selectedTable, options)
@@ -230,7 +227,8 @@ function TimMenu.Combo(label, selectedTable, options)
 	if not win then
 		return selectedTable, false
 	end
-	return withFontReset(Widgets.Combo, win, label, selectedTable, options)
+	applyPendingFont(win)
+	return Widgets.Combo(win, label, selectedTable, options)
 end
 
 function TimMenu.Selector(label, selectedIndex, options)
@@ -238,7 +236,8 @@ function TimMenu.Selector(label, selectedIndex, options)
 	if not win then
 		return selectedIndex, false
 	end
-	return withFontReset(Widgets.Selector, win, label, selectedIndex, options)
+	applyPendingFont(win)
+	return Widgets.Selector(win, label, selectedIndex, options)
 end
 
 function TimMenu.TabControl(id, tabs, defaultSelection)
@@ -250,7 +249,8 @@ function TimMenu.TabControl(id, tabs, defaultSelection)
 			return 1, false
 		end
 	end
-	local newIndex, changed = withFontReset(Widgets.TabControl, win, id, tabs, defaultSelection)
+	applyPendingFont(win)
+	local newIndex, changed = Widgets.TabControl(win, id, tabs, defaultSelection)
 	if type(defaultSelection) == "string" then
 		return tabs[newIndex], changed
 	end
@@ -366,7 +366,8 @@ function TimMenu.Keybind(label, currentKey)
 	if not win then
 		return currentKey, false
 	end
-	return withFontReset(Widgets.Keybind, win, label, currentKey)
+	applyPendingFont(win)
+	return Widgets.Keybind(win, label, currentKey)
 end
 
 local function setFontStyle(style, name, size, weight)
@@ -395,7 +396,8 @@ function TimMenu.ColorPicker(label, color)
 	if not win then
 		return color, false
 	end
-	return withFontReset(Widgets.ColorPicker, win, label, color)
+	applyPendingFont(win)
+	return Widgets.ColorPicker(win, label, color)
 end
 
 function TimMenu.Tooltip(text)
