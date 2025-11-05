@@ -92,26 +92,19 @@ end
 ---@param lines table Array of wrapped text lines
 local function renderTooltip(win, x, y, lines)
 	local width, height = calculateTooltipSize(lines)
+	local layout = Popup.Begin(win, x, y, width, height)
 
-	-- Begin popup for tooltip
-	Popup.Begin(win, x, y, width, height)
-
-	-- Draw each line of text
 	local padding = Globals.Style.ItemPadding
 	local lineSpacing = 2
 	local currentY = 0
 
 	draw.SetFont(Globals.Style.Font)
-	for i, line in ipairs(lines) do
+	for _, line in ipairs(lines) do
 		local _, lineHeight = draw.GetTextSize(line)
-		local textX = padding
-		local textY = currentY + padding
+		local absX = x + padding
+		local absY = y + padding + currentY
 
-		-- Queue text drawing at tooltip layer
-		local absX = x + textX
-		local absY = y + textY
-
-		win:QueueDrawAtLayer(Globals.Layers.Popup + 1, function()
+		layout:QueueDraw(Globals.Layers.Popup + 1, function()
 			Common.SetColor(Globals.Colors.Text)
 			Common.DrawText(absX, absY, line)
 		end)
@@ -119,8 +112,7 @@ local function renderTooltip(win, x, y, lines)
 		currentY = currentY + lineHeight + lineSpacing
 	end
 
-	-- End popup (draws background and border)
-	Popup.End(win)
+	layout:Close()
 end
 
 --- Processes all tooltips for the window and displays one if a widget is hovered
