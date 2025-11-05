@@ -180,6 +180,10 @@ end
 function Window:NextLine(spacing)
 	local baseSpacing = Globals.Style.ItemSpacingY or Globals.Defaults.WINDOW_CONTENT_PADDING
 	spacing = spacing or baseSpacing
+	if self._nextLineSpacingBoost then
+		spacing = math.max(spacing, self._nextLineSpacingBoost)
+		self._nextLineSpacingBoost = nil
+	end
 	self.cursorY = self.cursorY + self.lineHeight + spacing
 	self.cursorX = Globals.Defaults.WINDOW_CONTENT_PADDING -- reset to left padding
 	local endOfLineY = self.cursorY -- Y position *before* resetting lineHeight
