@@ -4,9 +4,6 @@ local Popup = require("TimMenu.Layout.Popup")
 
 local Tooltip = {}
 
--- Store tooltip data per window and widget
-local tooltipData = {}
-
 local function pointInBounds(bounds, x, y)
 	return x >= bounds.x and x <= bounds.x + bounds.w and y >= bounds.y and y <= bounds.y + bounds.h
 end
@@ -129,56 +126,41 @@ end
 --- Processes all tooltips for the window and displays one if a widget is hovered
 ---@param win table Window object
 function Tooltip.ProcessWindowTooltips(win)
-	local windowData = tooltipData[win.id]
-	if not windowData then
+	local boundsList = win._widgetBounds
+	if not boundsList then
 		return
 	end
 
 	local mouseX, mouseY = table.unpack(input.GetMousePos())
+	local Utils = require("TimMenu.Utils")
 
-	-- Check each widget that has a tooltip to see if it's hovered
-	for widgetKey, tooltipText in pairs(windowData) do
-		-- Extract widget index from key
-		local widgetIndex = widgetKey:match(":Widget:(%d+)")
-		if widgetIndex then
-			widgetIndex = tonumber(widgetIndex)
-
-			-- Check if we have widget bounds stored for this widget
-			local widgetBounds = win._widgetBounds and win._widgetBounds[widgetIndex]
-			if widgetBounds then
-				-- Check if mouse is hovering this widget
-				local inBounds = pointInBounds(widgetBounds, mouseX, mouseY)
-
-				if inBounds then
-					if isBlockedByPopup(win, mouseX, mouseY) then
-						-- Popup covers this point; suppress tooltip for underlying widgets
-						goto continue
-					end
-					-- Check if this widget is not blocked by a higher window
-					local Utils = require("TimMenu.Utils")
-					if not Utils.IsPointBlocked(TimMenuGlobal.order, TimMenuGlobal.windows, mouseX, mouseY, win.id) then
-						-- Show tooltip
-						local lines = wrapText(tooltipText, 40)
-
-						-- Position tooltip to the right and down from cursor
-						local tooltipX = mouseX + 10
-						local tooltipY = mouseY + 10
-
-						-- Ensure tooltip doesn't go off screen (basic bounds checking)
-						local screenW, screenH = draw.GetScreenSize()
-						local tooltipW, tooltipH = calculateTooltipSize(lines)
-
-						if tooltipX + tooltipW > screenW then
-							tooltipX = mouseX - tooltipW - 10 -- Position to the left instead
-						end
-						if tooltipY + tooltipH > screenH then
-							tooltipY = mouseY - tooltipH - 10 -- Position above instead
-						end
-
-						renderTooltip(win, tooltipX, tooltipY, lines)
-						return -- Only show one tooltip at a time
-					end
+	for index = #boundsList, 1, -1 do
+		local bounds = boundsList[index]
+		if bounds and type(bounds.tooltip) == "string" and bounds.tooltip ~= "" then
+			if pointInBounds(bounds, mouseX, mouseY) then
+				if isBlockedByPopup(win, mouseX, mouseY) then
+					goto continue
 				end
+				if Utils.IsPointBlocked(TimMenuGlobal.order, TimMenuGlobal.windows, mouseX, mouseY, win.id) then
+					goto continue
+				end
+
+				local lines = wrapText(bounds.tooltip, 40)
+				local tooltipX = mouseX + 10
+				local tooltipY = mouseY + 10
+
+				local screenW, screenH = draw.GetScreenSize()
+				local tooltipW, tooltipH = calculateTooltipSize(lines)
+
+				if tooltipX + tooltipW > screenW then
+					tooltipX = mouseX - tooltipW - 10
+				end
+				if tooltipY + tooltipH > screenH then
+					tooltipY = mouseY - tooltipH - 10
+				end
+
+				renderTooltip(win, tooltipX, tooltipY, lines)
+				return
 			end
 		end
 		::continue::
@@ -193,6 +175,12 @@ function Tooltip.StoreWidgetBounds(win, widgetIndex, bounds)
 	if not win._widgetBounds then
 		win._widgetBounds = {}
 	end
+
+	local existing = win._widgetBounds[widgetIndex]
+	if existing and existing.tooltip and bounds.tooltip == nil then
+		bounds.tooltip = existing.tooltip
+	end
+
 	win._widgetBounds[widgetIndex] = bounds
 end
 
@@ -202,59 +190,34 @@ end
 function Tooltip.AttachToLastWidget(win, text)
 	assert(type(text) == "string", "Tooltip text must be a string")
 
-	-- Create tooltip data structure for this window if it doesn't exist
-	if not tooltipData[win.id] then
-		tooltipData[win.id] = {}
-	end
-
-	-- Generate a key for the last widget (this assumes widgets increment _widgetCounter)
 	local widgetIndex = win._widgetCounter or 0
 	if widgetIndex == 0 then
-		return -- No widgets added yet
+		return
 	end
 
-	-- Store tooltip for the most recently added widget
-	-- We'll use the widget index for tracking
-	local widgetKey = win.id .. ":Widget:" .. widgetIndex
-	tooltipData[win.id][widgetKey] = text
+	local boundsList = win._widgetBounds
+	if not boundsList then
+		return
+	end
 
-	-- Store the tooltip key on the window for the last widget
-	win._lastWidgetTooltipKey = widgetKey
-	win._lastWidgetIndex = widgetIndex
+	local bounds = boundsList[widgetIndex]
+	if not bounds then
+		return
+	end
+
+	bounds.tooltip = text
 end
 
---- Gets the tooltip key for the last widget (used by widgets to check for tooltips)
----@param win table Window object
----@return string|nil tooltipKey The tooltip key if tooltip exists for last widget
-function Tooltip.GetLastWidgetKey(win)
-	return win._lastWidgetTooltipKey
+function Tooltip.GetLastWidgetKey()
+	return nil
 end
 
---- Checks if a widget has a tooltip and returns the text
----@param win table Window object
----@param widgetKey string Widget identifier
----@return string|nil tooltipText The tooltip text if it exists
-function Tooltip.GetTooltipForWidget(win, widgetKey)
-	local windowData = tooltipData[win.id]
-	if not windowData then
-		return nil
-	end
-	return windowData[widgetKey]
+function Tooltip.GetTooltipForWidget()
+	return nil
 end
 
---- Cleans up tooltip data for orphaned windows
----@param activeWindowIds table Array of active window IDs
-function Tooltip.CleanupOrphanedData(activeWindowIds)
-	local activeSet = {}
-	for _, id in ipairs(activeWindowIds) do
-		activeSet[id] = true
-	end
-
-	for windowId in pairs(tooltipData) do
-		if not activeSet[windowId] then
-			tooltipData[windowId] = nil
-		end
-	end
+function Tooltip.CleanupOrphanedData()
+	-- No-op: tooltip data now lives on window widget bounds
 end
 
 return Tooltip
