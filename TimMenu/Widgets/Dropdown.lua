@@ -38,10 +38,17 @@ local function DrawDropdownPopupBackground(win, relX, relY, width, listH)
 	Common.DrawFilledRect(absX, absY, absX + width, absY + listH)
 end
 
-local function DrawDropdownPopupItem(win, relX, relY, width, itemH, pad, opt, isHovered)
+local function DrawDropdownPopupItem(win, relX, relY, width, itemH, pad, opt, isHovered, isSelected)
 	local absX, absY = win.X + relX, win.Y + relY
 	draw.SetFont(Globals.Style.Font)
-	Common.SetColor(isHovered and Globals.Colors.ItemHover or Globals.Colors.Item)
+	local bgColor = Globals.Colors.Item
+	if isSelected then
+		bgColor = Globals.Colors.HighlightActive
+	end
+	if isHovered then
+		bgColor = Globals.Colors.ItemHover
+	end
+	Common.SetColor(bgColor)
 	Common.DrawFilledRect(absX, absY, absX + width, absY + itemH)
 	Common.SetColor(Globals.Colors.Text)
 	local _, optH = draw.GetTextSize(opt)
@@ -115,15 +122,19 @@ local function Dropdown(win, label, selectedIndex, options)
 				end
 			end
 			table.insert(TimMenuGlobal.order, win.id)
-		elseif entry.open then
-			if Interaction.IsHovered(win, popupBounds) then
-				local idx = math.floor((input.GetMousePos()[2] - popupBounds.y) / height) + 1
-				if idx >= 1 and idx <= #options then
-					entry.selected = idx
+		else
+			if entry.open then
+				if Interaction.IsHovered(win, popupBounds) then
+					local idx = math.floor((input.GetMousePos()[2] - popupBounds.y) / height) + 1
+					if idx >= 1 and idx <= #options then
+						entry.selected = idx
+						entry.open = false
+						win._widgetBlockedRegions = {}
+					end
+				else
+					entry.open = false
+					win._widgetBlockedRegions = {}
 				end
-			else
-				entry.open = false
-				win._widgetBlockedRegions = {}
 			end
 		end
 	end
@@ -171,7 +182,8 @@ local function Dropdown(win, label, selectedIndex, options)
 				height,
 				pad,
 				opt,
-				isH
+				isH,
+				i == entry.selected
 			)
 		end
 

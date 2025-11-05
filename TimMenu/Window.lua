@@ -59,6 +59,7 @@ function Window.new(params)
 	self.lineHeight = 0
 	-- Initialize per-widget blocking regions for popup widgets
 	self._widgetBlockedRegions = {}
+	self._requestedNextLineSpacing = nil
 	return self
 end
 
@@ -180,9 +181,9 @@ end
 function Window:NextLine(spacing)
 	local baseSpacing = Globals.Style.ItemSpacingY or Globals.Defaults.WINDOW_CONTENT_PADDING
 	spacing = spacing or baseSpacing
-	if self._nextLineSpacingBoost then
-		spacing = math.max(spacing, self._nextLineSpacingBoost)
-		self._nextLineSpacingBoost = nil
+	if self._requestedNextLineSpacing then
+		spacing = math.max(spacing, self._requestedNextLineSpacing)
+		self._requestedNextLineSpacing = nil
 	end
 	self.cursorY = self.cursorY + self.lineHeight + spacing
 	self.cursorX = Globals.Defaults.WINDOW_CONTENT_PADDING -- reset to left padding
@@ -215,12 +216,26 @@ function Window:Spacing(verticalSpacing)
 	-- Important: Do NOT reset cursorX here.
 end
 
+--- Allows a widget to request a minimum spacing before the next line starts.
+function Window:RequestNextLineSpacing(minSpacing)
+	if type(minSpacing) ~= "number" then
+		return
+	end
+	if minSpacing <= 0 then
+		return
+	end
+	if not self._requestedNextLineSpacing or minSpacing > self._requestedNextLineSpacing then
+		self._requestedNextLineSpacing = minSpacing
+	end
+end
+
 --- Reset the layout cursor for widgets (called on Begin)
 function Window:resetCursor()
 	local padding = Globals.Defaults.WINDOW_CONTENT_PADDING
 	self.cursorX = padding
 	self.cursorY = Globals.Defaults.TITLE_BAR_HEIGHT + padding
 	self.lineHeight = 0
+	self._requestedNextLineSpacing = nil
 	-- Clear any widget blocking regions at start of frame
 	self._widgetBlockedRegions = {}
 	-- Clear header tabs flag so titles center if no header tabs

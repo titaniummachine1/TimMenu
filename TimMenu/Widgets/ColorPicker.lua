@@ -79,7 +79,9 @@ local function ColorPicker(win, label, initColor)
 	local absX, absY = ctx.absX, ctx.absY
 	local baseSpacing = Globals.Style.ItemSpacingY or Globals.Defaults.WINDOW_CONTENT_PADDING
 	local spacingBoost = baseSpacing + padding
-	win._nextLineSpacingBoost = math.max(win._nextLineSpacingBoost or 0, spacingBoost)
+	if win.RequestNextLineSpacing then
+		win:RequestNextLineSpacing(spacingBoost)
+	end
 
 	-- State management
 	local state = Utils.GetState(win, ctx.widgetKey, {
