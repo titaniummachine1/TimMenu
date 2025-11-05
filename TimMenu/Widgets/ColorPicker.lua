@@ -4,6 +4,7 @@ local Utils = require("TimMenu.Utils")
 local Interaction = require("TimMenu.Interaction")
 local DrawHelpers = require("TimMenu.DrawHelpers")
 local DrawManager = require("TimMenu.DrawManager")
+local WidgetBase = require("TimMenu.WidgetBase")
 
 -- HSV to RGB conversion
 local function hsvToRGB(h, s, v)
@@ -68,24 +69,17 @@ local function ColorPicker(win, label, initColor)
 	draw.SetFont(Globals.Style.Font)
 	local txtW, txtH = draw.GetTextSize(label)
 	local padding = Globals.Style.ItemPadding
-	local boxSize = Globals.Style.ItemSize + (padding * 2)
-	local arrowBoxW = boxSize
-	local extraPadding = padding
-	local width = boxSize + padding + txtW + extraPadding + arrowBoxW
-	local height = boxSize
+	local colorSize = Globals.Style.ItemSize
+	local previewSize = colorSize + (padding * 2)
+	local height = math.max(previewSize, txtH + (padding * 2))
+	local arrowBoxW = height
+	local width = previewSize + padding + txtW + padding + arrowBoxW
 
-	if win.cursorX > Globals.Defaults.WINDOW_CONTENT_PADDING then
-		win.cursorX = win.cursorX + padding
-	end
-	local x, y = win:AddWidget(width, height)
-	local absX, absY = win.X + x, win.Y + y
+	local ctx = WidgetBase.Setup(win, "ColorPicker", label, width, height)
+	local absX, absY = ctx.absX, ctx.absY
 
 	-- State management
-	local stateKey = win.id .. ":ColorPicker:" .. label
-	win._widgetCounter = (win._widgetCounter or 0) + 1
-	local widgetKey = stateKey .. ":" .. win._widgetCounter
-
-	local state = Utils.GetState(win, stateKey, {
+	local state = Utils.GetState(win, ctx.widgetKey, {
 		open = false,
 		hue = 0,
 		sat = 0,
@@ -112,8 +106,8 @@ local function ColorPicker(win, label, initColor)
 	}
 
 	-- Interaction
-	local bounds = { x = absX, y = absY, w = width, h = height }
-	local hovered, pressed, clicked = Interaction.Process(win, widgetKey, bounds, state.open)
+	local bounds = ctx.bounds
+	local hovered, pressed, clicked = WidgetBase.ProcessInteraction(ctx, state.open)
 
 	-- Maintain popup blocked regions while open
 	if state.open then
@@ -159,7 +153,7 @@ local function ColorPicker(win, label, initColor)
 		-- Alpha slider interaction
 		local sliderBounds =
 			{ x = popupBounds.x, y = popupBounds.y + imageData.height, w = popupBounds.w, h = sliderHeight }
-		local _, sPressed = Interaction.Process(win, widgetKey .. ":alpha", sliderBounds, state.open)
+		local _, sPressed = Interaction.Process(win, ctx.widgetKey .. ":alpha", sliderBounds, state.open)
 		if sPressed then
 			local mx2, _ = table.unpack(input.GetMousePos())
 			local newA = math.floor(((mx2 - sliderBounds.x) / sliderBounds.w) * 255)
@@ -188,13 +182,17 @@ local function ColorPicker(win, label, initColor)
 		bg = Globals.Colors.ItemHover
 	end
 	local mainW = width - arrowBoxW
+	local arrowX = px + mainW
+	local colorY = py + (height - colorSize) * 0.5
+	local colorX = px + padding
+	local colorX2 = colorX + colorSize
 	Common.QueueRect(win, Globals.Layers.WidgetBackground, px, py, px + mainW, py + height, bg, nil)
 	Common.QueueRect(
 		win,
 		Globals.Layers.WidgetBackground,
-		px + mainW,
+		arrowX,
 		py,
-		px + width,
+		arrowX + arrowBoxW,
 		py + height,
 		Globals.Colors.ArrowBoxBg,
 		nil
@@ -213,17 +211,17 @@ local function ColorPicker(win, label, initColor)
 	Common.QueueRect(
 		win,
 		Globals.Layers.WidgetFill,
-		px + padding,
-		py + padding,
-		px + boxSize - padding,
-		py + boxSize - padding,
+		colorX,
+		colorY,
+		colorX2,
+		colorY + colorSize,
 		state.color,
 		nil
 	)
 	Common.QueueText(
 		win,
 		Globals.Layers.WidgetText,
-		px + boxSize + padding,
+		colorX2 + padding,
 		py + (height - txtH) * 0.5,
 		label,
 		Globals.Colors.Text
@@ -233,7 +231,7 @@ local function ColorPicker(win, label, initColor)
 	draw.SetFont(Globals.Style.Font)
 	local arrowCharW, arrowCharH = draw.GetTextSize("▼")
 	local triW, triH = arrowCharW * 0.5, arrowCharH * 0.5
-	local triX = px + mainW + (arrowBoxW - triW) / 2
+	local triX = arrowX + (arrowBoxW - triW) / 2
 	local triY = py + (height - triH) / 2
 	win:QueueDrawAtLayer(Globals.Layers.WidgetText, function()
 		DrawHelpers.DrawArrow(triX, triY, triW, triH, state.open and "up" or "down", Globals.Colors.Text)
