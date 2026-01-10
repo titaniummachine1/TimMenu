@@ -62,6 +62,8 @@ function Window.new(params)
 	self._widgetBlockedRegions = {}
 	-- Initialize click shapes for precise hit testing
 	self._clickShapes = {}
+	-- Flag to prevent focus changes during popup interactions
+	self._preventFocusChange = false
 	self._requestedNextLineSpacing = nil
 	return self
 end
@@ -219,8 +221,21 @@ end
 ---@param y number Y coordinate
 ---@return boolean
 function Window:ShouldChangeFocus(x, y)
-	local _, shapeData = self:GetClickShapeAt(x, y)
-	return shapeData and shapeData.focusWeight > 0
+	-- If flag is set, prevent focus changes (used during popup interactions)
+	if self._preventFocusChange then
+		return false
+	end
+
+	-- Check if point is in any popup region
+	if self._widgetBlockedRegions then
+		for _, region in ipairs(self._widgetBlockedRegions) do
+			if x >= region.x and x <= region.x + region.w and y >= region.y and y <= region.y + region.h then
+				return false -- Don't change focus if clicking popup area
+			end
+		end
+	end
+
+	return true -- Allow focus change for regular window areas
 end
 
 --- Get the focus weight of a click shape at a point
@@ -303,27 +318,6 @@ function Window:resetCursor()
 	self.H = Globals.Defaults.DEFAULT_H
 	-- Clear sector sizes to allow sectors to shrink each frame
 	self._sectorSizes = {}
-
-	-- Register main window click shapes
-	local titleHeight = Globals.Defaults.TITLE_BAR_HEIGHT
-
-	-- Title bar - high focus weight for dragging
-	self:AddClickShape("title_bar", {
-		type = "rectangle",
-		x = self.X,
-		y = self.Y,
-		w = self.W,
-		h = titleHeight,
-	}, 2, { type = "title_bar" })
-
-	-- Content area - normal focus weight
-	self:AddClickShape("content_area", {
-		type = "rectangle",
-		x = self.X,
-		y = self.Y + titleHeight,
-		w = self.W,
-		h = self.H,
-	}, 1, { type = "content_area" })
 end
 
 return Window

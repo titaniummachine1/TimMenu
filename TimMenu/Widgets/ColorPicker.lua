@@ -117,14 +117,6 @@ local function ColorPicker(win, label, initColor)
 	-- Maintain popup blocked regions while open
 	if state.open then
 		win._widgetBlockedRegions = { popupBounds }
-		-- Register popup click shape with focus weight 0 (no focus change)
-		win:AddClickShape(ctx.widgetKey .. "_popup", {
-			type = "rectangle",
-			x = popupBounds.x,
-			y = popupBounds.y,
-			w = popupBounds.w,
-			h = popupBounds.h,
-		}, 0, { type = "popup", widgetKey = ctx.widgetKey })
 	end
 
 	-- Toggle popup on field click
@@ -183,7 +175,6 @@ local function ColorPicker(win, label, initColor)
 		if not inField and not inPopup then
 			state.open = false
 			win._widgetBlockedRegions = {}
-			win:RemoveClickShape(ctx.widgetKey .. "_popup")
 		end
 	end
 
