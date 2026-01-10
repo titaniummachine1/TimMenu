@@ -41,9 +41,11 @@ function Utils.GetWindowUnderMouse(order, windows, x, y)
 		local key = order[i]
 		local win = windows[key]
 		if win and win:_HitTest(x, y) then
+			input.SetMouseInputEnabled(false)
 			return key
 		end
 	end
+	input.SetMouseInputEnabled(false)
 	return nil
 end
 
