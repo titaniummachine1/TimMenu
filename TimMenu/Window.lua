@@ -303,6 +303,27 @@ function Window:resetCursor()
 	self.H = Globals.Defaults.DEFAULT_H
 	-- Clear sector sizes to allow sectors to shrink each frame
 	self._sectorSizes = {}
+
+	-- Register main window click shapes
+	local titleHeight = Globals.Defaults.TITLE_BAR_HEIGHT
+
+	-- Title bar - high focus weight for dragging
+	self:AddClickShape("title_bar", {
+		type = "rectangle",
+		x = self.X,
+		y = self.Y,
+		w = self.W,
+		h = titleHeight,
+	}, 2, { type = "title_bar" })
+
+	-- Content area - normal focus weight
+	self:AddClickShape("content_area", {
+		type = "rectangle",
+		x = self.X,
+		y = self.Y + titleHeight,
+		w = self.W,
+		h = self.H,
+	}, 1, { type = "content_area" })
 end
 
 return Window

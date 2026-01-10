@@ -300,9 +300,20 @@ local function _TimMenu_GlobalDraw()
 	for i = #TimMenuGlobal.order, 1, -1 do
 		local key = TimMenuGlobal.order[i]
 		local win = TimMenuGlobal.windows[key]
-		if win and win.visible and win:_HitTest(mouseX, mouseY) then
-			focusedWindowKey = key
-			break
+		if win and win.visible then
+			-- Check if window has any click shapes at this point (popup-aware)
+			local shapeId, shapeData = win:GetClickShapeAt(mouseX, mouseY)
+			if shapeId then
+				-- Found a click shape - check if it should change focus
+				if win:ShouldChangeFocus(mouseX, mouseY) then
+					focusedWindowKey = key
+					break
+				end
+			elseif win:_HitTest(mouseX, mouseY) then
+				-- Fallback to traditional hit testing for non-shape areas
+				focusedWindowKey = key
+				break
+			end
 		end
 	end
 
