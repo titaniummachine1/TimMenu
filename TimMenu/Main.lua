@@ -278,7 +278,6 @@ local function _TimMenu_GlobalDraw()
 
 	local mouseX, mouseY = table.unpack(input.GetMousePos())
 	TimMenuGlobal.mouseX, TimMenuGlobal.mouseY = mouseX, mouseY
-	local focusedWindowKey = nil
 
 	local currentFrame = globals.FrameCount()
 	local keysToRemove = {}
@@ -297,20 +296,39 @@ local function _TimMenu_GlobalDraw()
 		end
 	end
 
+	-- PRIMARY FOCUS LOOP: Top-to-bottom search for window under mouse
+	local windowUnderMouse = nil
+	local mousePressed = input.IsButtonPressed(MOUSE_LEFT)
+
 	for i = #TimMenuGlobal.order, 1, -1 do
 		local key = TimMenuGlobal.order[i]
 		local win = TimMenuGlobal.windows[key]
 		if win and win.visible and win:_HitTest(mouseX, mouseY) then
-			focusedWindowKey = key
-			break
+			windowUnderMouse = key
+			break -- FOUND THE TOPMOST OWNER. STOP SEARCHING.
 		end
 	end
 
+	-- Handle focus changes only when clicking
+	if mousePressed and windowUnderMouse then
+		-- Bring the owner window to front
+		if TimMenuGlobal.order[#TimMenuGlobal.order] ~= windowUnderMouse then
+			for j, v_key in ipairs(TimMenuGlobal.order) do
+				if v_key == windowUnderMouse then
+					table.remove(TimMenuGlobal.order, j)
+					break
+				end
+			end
+			table.insert(TimMenuGlobal.order, windowUnderMouse)
+		end
+	end
+
+	-- Update logic for all visible windows
 	for i = 1, #TimMenuGlobal.order do
 		local key = TimMenuGlobal.order[i]
 		local win = TimMenuGlobal.windows[key]
 		if win and win.visible then
-			local isFocused = (key == focusedWindowKey)
+			local isFocused = (key == windowUnderMouse)
 			win:_UpdateLogic(
 				mouseX,
 				mouseY,
@@ -319,25 +337,6 @@ local function _TimMenu_GlobalDraw()
 				input.IsButtonDown(MOUSE_LEFT),
 				input.IsButtonReleased(MOUSE_LEFT)
 			)
-
-			-- Only change focus if window allows it (prevents popup focus stealing)
-			-- AND no widget has consumed the click
-			if
-				isFocused
-				and input.IsButtonPressed(MOUSE_LEFT)
-				and win:ShouldChangeFocus(mouseX, mouseY)
-				and not Globals.isClickConsumed
-			then
-				if TimMenuGlobal.order[#TimMenuGlobal.order] ~= key then
-					for j, v_key in ipairs(TimMenuGlobal.order) do
-						if v_key == key then
-							table.remove(TimMenuGlobal.order, j)
-							break
-						end
-					end
-					table.insert(TimMenuGlobal.order, key)
-				end
-			end
 		end
 	end
 
@@ -357,9 +356,6 @@ local function _TimMenu_GlobalDraw()
 			Widgets.Tooltip.ProcessWindowTooltips(win)
 		end
 	end
-
-	-- Reset click consumption flag at end of frame
-	Globals.isClickConsumed = false
 
 	if not reRegistered then
 		callbacks.Unregister("Draw", "zTimMenu_GlobalDraw")

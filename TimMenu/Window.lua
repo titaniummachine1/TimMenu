@@ -76,16 +76,16 @@ end
 
 --- Hit test: is a point inside this window (including title bar, content area, and popups)?
 function Window:_HitTest(x, y)
-	-- Basic window bounds (title and content)
+	-- Check main window bounds (title bar + content area)
 	local titleHeight = Globals.Defaults.TITLE_BAR_HEIGHT
-	local basicBounds = x >= self.X and x <= self.X + self.W and y >= self.Y and y <= self.Y + titleHeight + self.H
+	local mainBounds = x >= self.X and x <= self.X + self.W and y >= self.Y and y <= self.Y + titleHeight + self.H
 
-	-- If basic bounds pass, return true
-	if basicBounds then
+	-- If main bounds pass, return true
+	if mainBounds then
 		return true
 	end
 
-	-- Check if point is in any widget blocked regions (popups)
+	-- Check if point is in any popup regions (extended volume)
 	if self._widgetBlockedRegions then
 		for _, region in ipairs(self._widgetBlockedRegions) do
 			if x >= region.x and x <= region.x + region.w and y >= region.y and y <= region.y + region.h then
