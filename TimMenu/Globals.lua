@@ -129,6 +129,11 @@ Globals.LayersPerGroup = 10
 -- Popup layer that's always on top (above all sectors)
 Globals.POPUP_LAYER_BASE = 1000
 
+-- Global click consumption flag to prevent race conditions
+-- When true, indicates a widget has already handled the click
+-- Window manager should respect this and not change focus
+Globals.isClickConsumed = false
+
 -- Preload interactive widget images
 local ImgDecoder = require("TimMenu.images.imageDecoder")
 Globals.Images = Globals.Images or {}

@@ -321,7 +321,13 @@ local function _TimMenu_GlobalDraw()
 			)
 
 			-- Only change focus if window allows it (prevents popup focus stealing)
-			if isFocused and input.IsButtonPressed(MOUSE_LEFT) and win:ShouldChangeFocus(mouseX, mouseY) then
+			-- AND no widget has consumed the click
+			if
+				isFocused
+				and input.IsButtonPressed(MOUSE_LEFT)
+				and win:ShouldChangeFocus(mouseX, mouseY)
+				and not Globals.isClickConsumed
+			then
 				if TimMenuGlobal.order[#TimMenuGlobal.order] ~= key then
 					for j, v_key in ipairs(TimMenuGlobal.order) do
 						if v_key == key then
@@ -351,6 +357,9 @@ local function _TimMenu_GlobalDraw()
 			Widgets.Tooltip.ProcessWindowTooltips(win)
 		end
 	end
+
+	-- Reset click consumption flag at end of frame
+	Globals.isClickConsumed = false
 
 	if not reRegistered then
 		callbacks.Unregister("Draw", "zTimMenu_GlobalDraw")

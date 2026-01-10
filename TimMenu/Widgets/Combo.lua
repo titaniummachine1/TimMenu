@@ -164,6 +164,8 @@ local function Combo(win, label, selected, options)
 				local idx = math.floor((input.GetMousePos()[2] - popupBounds.y) / height) + 1
 				if idx >= 1 and idx <= #options then
 					entry.selected[idx] = not entry.selected[idx]
+					-- Consume the click to prevent window focus changes
+					WidgetBase.ConsumeClick()
 				end
 			else
 				entry.open = false

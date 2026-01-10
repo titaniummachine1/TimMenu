@@ -111,4 +111,10 @@ function WidgetBase.MeasureText(text)
 	return draw.GetTextSize(text)
 end
 
+--- Mark the current click as consumed by a widget
+--- This prevents the window manager from changing focus
+function WidgetBase.ConsumeClick()
+	Globals.isClickConsumed = true
+end
+
 return WidgetBase

@@ -155,6 +155,8 @@ local function Dropdown(win, label, selectedIndex, options)
 						entry.selected = idx
 						entry.open = false
 						win._widgetBlockedRegions = {}
+						-- Consume the click to prevent window focus changes
+						WidgetBase.ConsumeClick()
 					end
 				else
 					entry.open = false
