@@ -25,9 +25,22 @@ function Interaction.IsHovered(win, bounds)
 		return false
 	end
 
-	-- Block if covered by higher windows (using shape-aware testing)
-	if Utils.IsPointBlocked(TimMenuGlobal.order, TimMenuGlobal.windows, mX, mY, win.id) then
-		return false
+	-- Use unified hit detection: check if any window above this one claims the point
+	local currentWindowIndex = 0
+	for i, key in ipairs(TimMenuGlobal.order) do
+		if key == win.id then
+			currentWindowIndex = i
+			break
+		end
+	end
+
+	-- Check windows above this one (top-to-bottom)
+	for i = #TimMenuGlobal.order, currentWindowIndex + 1, -1 do
+		local key = TimMenuGlobal.order[i]
+		local higherWin = TimMenuGlobal.windows[key]
+		if higherWin and higherWin.visible and higherWin:_HitTest(mX, mY) then
+			return false -- Blocked by higher window
+		end
 	end
 
 	-- Check if element is within blocked regions (popups)
