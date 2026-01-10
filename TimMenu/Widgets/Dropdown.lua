@@ -89,15 +89,36 @@ local function Dropdown(win, label, selectedIndex, options)
 	local arrowW, arrowH = draw.GetTextSize(arrowChar)
 	local height = math.max(txtH, arrowH) + pad * 2
 	local arrowBoxW = height
+
+	-- Start with title width
 	local width = txtW + pad * 2 + arrowBoxW
 
-	-- Use WidgetBase for setup (layout, counter, bounds, key)
+	-- Expand if any option is wider
+	for _, opt in ipairs(options) do
+		local optW, _ = draw.GetTextSize(opt)
+		local optWidth = optW + pad * 2 + arrowBoxW
+		if optWidth > width then
+			width = optWidth
+		end
+	end
+
+	-- Use same width for popup
+	local popupWidth = width
+
 	local ctx = WidgetBase.Setup(win, "Dropdown", label, width, height)
+
+	-- Ensure popup doesn't go off screen
+	if entry.open then
+		local screenW = draw.GetScreenSize()
+		if ctx.absX + popupWidth > screenW then
+			popupWidth = screenW - ctx.absX - 10 -- 10px margin from edge
+		end
+	end
 
 	-- Unified interaction processing for main field
 	local hovered, pressed, clicked = WidgetBase.ProcessInteraction(ctx, entry.open)
 	local listH = #options * height
-	local popupBounds = { x = ctx.absX, y = ctx.absY + height, w = width, h = listH }
+	local popupBounds = { x = ctx.absX, y = ctx.absY + height, w = popupWidth, h = listH }
 
 	-- Maintain popup blocked regions while open
 	if entry.open then
@@ -153,7 +174,7 @@ local function Dropdown(win, label, selectedIndex, options)
 		width,
 		height,
 		pad,
-		label,
+		options[entry.selected] or label,
 		entry.open,
 		hovered,
 		arrowW,
@@ -166,14 +187,14 @@ local function Dropdown(win, label, selectedIndex, options)
 		local popupLayer = Globals.POPUP_LAYER_BASE
 
 		-- Popup background
-		win:QueueDrawAtLayer(popupLayer, DrawDropdownPopupBackground, win, popupX, popupY, width, listH)
+		win:QueueDrawAtLayer(popupLayer, DrawDropdownPopupBackground, win, popupX, popupY, popupWidth, listH)
 
 		-- Popup items
 		for i, opt in ipairs(options) do
 			local isH = Interaction.IsHovered(win, {
 				x = ctx.absX,
 				y = ctx.absY + height + (i - 1) * height,
-				w = width,
+				w = popupWidth,
 				h = height,
 			})
 			win:QueueDrawAtLayer(
@@ -182,7 +203,7 @@ local function Dropdown(win, label, selectedIndex, options)
 				win,
 				popupX,
 				popupY + (i - 1) * height,
-				width,
+				popupWidth,
 				height,
 				pad,
 				opt,
@@ -192,7 +213,7 @@ local function Dropdown(win, label, selectedIndex, options)
 		end
 
 		-- Popup outline
-		win:QueueDrawAtLayer(popupLayer, DrawDropdownPopupOutline, win, popupX, popupY, width, listH)
+		win:QueueDrawAtLayer(popupLayer, DrawDropdownPopupOutline, win, popupX, popupY, popupWidth, listH)
 	end
 
 	return entry.selected

@@ -16,7 +16,6 @@ function DrawManager.Enqueue(windowId, layer, fn, ...)
 		seq = DrawManager._nextSeq,
 	})
 end
-
 --- Flush all queued draw calls in proper back-to-front order
 ---@param zOrder table an array of window IDs in z-order (back to front)
 function DrawManager.Flush(zOrder)

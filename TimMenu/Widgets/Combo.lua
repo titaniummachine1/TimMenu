@@ -91,15 +91,46 @@ local function Combo(win, label, selected, options)
 	local arrowW, arrowH = draw.GetTextSize(arrowChar)
 	local height = math.max(txtH, arrowH) + pad * 2
 	local arrowBoxW = height
+
+	-- Start with title width
 	local width = txtW + pad * 2 + arrowBoxW
+
+	-- Expand if any option is wider (account for checkbox space)
+	for _, opt in ipairs(options) do
+		local optW, _ = draw.GetTextSize(opt)
+		local optWidth = optW + pad * 2 + boxSize + pad -- extra space for checkbox
+		if optWidth > width then
+			width = optWidth
+		end
+	end
+
+	-- Use same width for popup
+	local popupWidth = width
+
+	-- Create display text for selected items
+	local displayText = label
+	for i, selected in ipairs(entry.selected) do
+		if selected then
+			displayText = options[i]
+			break
+		end
+	end
 
 	-- Use WidgetBase for setup
 	local ctx = WidgetBase.Setup(win, "Combo", label, width, height)
 
+	-- Ensure popup doesn't go off screen
+	if entry.open then
+		local screenW = draw.GetScreenSize()
+		if ctx.absX + popupWidth > screenW then
+			popupWidth = screenW - ctx.absX - 10 -- 10px margin from edge
+		end
+	end
+
 	-- Unified interaction for main combo field
 	local hovered, pressed, clicked = WidgetBase.ProcessInteraction(ctx, entry.open)
 	local listH = #options * height
-	local popupBounds = { x = ctx.absX, y = ctx.absY + height, w = width, h = listH }
+	local popupBounds = { x = ctx.absX, y = ctx.absY + height, w = popupWidth, h = listH }
 
 	-- Maintain popup blocked regions while open
 	if entry.open then
@@ -151,7 +182,7 @@ local function Combo(win, label, selected, options)
 		width,
 		height,
 		pad,
-		label,
+		displayText,
 		entry.open,
 		hovered,
 		arrowW,
@@ -164,14 +195,14 @@ local function Combo(win, label, selected, options)
 		local popupLayer = Globals.POPUP_LAYER_BASE
 
 		-- Popup background
-		win:QueueDrawAtLayer(popupLayer, DrawComboPopupBackground, win, px, py, width, listH)
+		win:QueueDrawAtLayer(popupLayer, DrawComboPopupBackground, win, px, py, popupWidth, listH)
 
 		-- Popup items
 		for i, opt in ipairs(options) do
 			local isH = Interaction.IsHovered(win, {
 				x = ctx.absX,
 				y = ctx.absY + height + (i - 1) * height,
-				w = width,
+				w = popupWidth,
 				h = height,
 			})
 			win:QueueDrawAtLayer(
@@ -180,7 +211,7 @@ local function Combo(win, label, selected, options)
 				win,
 				px,
 				py + (i - 1) * height,
-				width,
+				popupWidth,
 				height,
 				pad,
 				opt,
@@ -191,7 +222,7 @@ local function Combo(win, label, selected, options)
 		end
 
 		-- Popup outline
-		win:QueueDrawAtLayer(popupLayer, DrawComboPopupOutline, win, px, py, width, listH)
+		win:QueueDrawAtLayer(popupLayer, DrawComboPopupOutline, win, px, py, popupWidth, listH)
 	end
 
 	return entry.selected
