@@ -1,45 +1,143 @@
-local Utils = require("TimMenu.Utils")
-local Globals = require("TimMenu.Globals")
-
 local Common = {}
 
 --------------------------------------------------------------------------------------
--- Library Loading
+-- Standalone Input Helper (Credit: LNXlib for inspiration)
 --------------------------------------------------------------------------------------
 
-local function requireLNXlib()
-	local loaded, Lib = pcall(require, "LNXlib")
-	if not loaded then
-		error("TimMenu requires LNXlib. Please install LNXlib before loading TimMenu.")
-	end
+-- Key name mapping for common keys (using actual numeric codes)
+local KeyNames = {
+	-- Mouse buttons
+	[1] = "MOUSE_LEFT",
+	[2] = "MOUSE_RIGHT",
+	[3] = "MOUSE_MIDDLE",
+	[4] = "MOUSE_4",
+	[5] = "MOUSE_5",
 
-	if type(Lib.GetVersion) ~= "function" then
-		error("TimMenu requires LNXlib >= 1.0 (GetVersion missing). Update LNXlib before loading TimMenu.")
-	end
+	-- Letters (A-Z = 65-90)
+	[65] = "A",
+	[66] = "B",
+	[67] = "C",
+	[68] = "D",
+	[69] = "E",
+	[70] = "F",
+	[71] = "G",
+	[72] = "H",
+	[73] = "I",
+	[74] = "J",
+	[75] = "K",
+	[76] = "L",
+	[77] = "M",
+	[78] = "N",
+	[79] = "O",
+	[80] = "P",
+	[81] = "Q",
+	[82] = "R",
+	[83] = "S",
+	[84] = "T",
+	[85] = "U",
+	[86] = "V",
+	[87] = "W",
+	[88] = "X",
+	[89] = "Y",
+	[90] = "Z",
 
-	if Lib.GetVersion() < 1.0 then
-		error("TimMenu requires LNXlib >= 1.0. Update LNXlib before loading TimMenu.")
-	end
+	-- Numbers (0-9 = 48-57)
+	[48] = "0",
+	[49] = "1",
+	[50] = "2",
+	[51] = "3",
+	[52] = "4",
+	[53] = "5",
+	[54] = "6",
+	[55] = "7",
+	[56] = "8",
+	[57] = "9",
 
-	return Lib
-end
+	-- Numpad (256-271)
+	[256] = "NUMPAD_0",
+	[257] = "NUMPAD_1",
+	[258] = "NUMPAD_2",
+	[259] = "NUMPAD_3",
+	[260] = "NUMPAD_4",
+	[261] = "NUMPAD_5",
+	[262] = "NUMPAD_6",
+	[263] = "NUMPAD_7",
+	[264] = "NUMPAD_8",
+	[265] = "NUMPAD_9",
+	[266] = "NUMPAD_MULTIPLY",
+	[267] = "NUMPAD_ADD",
+	[268] = "NUMPAD_ENTER",
+	[269] = "NUMPAD_SUBTRACT",
+	[270] = "NUMPAD_DECIMAL",
+	[271] = "NUMPAD_DIVIDE",
 
-local Lib = requireLNXlib()
+	-- Function keys (280-291)
+	[280] = "F1",
+	[281] = "F2",
+	[282] = "F3",
+	[283] = "F4",
+	[284] = "F5",
+	[285] = "F6",
+	[286] = "F7",
+	[287] = "F8",
+	[288] = "F9",
+	[289] = "F10",
+	[290] = "F11",
+	[291] = "F12",
 
--- Expose required functionality
-Common.Lib = Lib
-Common.Fonts = Lib.UI.Fonts
-Common.KeyHelper = Lib.Utils.KeyHelper
-Common.Input = Lib.Utils.Input
-Common.Timer = Lib.Utils.Timer
-Common.Log = Lib.Utils.Logger.new("TimMenu")
-Common.Notify = Lib.UI.Notify
-Common.Math = Lib.Utils.Math
-Common.Conversion = Lib.Utils.Conversion
+	-- Special keys (actual numeric codes)
+	[32] = "SPACE",
+	[13] = "ENTER",
+	[27] = "ESCAPE",
+	[8] = "BACKSPACE",
+	[9] = "TAB",
+	[20] = "CAPSLOCK",
+	[16] = "SHIFT",
+	[17] = "CTRL",
+	[18] = "ALT",
+	[59] = "SEMICOLON",
+	[39] = "APOSTROPHE",
+	[96] = "BACKQUOTE",
+	[44] = "COMMA",
+	[46] = "PERIOD",
+	[47] = "SLASH",
+	[92] = "BACKSLASH",
+	[45] = "MINUS",
+	[61] = "EQUAL",
+	[219] = "LBRACKET",
+	[221] = "RBRACKET",
+	[186] = "SEMICOLON",
+	[222] = "APOSTROPHE",
+	[192] = "BACKQUOTE",
+
+	-- Arrow keys
+	[200] = "UP",
+	[208] = "DOWN",
+	[203] = "LEFT",
+	[205] = "RIGHT",
+
+	-- Page/Home/End keys
+	[201] = "PAGE_UP",
+	[207] = "PAGE_DOWN",
+	[199] = "HOME",
+	[211] = "END",
+	[210] = "INSERT",
+	[212] = "DELETE",
+}
+
+-- Simple input helper
+Common.Input = {
+	GetKeyName = function(keyCode)
+		return KeyNames[keyCode] or ("UNKNOWN_" .. tostring(keyCode))
+	end,
+}
 
 --------------------------------------------------------------------------------
 -- Common Functions
 --------------------------------------------------------------------------------
+
+local Utils = require("TimMenu.Utils")
+local Globals = require("TimMenu.Globals")
 
 function Common.Refresh()
 	package.loaded["TimMenu"] = nil
