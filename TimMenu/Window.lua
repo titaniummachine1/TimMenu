@@ -1,6 +1,7 @@
 local Common = require("TimMenu.Common")
 local Globals = require("TimMenu.Globals")
 local DrawManager = require("TimMenu.DrawManager")
+local ShapeUtils = require("TimMenu.ShapeUtils")
 local lmbx = globals -- alias for Lmaobox API
 
 local Window = {}
@@ -59,6 +60,8 @@ function Window.new(params)
 	self.lineHeight = 0
 	-- Initialize per-widget blocking regions for popup widgets
 	self._widgetBlockedRegions = {}
+	-- Initialize click shapes for precise hit testing
+	self._clickShapes = {}
 	self._requestedNextLineSpacing = nil
 	return self
 end
@@ -176,6 +179,59 @@ function Window:AddWidget(width, height)
 	return x, y
 end
 
+--- Register a click shape for precise hit testing
+---@param id string Unique identifier for this shape
+---@param shape table Shape definition (type, bounds, etc.)
+---@param focusWeight number Focus priority (0=no focus change, 1=normal, 2=high)
+---@param metadata table Optional additional data
+function Window:AddClickShape(id, shape, focusWeight, metadata)
+	focusWeight = focusWeight or 1
+	metadata = metadata or {}
+
+	self._clickShapes[id] = {
+		shape = shape,
+		focusWeight = focusWeight,
+		metadata = metadata,
+	}
+end
+
+--- Remove a click shape by ID
+---@param id string Shape identifier to remove
+function Window:RemoveClickShape(id)
+	self._clickShapes[id] = nil
+end
+
+--- Get the click shape at a specific point
+---@param x number X coordinate
+---@param y number Y coordinate
+---@return string|nil shapeId, table|nil shapeData
+function Window:GetClickShapeAt(x, y)
+	for id, shapeData in pairs(self._clickShapes) do
+		if ShapeUtils.PointInShape(x, y, shapeData.shape) then
+			return id, shapeData
+		end
+	end
+	return nil, nil
+end
+
+--- Check if clicking at this point should change focus
+---@param x number X coordinate
+---@param y number Y coordinate
+---@return boolean
+function Window:ShouldChangeFocus(x, y)
+	local _, shapeData = self:GetClickShapeAt(x, y)
+	return shapeData and shapeData.focusWeight > 0
+end
+
+--- Get the focus weight of a click shape at a point
+---@param x number X coordinate
+---@param y number Y coordinate
+---@return number
+function Window:GetFocusWeight(x, y)
+	local _, shapeData = self:GetClickShapeAt(x, y)
+	return shapeData and shapeData.focusWeight or 0
+end
+
 --- Provide a simple way to "new line" to place subsequent widgets below
 --- Resets horizontal position and advances vertically.
 function Window:NextLine(spacing)
@@ -238,6 +294,8 @@ function Window:resetCursor()
 	self._requestedNextLineSpacing = nil
 	-- Clear any widget blocking regions at start of frame
 	self._widgetBlockedRegions = {}
+	-- Clear click shapes at start of frame (they're re-registered each frame)
+	self._clickShapes = {}
 	-- Clear header tabs flag so titles center if no header tabs
 	self._hasHeaderTabs = false
 	-- Reset window size to defaults to allow shrinking

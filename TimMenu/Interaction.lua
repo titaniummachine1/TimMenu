@@ -17,7 +17,7 @@ local function inBounds(x, y, b)
 end
 
 ----------------------------------------------------
--- Public: Z-aware hover check
+-- Public: Z-aware hover check with shape support
 ----------------------------------------------------
 function Interaction.IsHovered(win, bounds)
 	local mX, mY = table.unpack(input.GetMousePos())
@@ -25,7 +25,7 @@ function Interaction.IsHovered(win, bounds)
 		return false
 	end
 
-	-- Block if covered by higher windows
+	-- Block if covered by higher windows (using shape-aware testing)
 	if Utils.IsPointBlocked(TimMenuGlobal.order, TimMenuGlobal.windows, mX, mY, win.id) then
 		return false
 	end
@@ -35,8 +35,12 @@ function Interaction.IsHovered(win, bounds)
 	if win._widgetBlockedRegions then
 		local elementInBlockedRegion = false
 		for _, region in ipairs(win._widgetBlockedRegions) do
-			if bounds.x >= region.x and bounds.x + bounds.w <= region.x + region.w and
-			   bounds.y >= region.y and bounds.y + bounds.h <= region.y + region.h then
+			if
+				bounds.x >= region.x
+				and bounds.x + bounds.w <= region.x + region.w
+				and bounds.y >= region.y
+				and bounds.y + bounds.h <= region.y + region.h
+			then
 				elementInBlockedRegion = true
 				break
 			end
@@ -104,13 +108,36 @@ Interaction._PressState = PressState -- expose for debugging
 ---@param isPopupOpen boolean True if this widget is part of an open popup
 ---@return boolean hovered, boolean pressed, boolean clicked
 function Interaction.Process(win, widgetKey, bounds, isPopupOpen)
-	-- Determine hover with window and region blocking
+	-- Determine hover with window and region blocking (shape-aware)
 	local hovered = Interaction.IsHovered(win, bounds)
 	-- Press state
 	local pressed = hovered and input.IsButtonDown(MOUSE_LEFT)
 	-- One-shot click consumption
 	local clicked = Interaction.ConsumeWidgetClick(win, hovered, isPopupOpen)
 	return hovered, pressed, clicked
+end
+
+--- Check if a point should trigger focus change based on click shapes
+---@param win table Window object
+---@param x number X coordinate
+---@param y number Y coordinate
+---@return boolean
+function Interaction.ShouldChangeFocus(win, x, y)
+	-- First check if window has click shapes at this point
+	if win.ShouldChangeFocus and win:GetClickShapeAt(x, y) then
+		return win:ShouldChangeFocus(x, y)
+	end
+
+	-- Fallback to traditional logic - check if point is in popup blocked regions
+	if win._widgetBlockedRegions then
+		for _, region in ipairs(win._widgetBlockedRegions) do
+			if inBounds(x, y, region) then
+				return false -- Don't change focus if clicking popup area
+			end
+		end
+	end
+
+	return true -- Allow focus change for regular window areas
 end
 
 return Interaction

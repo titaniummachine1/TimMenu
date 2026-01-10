@@ -29,22 +29,47 @@ function Utils.IsPointBlocked(order, windows, x, y, currentWindowKey)
 			break
 		end
 		local win = windows[key]
-		if win and win.visible and win:_HitTest(x, y) then
-			return true
+		if win and win.visible then
+			-- Check click shapes first
+			local shapeId, shapeData = win:GetClickShapeAt(x, y)
+			if shapeId then
+				return true
+			end
+			-- Fallback to traditional hit testing
+			if win:_HitTest(x, y) then
+				return true
+			end
 		end
 	end
 	return false
 end
 
 function Utils.GetWindowUnderMouse(order, windows, x, y)
+	-- Find the topmost window with a click shape at the point
 	for i = #order, 1, -1 do
 		local key = order[i]
 		local win = windows[key]
-		if win and win:_HitTest(x, y) then
+		if win and win.visible then
+			-- Check if window has any click shapes at this point
+			local shapeId, shapeData = win:GetClickShapeAt(x, y)
+			if shapeId then
+				-- Found a click shape, return this window
+				input.SetMouseInputEnabled(false)
+				return key
+			end
+		end
+	end
+
+	-- Fallback to traditional hit testing if no click shapes found
+	for i = #order, 1, -1 do
+		local key = order[i]
+		local win = windows[key]
+		if win and win.visible and win:_HitTest(x, y) then
 			input.SetMouseInputEnabled(false)
 			return key
 		end
 	end
+
 	input.SetMouseInputEnabled(false)
 	return nil
 end

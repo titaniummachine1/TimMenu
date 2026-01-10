@@ -3,6 +3,7 @@
 local Globals = require("TimMenu.Globals")
 local Interaction = require("TimMenu.Interaction")
 local Tooltip = require("TimMenu.Widgets.Tooltip")
+local ShapeUtils = require("TimMenu.ShapeUtils")
 
 local WidgetBase = {}
 
@@ -37,6 +38,15 @@ function WidgetBase.Setup(win, widgetType, label, width, height)
 	-- Store bounds for tooltip detection
 	Tooltip.StoreWidgetBounds(win, widgetIndex, bounds)
 
+	-- Register click shape for precise hit testing
+	win:AddClickShape(widgetKey, {
+		type = "rectangle",
+		x = absX,
+		y = absY,
+		w = width,
+		h = height,
+	}, 1, { widgetType = widgetType, label = label })
+
 	return {
 		win = win,
 		widgetIndex = widgetIndex,
@@ -52,12 +62,31 @@ function WidgetBase.Setup(win, widgetType, label, width, height)
 	}
 end
 
---- Processes widget interaction (hover, press, click)
+--- Processes widget interaction (hover, press, click) using shape-aware testing
 ---@param ctx table Widget context from Setup()
 ---@param isPopupOpen boolean Whether widget has an open popup
 ---@return boolean hovered, boolean pressed, boolean clicked
 function WidgetBase.ProcessInteraction(ctx, isPopupOpen)
 	return Interaction.Process(ctx.win, ctx.widgetKey, ctx.bounds, isPopupOpen or false)
+end
+
+--- Get the hover state using window's shape-aware hit testing
+---@param win table Window object
+---@param mouseX number Mouse X coordinate
+---@param mouseY number Mouse Y coordinate
+---@return string|nil shapeId, table|nil shapeData
+function WidgetBase.GetHoveredPart(win, mouseX, mouseY)
+	return win:GetClickShapeAt(mouseX, mouseY)
+end
+
+--- Register a custom click shape for a widget
+---@param win table Window object
+---@param widgetKey string Unique widget identifier
+---@param shape table Shape definition
+---@param focusWeight number Focus priority (optional, defaults to 1)
+---@param metadata table Additional metadata (optional)
+function WidgetBase.RegisterClickShape(win, widgetKey, shape, focusWeight, metadata)
+	win:AddClickShape(widgetKey, shape, focusWeight, metadata)
 end
 
 --- Gets interaction state as a string for drawing

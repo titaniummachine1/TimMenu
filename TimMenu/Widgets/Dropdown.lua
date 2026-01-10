@@ -123,6 +123,14 @@ local function Dropdown(win, label, selectedIndex, options)
 	-- Maintain popup blocked regions while open
 	if entry.open then
 		win._widgetBlockedRegions = { popupBounds }
+		-- Register popup click shape with focus weight 0 (no focus change)
+		win:AddClickShape(ctx.widgetKey .. "_popup", {
+			type = "rectangle",
+			x = popupBounds.x,
+			y = popupBounds.y,
+			w = popupBounds.w,
+			h = popupBounds.h,
+		}, 0, { type = "popup", widgetKey = ctx.widgetKey })
 	end
 
 	-- Close popup on outside click using cached mouse position
@@ -155,10 +163,12 @@ local function Dropdown(win, label, selectedIndex, options)
 						entry.selected = idx
 						entry.open = false
 						win._widgetBlockedRegions = {}
+						win:RemoveClickShape(ctx.widgetKey .. "_popup")
 					end
 				else
 					entry.open = false
 					win._widgetBlockedRegions = {}
+					win:RemoveClickShape(ctx.widgetKey .. "_popup")
 				end
 			end
 		end
