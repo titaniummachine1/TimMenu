@@ -1,134 +1,84 @@
 local Common = {}
 
 --------------------------------------------------------------------------------------
--- Standalone Input Helper (Credit: LNXlib for inspiration)
+-- Standalone Input Helper (Fixed to use Engine Enums)
 --------------------------------------------------------------------------------------
 
--- Key name mapping for common keys (using actual numeric codes)
 local KeyNames = {
-	-- Mouse buttons
-	[1] = "MOUSE_LEFT",
-	[2] = "MOUSE_RIGHT",
-	[3] = "MOUSE_MIDDLE",
-	[4] = "MOUSE_4",
-	[5] = "MOUSE_5",
-
-	-- Letters (A-Z = 65-90)
-	[65] = "A",
-	[66] = "B",
-	[67] = "C",
-	[68] = "D",
-	[69] = "E",
-	[70] = "F",
-	[71] = "G",
-	[72] = "H",
-	[73] = "I",
-	[74] = "J",
-	[75] = "K",
-	[76] = "L",
-	[77] = "M",
-	[78] = "N",
-	[79] = "O",
-	[80] = "P",
-	[81] = "Q",
-	[82] = "R",
-	[83] = "S",
-	[84] = "T",
-	[85] = "U",
-	[86] = "V",
-	[87] = "W",
-	[88] = "X",
-	[89] = "Y",
-	[90] = "Z",
-
-	-- Numbers (0-9 = 48-57)
-	[48] = "0",
-	[49] = "1",
-	[50] = "2",
-	[51] = "3",
-	[52] = "4",
-	[53] = "5",
-	[54] = "6",
-	[55] = "7",
-	[56] = "8",
-	[57] = "9",
-
-	-- Numpad (256-271)
-	[256] = "NUMPAD_0",
-	[257] = "NUMPAD_1",
-	[258] = "NUMPAD_2",
-	[259] = "NUMPAD_3",
-	[260] = "NUMPAD_4",
-	[261] = "NUMPAD_5",
-	[262] = "NUMPAD_6",
-	[263] = "NUMPAD_7",
-	[264] = "NUMPAD_8",
-	[265] = "NUMPAD_9",
-	[266] = "NUMPAD_MULTIPLY",
-	[267] = "NUMPAD_ADD",
-	[268] = "NUMPAD_ENTER",
-	[269] = "NUMPAD_SUBTRACT",
-	[270] = "NUMPAD_DECIMAL",
-	[271] = "NUMPAD_DIVIDE",
-
-	-- Function keys (280-291)
-	[280] = "F1",
-	[281] = "F2",
-	[282] = "F3",
-	[283] = "F4",
-	[284] = "F5",
-	[285] = "F6",
-	[286] = "F7",
-	[287] = "F8",
-	[288] = "F9",
-	[289] = "F10",
-	[290] = "F11",
-	[291] = "F12",
-
-	-- Special keys (actual numeric codes)
-	[32] = "SPACE",
-	[13] = "ENTER",
-	[27] = "ESCAPE",
-	[8] = "BACKSPACE",
-	[9] = "TAB",
-	[20] = "CAPSLOCK",
-	[16] = "SHIFT",
-	[17] = "CTRL",
-	[18] = "ALT",
-	[59] = "SEMICOLON",
-	[39] = "APOSTROPHE",
-	[96] = "BACKQUOTE",
-	[44] = "COMMA",
-	[46] = "PERIOD",
-	[47] = "SLASH",
-	[92] = "BACKSLASH",
-	[45] = "MINUS",
-	[61] = "EQUAL",
-	[219] = "LBRACKET",
-	[221] = "RBRACKET",
-	[186] = "SEMICOLON",
-	[222] = "APOSTROPHE",
-	[192] = "BACKQUOTE",
-
-	-- Arrow keys
-	[200] = "UP",
-	[208] = "DOWN",
-	[203] = "LEFT",
-	[205] = "RIGHT",
-
-	-- Page/Home/End keys
-	[201] = "PAGE_UP",
-	[207] = "PAGE_DOWN",
-	[199] = "HOME",
-	[211] = "END",
-	[210] = "INSERT",
-	[212] = "DELETE",
+	[KEY_SEMICOLON] = "SEMICOLON",
+	[KEY_APOSTROPHE] = "APOSTROPHE",
+	[KEY_BACKQUOTE] = "BACKQUOTE",
+	[KEY_COMMA] = "COMMA",
+	[KEY_PERIOD] = "PERIOD",
+	[KEY_SLASH] = "SLASH",
+	[KEY_BACKSLASH] = "BACKSLASH",
+	[KEY_MINUS] = "MINUS",
+	[KEY_EQUAL] = "EQUAL",
+	[KEY_ENTER] = "ENTER",
+	[KEY_SPACE] = "SPACE",
+	[KEY_BACKSPACE] = "BACKSPACE",
+	[KEY_TAB] = "TAB",
+	[KEY_CAPSLOCK] = "CAPSLOCK",
+	[KEY_NUMLOCK] = "NUMLOCK",
+	[KEY_ESCAPE] = "ESCAPE",
+	[KEY_SCROLLLOCK] = "SCROLLLOCK",
+	[KEY_INSERT] = "INSERT",
+	[KEY_DELETE] = "DELETE",
+	[KEY_HOME] = "HOME",
+	[KEY_END] = "END",
+	[KEY_PAGEUP] = "PAGEUP",
+	[KEY_PAGEDOWN] = "PAGEDOWN",
+	[KEY_BREAK] = "BREAK",
+	[KEY_LSHIFT] = "LSHIFT",
+	[KEY_RSHIFT] = "RSHIFT",
+	[KEY_LALT] = "LALT",
+	[KEY_RALT] = "RALT",
+	[KEY_LCONTROL] = "LCONTROL",
+	[KEY_RCONTROL] = "RCONTROL",
+	[KEY_UP] = "UP",
+	[KEY_LEFT] = "LEFT",
+	[KEY_DOWN] = "DOWN",
+	[KEY_RIGHT] = "RIGHT",
+	[MOUSE_LEFT] = "LMB",
+	[MOUSE_RIGHT] = "RMB",
+	[MOUSE_MIDDLE] = "MMB",
+	[MOUSE_4] = "MOUSE4",
+	[MOUSE_5] = "MOUSE5",
 }
+
+-- Automatically fill numbers 0-9 and A-Z using the same logic as LNXlib
+-- This maps the Engine Enums to strings correctly
+for i = KEY_0, KEY_9 do
+	KeyNames[i] = tostring(i - KEY_0)
+end
+
+for i = KEY_A, KEY_Z do
+	KeyNames[i] = string.char(65 + (i - KEY_A))
+end
+
+for i = KEY_PAD_0, KEY_PAD_9 do
+	KeyNames[i] = "KP_" .. tostring(i - KEY_PAD_0)
+end
+
+for i = KEY_F1, KEY_F12 do
+	KeyNames[i] = "F" .. tostring(i - KEY_F1 + 1)
+end
 
 -- Simple input helper
 Common.Input = {
 	GetKeyName = function(keyCode)
-		return KeyNames[keyCode] or ("UNKNOWN_" .. tostring(keyCode))
+		-- Return the mapped name, or the numeric ID if not found
+		return KeyNames[keyCode] or ("KEY_" .. tostring(keyCode))
+	end,
+
+	-- Helper to get what is currently being pressed (useful for binding keys)
+	GetPressedKey = function()
+		for i = KEY_FIRST, KEY_LAST do
+			if input.IsButtonDown(i) then
+				return i
+			end
+		end
+		return nil
 	end,
 }
 
