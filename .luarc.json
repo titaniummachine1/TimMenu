@@ -1,0 +1,19 @@
+{
+    "$schema": "https://raw.githubusercontent.com/sumneko/vscode-lua/master/setting/schema.json",
+    "Lua.runtime.version": "Lua 5.4",
+    "Lua.diagnostics.globals": [
+        "ImMenu",
+        "loadlib",
+        "warn"
+    ],
+    "Lua.runtime.pathStrict": false,
+    "Lua.workspace.library": [
+        ".vscode/Lmaobox-Annotations/library"
+    ],
+    "Lua.workspace.ignoreDir": [
+        "node_modules",
+        ".vscode"
+    ],
+    "Lua.workspace.checkThirdParty": false,
+    "Lua.telemetry.enable": false
+}

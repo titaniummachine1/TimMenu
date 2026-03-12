@@ -48,12 +48,14 @@ function Interaction.IsHovered(win, bounds)
 	if win._widgetBlockedRegions then
 		local elementInBlockedRegion = false
 		for _, region in ipairs(win._widgetBlockedRegions) do
-			if
-				bounds.x >= region.x
-				and bounds.x + bounds.w <= region.x + region.w
-				and bounds.y >= region.y
-				and bounds.y + bounds.h <= region.y + region.h
-			then
+			local withinXStart = bounds.x >= region.x
+			local withinXEnd = bounds.x + bounds.w <= region.x + region.w
+			local withinYStart = bounds.y >= region.y
+			local withinYEnd = bounds.y + bounds.h <= region.y + region.h
+
+			local isFullyInside = withinXStart and withinXEnd and withinYStart and withinYEnd
+
+			if isFullyInside then
 				elementInBlockedRegion = true
 				break
 			end

@@ -79,21 +79,21 @@ local function OnDraw_Menudemo1()
 		TimMenu.Tooltip("Click the color box to open the color picker")
 		TimMenu.NextLine()
 
-		-- First row: Demonstrate multiple widgets and alignment
+		-- First row: Two sectors side by side.
+		-- EndSector(true) = stay on same line; EndSector() = advance to next line.
 		TimMenu.BeginSector("Multi-Widget Area")
 		TimMenu.Text("Content in A")
 		TimMenu.NextLine()
 		cbState1 = TimMenu.Checkbox("Checkbox in A", cbState1)
 		TimMenu.NextLine()
 		TimMenu.Text("More text...")
-		TimMenu.EndSector()
+		TimMenu.EndSector(true) -- keep on same line, "Single Button" sector comes beside this
 
 		TimMenu.BeginSector("Single Button")
 		if TimMenu.Button("Button in B") then
 			print("[Menudemo1] Button B clicked!")
 		end
-		TimMenu.EndSector()
-		TimMenu.NextLine() -- End of the first row of sectors
+		TimMenu.EndSector() -- end of row: auto-advances to next line
 
 		-- Nested Sector Example
 		TimMenu.BeginSector("Nesting Container")
@@ -112,12 +112,9 @@ local function OnDraw_Menudemo1()
 		if TimMenu.Button("Action Button 3") then
 			print("[Menudemo1] Action Button 3 clicked!")
 		end
-
-		TimMenu.EndSector()
-		TimMenu.NextLine()
+		TimMenu.EndSector() -- inner sector ends, auto-advances within outer sector
 		TimMenu.Text("Also inside Container")
-		TimMenu.EndSector()
-		TimMenu.NextLine() -- End of Nesting Container block
+		TimMenu.EndSector() -- outer sector ends, auto-advances to next line in window
 
 		-- Separator line (outside sectors)
 		TimMenu.Separator()

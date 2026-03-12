@@ -123,11 +123,13 @@ local function _enqueueBorderDraw(win, layoutState, depth, size)
 end
 
 local function _finalizeCursorAndLayout(win, layoutState, width, rowHeight)
-	-- Treat sector as a single widget occupying the computed width/height
+	-- Treat sector as a single widget occupying the computed width/height.
+	-- Caller is responsible for calling NextLine() when they want to advance.
 	local horizontalSpacing = getHorizontalGap()
 	win.cursorX = layoutState.startX + width + horizontalSpacing
 	win.cursorY = layoutState.startY
 	local verticalGap = getVerticalGap()
+	-- Include verticalGap in lineHeight so the caller's NextLine() advances the full row height.
 	win.lineHeight = math.max(layoutState.preLineHeight or 0, rowHeight + verticalGap)
 
 	if #win._sectorStack > 0 then

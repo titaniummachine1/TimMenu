@@ -1,6 +1,7 @@
 local Globals = require("TimMenu.Globals")
 local Common = require("TimMenu.Common")
 local Popup = require("TimMenu.Layout.Popup")
+local Utils = require("TimMenu.Utils")
 
 local Tooltip = {}
 
@@ -124,7 +125,6 @@ function Tooltip.ProcessWindowTooltips(win)
 	end
 
 	local mouseX, mouseY = table.unpack(input.GetMousePos())
-	local Utils = require("TimMenu.Utils")
 
 	for index = #boundsList, 1, -1 do
 		local bounds = boundsList[index]

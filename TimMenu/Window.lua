@@ -78,7 +78,7 @@ end
 function Window:_HitTest(x, y)
 	-- Check main window bounds (title bar + content area)
 	local titleHeight = Globals.Defaults.TITLE_BAR_HEIGHT
-	local mainBounds = x >= self.X and x <= self.X + self.W and y >= self.Y and y <= self.Y + titleHeight + self.H
+	local mainBounds = x >= self.X and x <= self.X + self.W and y >= self.Y and y <= self.Y + self.H
 
 	-- If main bounds pass, return true
 	if mainBounds then
@@ -129,7 +129,7 @@ function Window:_Draw()
 	-- Background
 	Common.SetColor(Globals.Colors.Window)
 	-- Background covers title + content area (no extra padding)
-	Common.DrawFilledRect(self.X, self.Y + titleHeight, self.X + self.W, self.Y + titleHeight + self.H)
+	Common.DrawFilledRect(self.X, self.Y + titleHeight, self.X + self.W, self.Y + self.H)
 
 	-- Title bar
 	Common.SetColor(Globals.Colors.Title)
@@ -139,7 +139,7 @@ function Window:_Draw()
 	if Globals.Style.EnableWindowBorder then
 		Common.SetColor(Globals.Colors.WindowBorder)
 		-- Outline around full window including title and content area
-		Common.DrawOutlinedRect(self.X, self.Y, self.X + self.W, self.Y + titleHeight + self.H)
+		Common.DrawOutlinedRect(self.X, self.Y, self.X + self.W, self.Y + self.H)
 	end
 
 	-- Title text
@@ -172,7 +172,7 @@ function Window:AddWidget(width, height)
 	-- Update window dimensions if needed
 	self.W = math.max(self.W, x + width + padding)
 	self.lineHeight = math.max(self.lineHeight, height)
-	self.H = math.max(self.H, y + self.lineHeight)
+	self.H = math.max(self.H, y + self.lineHeight + padding)
 
 	-- Update cursor position for the *next* widget on this line
 	local horizontalSpacing = Globals.Style.ItemSpacingX or Globals.Defaults.ITEM_SPACING
