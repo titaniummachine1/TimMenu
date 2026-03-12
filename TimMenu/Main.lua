@@ -263,12 +263,12 @@ function TimMenu.BeginSector(label)
 	end, label)
 end
 
-function TimMenu.EndSector()
+function TimMenu.EndSector(sameLine)
 	local win = TimMenu.GetCurrentWindow()
 	if not win or not win._sectorStack or #win._sectorStack == 0 then
 		return
 	end
-	SectorWidget.End(win)
+	SectorWidget.End(win, sameLine)
 end
 
 local reRegistered = false

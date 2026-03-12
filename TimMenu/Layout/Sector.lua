@@ -122,13 +122,17 @@ local function _enqueueBorderDraw(win, layoutState, depth, size)
 	end)
 end
 
-local function _finalizeCursorAndLayout(win, layoutState, width, rowHeight)
+local function _finalizeCursorAndLayout(win, layoutState, width, rowHeight, sameLine)
 	-- Treat sector as a single widget occupying the computed width/height
 	local horizontalSpacing = getHorizontalGap()
 	win.cursorX = layoutState.startX + width + horizontalSpacing
 	win.cursorY = layoutState.startY
 	local verticalGap = getVerticalGap()
-	win.lineHeight = math.max(layoutState.preLineHeight or 0, rowHeight + verticalGap)
+	win.lineHeight = math.max(layoutState.preLineHeight or 0, rowHeight)
+
+	if not sameLine then
+		win:NextLine(verticalGap)
+	end
 
 	if #win._sectorStack > 0 then
 		local parentSector = win._sectorStack[#win._sectorStack]
@@ -236,7 +240,7 @@ function Sector.Begin(win, label)
 	end
 end
 
-function Sector.End(win)
+function Sector.End(win, sameLine)
 	if not win._sectorStack or #win._sectorStack == 0 then
 		return
 	end
@@ -263,7 +267,7 @@ function Sector.End(win)
 	win.QueueDrawAtLayer = layoutState.origQueue
 
 	-- Use calculated currentWidth/Height for layout/cursor updates, but persistent for drawing.
-	_finalizeCursorAndLayout(win, layoutState, persistentSize.width, rowHeight)
+	_finalizeCursorAndLayout(win, layoutState, persistentSize.width, rowHeight, sameLine)
 end
 
 return Sector
