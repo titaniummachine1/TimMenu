@@ -227,6 +227,11 @@ function Sector.Begin(win, label)
 	-- indent cursor for sector padding
 	win.cursorX = layoutState.startX + layoutState.padding
 	win.cursorY = layoutState.startY + layoutState.padding
+	if type(label) == "string" then
+		draw.SetFont(Globals.Style.Font)
+		local _, th = draw.GetTextSize(label)
+		win.cursorY = win.cursorY + math.ceil(th / 2)
+	end
 
 	-- Override QueueDrawAtLayer to apply per-sector layer offset
 	local depth = #win._sectorStack
