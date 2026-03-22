@@ -129,6 +129,13 @@ Globals.LayersPerGroup = 10
 -- Popup layer that's always on top (above all sectors)
 Globals.POPUP_LAYER_BASE = 1000
 
+-- Keybind modes
+Globals.KeybindModes = {
+	[0] = "Always On",
+	[1] = "Hold",
+	[2] = "Toggle",
+}
+
 -- Preload interactive widget images
 local ImgDecoder = require("TimMenu.images.imageDecoder")
 Globals.Images = Globals.Images or {}

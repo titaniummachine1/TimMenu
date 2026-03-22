@@ -8,6 +8,7 @@ local function Setup()
 			isLeftMouseDown = false,
 			wasLeftMouseDownLastFrame = false,
 		},
+		kbStates = {}, -- Store toggle states for keybinds { [key] = bool }
 	}
 end
 
@@ -271,8 +272,20 @@ function TimMenu.EndSector()
 	SectorWidget.End(win)
 end
 
+-- Update toggle states in GlobalDraw
+local function UpdateKeybindToggles()
+	-- This should be called once per frame. 
+	-- We iterate through all keys and update toggle state if pressed.
+	for code = 1, 255 do
+		if input.IsButtonPressed(code) then
+			TimMenuGlobal.kbStates[code] = not TimMenuGlobal.kbStates[code]
+		end
+	end
+end
+
 local reRegistered = false
 local function _TimMenu_GlobalDraw()
+	UpdateKeybindToggles()
 	TimMenuGlobal.InputState.wasLeftMouseDownLastFrame = TimMenuGlobal.InputState.isLeftMouseDown
 	TimMenuGlobal.InputState.isLeftMouseDown = input.IsButtonDown(MOUSE_LEFT)
 
@@ -410,6 +423,45 @@ function TimMenu.Tooltip(text)
 	return withCurrentWindow(function(win, text)
 		Widgets.Tooltip.AttachToLastWidget(win, text)
 	end, text)
+end
+
+-- --- Keybind System API ---
+
+--- Checks if a keybind is active based on its mode and state.
+---@param kbTable table|number { key = number, mode = number } or legacy keycode
+---@return boolean
+function TimMenu.IsKeybindActive(kbTable)
+	if not kbTable then return false end
+	
+	-- Legacy support
+	local key, mode
+	if type(kbTable) == "number" then
+		key = kbTable
+		mode = 1 -- Hold
+	elseif type(kbTable) == "table" then
+		key = kbTable.key or 0
+		mode = kbTable.mode or 0
+	else
+		return false
+	end
+
+	-- Always On
+	if mode == 0 then return true end
+	
+	-- No key bound
+	if key == 0 then return false end
+
+	-- Hold
+	if mode == 1 then
+		return input.IsButtonDown(key)
+	end
+
+	-- Toggle
+	if mode == 2 then
+		return TimMenuGlobal.kbStates[key] == true
+	end
+
+	return false
 end
 
 _G.TimMenu = TimMenu
