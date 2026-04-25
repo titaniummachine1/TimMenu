@@ -7,35 +7,113 @@ local lmbx = globals -- alias for Lmaobox API
 TimMenuSpawnGlobal = TimMenuSpawnGlobal or { nextIndex = 0 }
 local sharedSpawnState = TimMenuSpawnGlobal
 
-local function getDefaultSpawnPosition(windowWidth)
+local function getWindowRectForSpawn(win, fallbackHeight)
+	if type(win) ~= "table" then
+		return nil
+	end
+	local x = win.X
+	local y = win.Y
+	local w = win.W
+	local h = win.H
+	if type(x) ~= "number" or type(y) ~= "number" or type(w) ~= "number" or type(h) ~= "number" then
+		return nil
+	end
+	if h <= 0 then
+		h = fallbackHeight
+	end
+	if h < Globals.Defaults.TITLE_BAR_HEIGHT then
+		h = Globals.Defaults.TITLE_BAR_HEIGHT
+	end
+	return { x = x, y = y, w = w, h = h }
+end
+
+local function overlapArea(a, b)
+	local left = math.max(a.x, b.x)
+	local right = math.min(a.x + a.w, b.x + b.w)
+	if right <= left then
+		return 0
+	end
+	local top = math.max(a.y, b.y)
+	local bottom = math.min(a.y + a.h, b.y + b.h)
+	if bottom <= top then
+		return 0
+	end
+	return (right - left) * (bottom - top)
+end
+
+local function getCandidateObscureScore(candidateRect, fallbackHeight)
+	local totalOverlap = 0
+	if type(TimMenuGlobal) ~= "table" or type(TimMenuGlobal.windows) ~= "table" then
+		return totalOverlap
+	end
+
+	for _, win in pairs(TimMenuGlobal.windows) do
+		local winRect = getWindowRectForSpawn(win, fallbackHeight)
+		if winRect then
+			totalOverlap = totalOverlap + overlapArea(candidateRect, winRect)
+		end
+	end
+
+	return totalOverlap
+end
+
+local function randomInRange(minValue, maxValue)
+	if maxValue <= minValue then
+		return minValue
+	end
+	return math.random(minValue, maxValue)
+end
+
+local function getDefaultSpawnPosition(windowWidth, windowHeight)
 	local baseX = Globals.Defaults.DEFAULT_X
 	local baseY = Globals.Defaults.DEFAULT_Y
 	local padX = Globals.Defaults.WINDOW_CONTENT_PADDING
 	local padY = Globals.Defaults.WINDOW_CONTENT_PADDING
-	local stepX = windowWidth + padX
+	local estimatedHeight = windowHeight
+	if type(estimatedHeight) ~= "number" or estimatedHeight <= 0 then
+		estimatedHeight = Globals.Defaults.TITLE_BAR_HEIGHT + padY * 10
+	end
+	if estimatedHeight < Globals.Defaults.TITLE_BAR_HEIGHT then
+		estimatedHeight = Globals.Defaults.TITLE_BAR_HEIGHT
+	end
 
 	sharedSpawnState.nextIndex = (sharedSpawnState.nextIndex or 0) + 1
 	if sharedSpawnState.nextIndex > 10000 then
 		sharedSpawnState.nextIndex = 1
 	end
 
-	local spawnIndex = sharedSpawnState.nextIndex - 1
-	local columnCount = 6
+	local minX = padX
+	local minY = padY
+	local maxX = baseX + 300
+	local maxY = baseY + 200
 
-	local okScreenSize, screenW = pcall(draw.GetScreenSize)
-	if okScreenSize and type(screenW) == "number" and screenW > 0 and stepX > 0 then
-		local rightLimit = screenW - padX
-		local availableWidth = rightLimit - baseX
-		local computedColumns = math.floor(availableWidth / stepX)
-		columnCount = math.max(1, computedColumns)
+	local okScreenSize, screenW, screenH = pcall(draw.GetScreenSize)
+	if okScreenSize and type(screenW) == "number" and type(screenH) == "number" and screenW > 0 and screenH > 0 then
+		maxX = math.max(minX, math.floor(screenW - windowWidth - padX))
+		maxY = math.max(minY, math.floor(screenH - estimatedHeight - padY))
+	else
+		maxX = math.max(minX, baseX + 300)
+		maxY = math.max(minY, baseY + 200)
 	end
 
-	local column = spawnIndex % columnCount
-	local row = math.floor(spawnIndex / columnCount)
-	local spawnX = baseX + column * stepX
-	local spawnY = baseY + row * (Globals.Defaults.TITLE_BAR_HEIGHT + padY)
+	local bestX = randomInRange(minX, maxX)
+	local bestY = randomInRange(minY, maxY)
+	local bestRect = { x = bestX, y = bestY, w = windowWidth, h = estimatedHeight }
+	local bestScore = getCandidateObscureScore(bestRect, estimatedHeight)
 
-	return spawnX, spawnY
+	for _ = 2, 10 do
+		local testX = randomInRange(minX, maxX)
+		local testY = randomInRange(minY, maxY)
+		local testRect = { x = testX, y = testY, w = windowWidth, h = estimatedHeight }
+		local testScore = getCandidateObscureScore(testRect, estimatedHeight)
+		if testScore < bestScore then
+			bestScore = testScore
+			bestX = testX
+			bestY = testY
+		end
+	end
+
+	return bestX, bestY
 end
 
 local Window = {}
@@ -43,7 +121,8 @@ Window.__index = Window
 
 local function applyDefaults(params)
 	local defaultW = params.W or Globals.Defaults.DEFAULT_W
-	local defaultX, defaultY = getDefaultSpawnPosition(defaultW)
+	local defaultH = params.H or Globals.Defaults.DEFAULT_H
+	local defaultX, defaultY = getDefaultSpawnPosition(defaultW, defaultH)
 	-- Provide a fallback for each setting if not provided
 	return {
 		title = params.title or "Untitled",
