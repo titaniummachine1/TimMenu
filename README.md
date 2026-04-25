@@ -6,7 +6,7 @@
 
 ## Download Latest
 
-[![Download Latest](https://img.shields.io/github/downloads/titaniummachine1/TimMenu/total.svg?style=for-the-badge&logo=download&label=Download%20Latest)](https://github.com/titaniummachine1/TimMenu/releases/download/v1.8.8/TimMenu.lua)
+[![Download Latest](https://img.shields.io/github/downloads/titaniummachine1/TimMenu/total.svg?style=for-the-badge&logo=download&label=Download%20Latest)](https://github.com/titaniummachine1/TimMenu/archive/refs/tags/v1.8.8.zip)
 
 Terminator's Immediate-Mode Menu for Lmaobox
 
