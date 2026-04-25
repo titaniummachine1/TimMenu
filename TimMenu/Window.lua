@@ -4,18 +4,54 @@ local DrawManager = require("TimMenu.DrawManager")
 local ShapeUtils = require("TimMenu.ShapeUtils")
 local lmbx = globals -- alias for Lmaobox API
 
+TimMenuSpawnGlobal = TimMenuSpawnGlobal or { nextIndex = 0 }
+local sharedSpawnState = TimMenuSpawnGlobal
+
+local function getDefaultSpawnPosition(windowWidth)
+	local baseX = Globals.Defaults.DEFAULT_X
+	local baseY = Globals.Defaults.DEFAULT_Y
+	local padX = Globals.Defaults.WINDOW_CONTENT_PADDING
+	local padY = Globals.Defaults.WINDOW_CONTENT_PADDING
+	local stepX = windowWidth + padX
+
+	sharedSpawnState.nextIndex = (sharedSpawnState.nextIndex or 0) + 1
+	if sharedSpawnState.nextIndex > 10000 then
+		sharedSpawnState.nextIndex = 1
+	end
+
+	local spawnIndex = sharedSpawnState.nextIndex - 1
+	local columnCount = 6
+
+	local okScreenSize, screenW = pcall(draw.GetScreenSize)
+	if okScreenSize and type(screenW) == "number" and screenW > 0 and stepX > 0 then
+		local rightLimit = screenW - padX
+		local availableWidth = rightLimit - baseX
+		local computedColumns = math.floor(availableWidth / stepX)
+		columnCount = math.max(1, computedColumns)
+	end
+
+	local column = spawnIndex % columnCount
+	local row = math.floor(spawnIndex / columnCount)
+	local spawnX = baseX + column * stepX
+	local spawnY = baseY + row * (Globals.Defaults.TITLE_BAR_HEIGHT + padY)
+
+	return spawnX, spawnY
+end
+
 local Window = {}
 Window.__index = Window
 
 local function applyDefaults(params)
+	local defaultW = params.W or Globals.Defaults.DEFAULT_W
+	local defaultX, defaultY = getDefaultSpawnPosition(defaultW)
 	-- Provide a fallback for each setting if not provided
 	return {
 		title = params.title or "Untitled",
 		id = params.id or params.title,
 		visible = (params.visible == nil) and true or params.visible,
-		X = params.X or (Globals.Defaults.DEFAULT_X + math.random(0, 150)),
-		Y = params.Y or (Globals.Defaults.DEFAULT_Y + math.random(0, 50)),
-		W = params.W or Globals.Defaults.DEFAULT_W,
+		X = params.X or defaultX,
+		Y = params.Y or defaultY,
+		W = defaultW,
 		H = params.H or Globals.Defaults.DEFAULT_H,
 	}
 end

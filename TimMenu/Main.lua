@@ -25,6 +25,28 @@ local Widgets = require("TimMenu.Widgets")
 
 local nextWidgetFont = nil
 
+TimMenu.Options = {
+	Visibility = {
+		LboxIndependent = true,
+	},
+}
+
+function TimMenu.SetVisibilityOptions(options)
+	if type(options) ~= "table" then
+		return
+	end
+	local visibilityOptions = TimMenu.Options.Visibility
+	if options.LboxIndependent ~= nil then
+		visibilityOptions.LboxIndependent = options.LboxIndependent and true or false
+	end
+end
+
+function TimMenu.GetVisibilityOptions()
+	return {
+		LboxIndependent = TimMenu.Options.Visibility.LboxIndependent,
+	}
+end
+
 function TimMenu.SetFontNext(name, size, weight)
 	nextWidgetFont = { name = name, size = size, weight = weight }
 end
@@ -66,15 +88,51 @@ local function getOrCreateWindow(key, title, visible)
 	return win
 end
 
-function TimMenu.Begin(title, visible, id)
-	TimMenu.FontReset()
-	visible = (visible == nil) and true or visible
-	if type(visible) == "string" then
-		id, visible = visible, true
-	end
-	local key = (id or title)
+local function resolveBeginArgs(visible, id, options)
+	local resolvedVisible = visible
+	local resolvedId = id
+	local resolvedOptions = options
 
-	local win = getOrCreateWindow(key, title, visible)
+	if type(resolvedVisible) == "string" then
+		resolvedId = resolvedVisible
+		resolvedVisible = nil
+	end
+
+	if type(resolvedId) == "table" and resolvedOptions == nil then
+		resolvedOptions = resolvedId
+		resolvedId = nil
+	end
+
+	if type(resolvedOptions) ~= "table" then
+		resolvedOptions = nil
+	end
+
+	if resolvedVisible == nil and resolvedOptions and resolvedOptions.visible ~= nil then
+		resolvedVisible = resolvedOptions.visible
+	end
+
+	if resolvedVisible == nil then
+		resolvedVisible = true
+	end
+
+	local isLboxIndependent = TimMenu.Options.Visibility.LboxIndependent
+	if resolvedOptions and resolvedOptions.LboxIndependent ~= nil then
+		isLboxIndependent = resolvedOptions.LboxIndependent and true or false
+	end
+
+	if not isLboxIndependent then
+		resolvedVisible = resolvedVisible and gui.IsMenuOpen()
+	end
+
+	return resolvedVisible, resolvedId
+end
+
+function TimMenu.Begin(title, visible, id, options)
+	TimMenu.FontReset()
+	local resolvedVisible, resolvedId = resolveBeginArgs(visible, id, options)
+	local key = (resolvedId or title)
+
+	local win = getOrCreateWindow(key, title, resolvedVisible)
 	win:update()
 
 	_currentWindow = win
