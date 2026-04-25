@@ -27,22 +27,41 @@ local nextWidgetFont = nil
 
 TimMenu.Options = {
 	Visibility = {
-		LboxIndependent = true,
+		ShowAlways = false,
+		LboxIndependent = false,
 	},
 }
+
+local function resolveShowAlwaysOption(optionsTable, fallbackValue)
+	local resolvedValue = fallbackValue and true or false
+	if type(optionsTable) ~= "table" then
+		return resolvedValue
+	end
+	if optionsTable.ShowAlways ~= nil then
+		return optionsTable.ShowAlways and true or false
+	end
+	if optionsTable.showAlways ~= nil then
+		return optionsTable.showAlways and true or false
+	end
+	if optionsTable.LboxIndependent ~= nil then
+		return optionsTable.LboxIndependent and true or false
+	end
+	return resolvedValue
+end
 
 function TimMenu.SetVisibilityOptions(options)
 	if type(options) ~= "table" then
 		return
 	end
 	local visibilityOptions = TimMenu.Options.Visibility
-	if options.LboxIndependent ~= nil then
-		visibilityOptions.LboxIndependent = options.LboxIndependent and true or false
-	end
+	local showAlways = resolveShowAlwaysOption(options, visibilityOptions.ShowAlways)
+	visibilityOptions.ShowAlways = showAlways
+	visibilityOptions.LboxIndependent = showAlways
 end
 
 function TimMenu.GetVisibilityOptions()
 	return {
+		ShowAlways = TimMenu.Options.Visibility.ShowAlways,
 		LboxIndependent = TimMenu.Options.Visibility.LboxIndependent,
 	}
 end
@@ -93,6 +112,11 @@ local function resolveBeginArgs(visible, id, options)
 	local resolvedId = id
 	local resolvedOptions = options
 
+	if type(resolvedVisible) == "table" and resolvedId == nil and resolvedOptions == nil then
+		resolvedOptions = resolvedVisible
+		resolvedVisible = nil
+	end
+
 	if type(resolvedVisible) == "string" then
 		resolvedId = resolvedVisible
 		resolvedVisible = nil
@@ -115,12 +139,9 @@ local function resolveBeginArgs(visible, id, options)
 		resolvedVisible = true
 	end
 
-	local isLboxIndependent = TimMenu.Options.Visibility.LboxIndependent
-	if resolvedOptions and resolvedOptions.LboxIndependent ~= nil then
-		isLboxIndependent = resolvedOptions.LboxIndependent and true or false
-	end
+	local showAlways = resolveShowAlwaysOption(resolvedOptions, TimMenu.Options.Visibility.ShowAlways)
 
-	if not isLboxIndependent then
+	if not showAlways then
 		resolvedVisible = resolvedVisible and gui.IsMenuOpen()
 	end
 
@@ -332,7 +353,7 @@ end
 
 -- Update toggle states in GlobalDraw
 local function UpdateKeybindToggles()
-	-- This should be called once per frame. 
+	-- This should be called once per frame.
 	-- We iterate through all keys and update toggle state if pressed.
 	for code = 1, 255 do
 		if input.IsButtonPressed(code) then
@@ -489,8 +510,10 @@ end
 ---@param kbTable table|number { key = number, mode = number } or legacy keycode
 ---@return boolean
 function TimMenu.IsKeybindActive(kbTable)
-	if not kbTable then return false end
-	
+	if not kbTable then
+		return false
+	end
+
 	-- Legacy support
 	local key, mode
 	if type(kbTable) == "number" then
@@ -504,10 +527,14 @@ function TimMenu.IsKeybindActive(kbTable)
 	end
 
 	-- Always On
-	if mode == 0 then return true end
-	
+	if mode == 0 then
+		return true
+	end
+
 	-- No key bound
-	if key == 0 then return false end
+	if key == 0 then
+		return false
+	end
 
 	-- Hold
 	if mode == 1 then
