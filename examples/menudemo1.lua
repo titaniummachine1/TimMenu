@@ -31,9 +31,12 @@ local showcaseSelectorOptions = { "Sel Foo", "Sel Bar", "Sel Baz Qux" }
 local showcaseSelectorS = 1
 local showcaseTextT = "Edit this showcase text!"
 local showcaseButtonClicks = 0
+local demoWindowOptions = {
+	ShowAlways = false,
+}
 
 local function OnDraw_Menudemo1()
-	if TimMenu.Begin("Demo Window 1") then
+	if TimMenu.Begin("Demo Window 1", demoWindowOptions) then
 		-- NEW Showcase Header TabControl
 		showcaseSelectedTab = TimMenu.TabControl("ShowcaseHeaderTabs", showcaseTabNames, showcaseSelectedTab, true)
 
@@ -75,6 +78,8 @@ local function OnDraw_Menudemo1()
 		TimMenu.NextLine() -- Ensure content below header tabs starts on a new line.
 
 		-- Color Picker demonstration
+		TimMenu.Text("Set ShowAlways = true in demoWindowOptions to keep this visible when the Lmaobox menu is closed.")
+		TimMenu.NextLine()
 		pickerColor1 = TimMenu.ColorPicker("Pick Color", pickerColor1)
 		TimMenu.Tooltip("Click the color box to open the color picker")
 		TimMenu.NextLine()

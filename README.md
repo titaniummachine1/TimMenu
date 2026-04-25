@@ -6,7 +6,7 @@
 
 ## Download Latest
 
-[![Download Latest](https://img.shields.io/github/downloads/titaniummachine1/TimMenu/total.svg?style=for-the-badge&logo=download&label=Download%20Latest)](https://github.com/titaniummachine1/TimMenu/releases/download/v1.8.4/TimMenu.lua)
+[![Download Latest](https://img.shields.io/github/downloads/titaniummachine1/TimMenu/total.svg?style=for-the-badge&logo=download&label=Download%20Latest)](https://github.com/titaniummachine1/TimMenu/releases/download/v1.8.8/TimMenu.lua)
 
 Terminator's Immediate-Mode Menu for Lmaobox
 
@@ -39,8 +39,24 @@ TimMenu is now a **fully standalone** library. It does not require LNXlib or oth
 
 ### Window Management
 
-- **Begin**: `bool = TimMenu.Begin(title, [visible, [id]])`
+- **Begin**: `bool = TimMenu.Begin(title, [visibleOrOptions, [idOrOptions, [options]]])`
 - Starts a new window context. Returns true if the window is expanded.
+
+### Visibility Behavior
+
+- By default, `TimMenu.Begin("My Window")` follows `gui.IsMenuOpen()`.
+- Use `ShowAlways = true` to keep a menu visible even when the Lmaobox menu is closed.
+- `LboxIndependent = true` is still supported as a compatibility alias.
+
+```lua
+if TimMenu.Begin("Visible With Lmaobox") then
+    TimMenu.Text("This window hides when the Lmaobox menu is closed.")
+end
+
+if TimMenu.Begin("Always Visible", { ShowAlways = true }) then
+    TimMenu.Text("This window ignores gui.IsMenuOpen().")
+end
+```
 
 ### Layout Controls
 
@@ -88,9 +104,12 @@ local TimMenu = require("TimMenu")
 
 local isChecked = false
 local sliderValue = 50
+local windowOptions = {
+    ShowAlways = false,
+}
 
 local function OnDraw()
-    if TimMenu.Begin("Example Window") then
+    if TimMenu.Begin("Example Window", windowOptions) then
         isChecked = TimMenu.Checkbox("Enable Feature", isChecked)
         TimMenu.NextLine()
 
@@ -106,6 +125,13 @@ end
 callbacks.Register("Draw", "ExampleDraw", OnDraw)
 
 ```
+
+### Recent Changes In v1.8.8
+
+- New windows now try multiple random spawn positions and choose the least-overlapping candidate.
+- Spawn placement stays inside screen bounds when screen size is available.
+- Ties in spawn placement prefer positions closer to the top-left of the screen.
+- Menu visibility now follows the Lmaobox menu by default, with `ShowAlways` available as an override.
 
 ### Grouping with Sectors
 
