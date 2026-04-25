@@ -64,6 +64,30 @@ local function randomInRange(minValue, maxValue)
 	return math.random(minValue, maxValue)
 end
 
+local function clamp(value, minValue, maxValue)
+	if value < minValue then
+		return minValue
+	end
+	if value > maxValue then
+		return maxValue
+	end
+	return value
+end
+
+local function topLeftDistanceScore(x, y)
+	return x + y
+end
+
+local function isBetterCandidate(testOverlap, testDistance, bestOverlap, bestDistance)
+	if testOverlap < bestOverlap then
+		return true
+	end
+	if testOverlap > bestOverlap then
+		return false
+	end
+	return testDistance < bestDistance
+end
+
 local function getDefaultSpawnPosition(windowWidth, windowHeight)
 	local baseX = Globals.Defaults.DEFAULT_X
 	local baseY = Globals.Defaults.DEFAULT_Y
@@ -86,11 +110,22 @@ local function getDefaultSpawnPosition(windowWidth, windowHeight)
 	local minY = padY
 	local maxX = baseX + 300
 	local maxY = baseY + 200
+	local hasScreenBounds = false
 
 	local okScreenSize, screenW, screenH = pcall(draw.GetScreenSize)
 	if okScreenSize and type(screenW) == "number" and type(screenH) == "number" and screenW > 0 and screenH > 0 then
-		maxX = math.max(minX, math.floor(screenW - windowWidth - padX))
-		maxY = math.max(minY, math.floor(screenH - estimatedHeight - padY))
+		hasScreenBounds = true
+		minX = 0
+		minY = 0
+		maxX = math.floor(screenW - windowWidth)
+		maxY = math.floor(screenH - estimatedHeight)
+
+		if maxX < minX then
+			maxX = minX
+		end
+		if maxY < minY then
+			maxY = minY
+		end
 	else
 		maxX = math.max(minX, baseX + 300)
 		maxY = math.max(minY, baseY + 200)
@@ -100,17 +135,25 @@ local function getDefaultSpawnPosition(windowWidth, windowHeight)
 	local bestY = randomInRange(minY, maxY)
 	local bestRect = { x = bestX, y = bestY, w = windowWidth, h = estimatedHeight }
 	local bestScore = getCandidateObscureScore(bestRect, estimatedHeight)
+	local bestDistance = topLeftDistanceScore(bestX, bestY)
 
 	for _ = 2, 10 do
 		local testX = randomInRange(minX, maxX)
 		local testY = randomInRange(minY, maxY)
 		local testRect = { x = testX, y = testY, w = windowWidth, h = estimatedHeight }
 		local testScore = getCandidateObscureScore(testRect, estimatedHeight)
-		if testScore < bestScore then
+		local testDistance = topLeftDistanceScore(testX, testY)
+		if isBetterCandidate(testScore, testDistance, bestScore, bestDistance) then
 			bestScore = testScore
+			bestDistance = testDistance
 			bestX = testX
 			bestY = testY
 		end
+	end
+
+	if hasScreenBounds then
+		bestX = clamp(bestX, minX, maxX)
+		bestY = clamp(bestY, minY, maxY)
 	end
 
 	return bestX, bestY
