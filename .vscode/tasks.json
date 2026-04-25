@@ -2,13 +2,54 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "Run BundleAndDeploy.bat",
+            "label": "Bundle and deploy (lua)",
             "type": "shell",
             "command": "${workspaceFolder}/BundleAndDeploy.bat",
+            "problemMatcher": [],
             "group": {
                 "kind": "build",
                 "isDefault": true
             }
+        },
+        {
+            "label": "Bundle and deploy (npm)",
+            "type": "shell",
+            "command": "npm.cmd run bundle-deploy",
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Git Quick Commit",
+            "type": "shell",
+            "command": "git add . && git commit -m '⚡ quick update'",
+            "problemMatcher": []
+        },
+        {
+            "label": "Git Named Commit",
+            "type": "shell",
+            "command": "git add . && git commit -m '${input:commitMessage}'",
+            "problemMatcher": []
+        },
+        {
+            "label": "🚀 Auto-Build (Watcher)",
+            "type": "shell",
+            "command": "powershell -Command \"Write-Host 'Watching for changes...'; while($true) { $changed = gci -Recurse TimMenu/*.lua | where { $_.LastWriteTime -gt (Get-Date).AddSeconds(-2) }; if ($changed) { ./BundleAndDeploy.bat; Write-Host '✅ Bundled and Deployed!' -ForegroundColor Green }; Start-Sleep -Seconds 1 }\"",
+            "isBackground": true,
+            "problemMatcher": [],
+            "presentation": {
+                "reveal": "always",
+                "panel": "dedicated"
+            }
+        }
+    ],
+    "inputs": [
+        {
+            "id": "commitMessage",
+            "type": "promptString",
+            "description": "Enter commit message",
+            "default": "updates"
         }
     ]
 }

@@ -1,18 +1,32 @@
 {
+    "files.autoSave": "onFocusChange",
     "editor.formatOnSave": true,
     "[lua]": {
-      "editor.defaultFormatter": "JohnnyMorganz.stylua", 
-      // Or if using LuaFormat: "editor.defaultFormatter": "koihik.vscode-lua-format",
-      "editor.formatOnSave": true
+        "editor.defaultFormatter": "JohnnyMorganz.stylua",
+        // Or if using LuaFormat: "editor.defaultFormatter": "koihik.vscode-lua-format",
+        "editor.formatOnSave": true
     },
     "stylua.searchParentDirectories": true,
-    "emeraldwalk.runonsave": {
+    "achilleshr.runonsave": {
+        "autoSave": true,
+        "onSave": true,
         "commands": [
             {
-                "match": "\\.lua$",
-                "isAsync": true,
+                "match": ".*\\.lua$",
+                "isAsync": false,
                 "cmd": "${workspaceFolder}/BundleAndDeploy.bat",
-                "message": "Attempting to run default build task for ${fileBasename}...",
+                "autoShowOutputPanel": "always"
+            }
+        ]
+    },
+    "emeraldwalk.runonsave": {
+        "autoSave": true,
+        "commands": [
+            {
+                "match": ".*\\.lua$",
+                "isAsync": false,
+                "cmd": "${workspaceFolder}/BundleAndDeploy.bat",
+                "autoShowOutputPanel": "always"
             }
         ]
     },
