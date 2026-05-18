@@ -1,10 +1,5 @@
 -- Helper to check if script is loaded standalone/normally instead of required
-local function IsLoadedAsMainScript(...)
-	local firstArg = ...
-	if type(firstArg) == "string" and firstArg ~= "" then
-		return false
-	end
-
+local function IsLoadedAsMainScript()
 	local hasGetScriptName = type(GetScriptName) == "function"
 	if not hasGetScriptName then
 		return false
@@ -25,7 +20,7 @@ local function IsLoadedAsMainScript(...)
 	return false
 end
 
-local isMain, scriptPath = IsLoadedAsMainScript(...)
+local isMain, scriptPath = IsLoadedAsMainScript()
 if isMain then
 	local hasUnloadScript = type(UnloadScript) == "function"
 	assert(hasUnloadScript, "TimMenu standalone check: UnloadScript global not found")
@@ -33,6 +28,7 @@ if isMain then
 	UnloadScript(scriptPath)
 	return {}
 end
+
 
 local TimMenu = {}
 
