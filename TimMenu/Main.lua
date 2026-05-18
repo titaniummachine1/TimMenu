@@ -1,3 +1,39 @@
+-- Helper to check if script is loaded standalone/normally instead of required
+local function IsLoadedAsMainScript(...)
+	local firstArg = ...
+	if type(firstArg) == "string" and firstArg ~= "" then
+		return false
+	end
+
+	local hasGetScriptName = type(GetScriptName) == "function"
+	if not hasGetScriptName then
+		return false
+	end
+
+	local rawPath = GetScriptName()
+	assert(type(rawPath) == "string", "IsLoadedAsMainScript: GetScriptName must return a string")
+
+	local fileName = rawPath:match("([^/\\]+)%.lua$")
+	if type(fileName) == "string" then
+		local cleanName = fileName:gsub("%.lua$", "")
+		local isTimMenu = cleanName:lower() == "timmenu"
+		if isTimMenu then
+			return true, rawPath
+		end
+	end
+
+	return false
+end
+
+local isMain, scriptPath = IsLoadedAsMainScript(...)
+if isMain then
+	local hasUnloadScript = type(UnloadScript) == "function"
+	assert(hasUnloadScript, "TimMenu standalone check: UnloadScript global not found")
+	printc(255, 100, 100, 255, "[TimMenu] Library loaded as main script. Unloading to prevent background resource usage.")
+	UnloadScript(scriptPath)
+	return {}
+end
+
 local TimMenu = {}
 
 local function Setup()
